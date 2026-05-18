@@ -1,0 +1,153 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/utils/date_fmt.dart';
+import '../../application/horas_providers.dart';
+import '../../domain/hora_registro.dart';
+import '../../domain/persona.dart';
+
+class VerHorasPage extends ConsumerWidget {
+  const VerHorasPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listado = ref.watch(listadoProvider);
+    final persona = ref.watch(selectedPersonaProvider);
+    final periodo = ref.watch(periodoProvider);
+    final registros = ref.watch(registrosProvider);
+    final borrarState = ref.watch(borrarHoraControllerProvider);
+
+    void snack(String msg, {bool err = false}) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: err ? Colors.red : null),
+      );
+    }
+
+    Future<void> borrar(int id) async {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Borrar'),
+          content: const Text('¿Borrar este registro?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Borrar'),
+            ),
+          ],
+        ),
+      );
+
+      if (ok != true) return;
+
+      try {
+        final res = await ref
+            .read(borrarHoraControllerProvider.notifier)
+            .borrar(id);
+        if (res) {
+          snack('Borrado');
+        } else {
+          snack('No se borró (no encontrado)', err: true);
+        }
+      } catch (e) {
+        snack('Error borrando: $e', err: true);
+      }
+    }
+
+    Widget personaDropdown(List<Persona> items) {
+      if (items.isEmpty) return const Text('Sin personas.');
+
+      if (persona == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(selectedPersonaProvider.notifier).state = items.first;
+        });
+      }
+
+      return DropdownButtonFormField<Persona>(
+        value: persona ?? items.first,
+        items: items
+            .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
+            .toList(),
+        onChanged: (v) {
+          ref.read(selectedPersonaProvider.notifier).state = v;
+          ref.invalidate(registrosProvider);
+        },
+        decoration: const InputDecoration(
+          labelText: 'Persona',
+          border: OutlineInputBorder(),
+        ),
+      );
+    }
+
+    String line(HoraRegistro r) {
+      final min = r.minutos?.toString() ?? '-';
+      final extra = r.excedido ? '  (EXCEDIDO)' : '';
+      return 'min: $min | aplicados: ${r.minutosAplicados} | excedidos: ${r.minutosExcedidos}$extra';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          listado.when(
+            data: personaDropdown,
+            loading: () => const LinearProgressIndicator(),
+            error: (e, _) => Text('Error listado: $e'),
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Periodo: ${DateFmt.mmyyyy(periodo)}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Recargar',
+                onPressed: () => ref.invalidate(registrosProvider),
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          Expanded(
+            child: registros.when(
+              data: (rows) {
+                if (rows.isEmpty)
+                  return const Center(child: Text('Sin registros'));
+                return ListView.separated(
+                  itemCount: rows.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final r = rows[i];
+                    return ListTile(
+                      title: Text('${DateFmt.ddmmyyyy(r.fecha)} • ${r.tipo}'),
+                      subtitle: Text(line(r)),
+                      trailing: IconButton(
+                        tooltip: 'Borrar (solo ADM)',
+                        onPressed: borrarState.isLoading
+                            ? null
+                            : () => borrar(r.id),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error registros: $e')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
