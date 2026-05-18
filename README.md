@@ -1,16 +1,21 @@
-# app_horas
+# HESM - Gestión RRHH
 
-A new Flutter project.
+Aplicación interna para la carga, control y gestión de permisos de salida y novedades administrativas del personal del HESM.
 
-## Getting Started
+## Estado actual
 
-This project is a starting point for a Flutter application.
+Actualmente el sistema permite registrar y administrar permisos de salida del personal.
 
-A few resources to get you started if this is your first Flutter project:
+## Objetivo
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Centralizar la gestión operativa de novedades de RRHH en una herramienta digital, reduciendo registros manuales y mejorando el seguimiento administrativo.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Tecnologías
+
+- Flutter
+- Supabase
+- Dart
+
+## Uso
+
+Sistema de uso interno administrativo.
