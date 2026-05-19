@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 //import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_activity_listener.dart';
 //import '../../../core/supabase/supabase_provider.dart';
-import '../../horas/presentation/horas_shell.dart';
+//import '../../horas/presentation/horas_shell.dart';
+import '../../shell/presentation/main_shell.dart';
 import '../application/session_timeout_provider.dart';
 //import '../data/auth_repository.dart';
 import 'login_page.dart';
@@ -101,7 +102,7 @@ class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
         }
 
         return const AuthActivityListener(
-          child: HorasShell(),
+          child: MainShell(),
         );
       },
     );
