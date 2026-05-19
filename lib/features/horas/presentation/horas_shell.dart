@@ -42,7 +42,7 @@ class _HorasShellState extends ConsumerState<HorasShell> {
       icon: Icons.analytics_outlined,
       selectedIcon: Icons.analytics,
       label: 'Informe',
-      title: 'Informe',
+      title: 'Informe de Horas',
     ),
   ];
 

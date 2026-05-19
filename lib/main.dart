@@ -15,7 +15,7 @@ Future<void> main(List<String> args) async {
   if (Platform.isWindows) {
     await WindowsSingleInstance.ensureSingleInstance(
       args,
-      'gaby_listado_horas',
+      'hesm_gestion_rrhh',
       onSecondWindow: (args) {},
     );
   }
