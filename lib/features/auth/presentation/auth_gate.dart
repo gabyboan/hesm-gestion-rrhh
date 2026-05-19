@@ -1,23 +1,34 @@
+// lib/features/auth/presentation/auth_gate.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
+import '../../horas/presentation/horas_shell.dart';
 import '../application/session_timeout_provider.dart';
 import '../data/auth_repository.dart';
-import '../../horas/presentation/horas_shell.dart';
 import 'login_page.dart';
 
+/// Repositorio de autenticación.
+///
+/// Se define acá porque este gate es el punto (puerta) de entrada de auth para la UI.
 final authRepoProvider = Provider<AuthRepository>((ref) {
   final sb = ref.watch(supabaseClientProvider);
   return AuthRepository(sb);
 });
 
-final authSessionProvider = StreamProvider<Session?>((ref) {
+/// Sesión actual de Supabase.
+///
+/// Emite primero la sesión actualmente disponible y luego escucha los cambios
+/// futuros de autenticación.
+///
+/// Esto evita depender de que Supabase emita inmediatamente un evento inicial.
+final authSessionProvider = StreamProvider<Session?>((ref) async* {
   final repo = ref.watch(authRepoProvider);
 
-  // Emite señal de sesión actual y luego cambios
-  return repo.onAuthStateChange.map((_) => repo.session);
+  yield repo.session;
+
+  yield* repo.onAuthStateChange.map((state) => state.session);
 });
 
 class AuthGate extends ConsumerWidget {
@@ -26,41 +37,129 @@ class AuthGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionAsync = ref.watch(authSessionProvider);
-    final timeout = ref.read(sessionTimeoutProvider);
 
     return sessionAsync.when(
       data: (session) {
         if (session == null) {
-          // No logueado => no corre el timer
-          timeout.stop();
-          return const LoginPage();
+          return const _LoggedOutGate();
         }
 
-        // Logueado => validar inactividad persistente antes de entrar
-        return FutureBuilder<void>(
-          future: timeout.start(),
-          builder: (context, snap) {
-            // Mientras valida/arranca el timer, mostramos loader
-            if (snap.connectionState != ConnectionState.done) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            // Si estaba vencido, start() hace logout y el stream va a emitir null,
-            // por lo que en el próximo rebuild caerá a LoginPage.
-            return const HorasShell();
-          },
+        return _LoggedInGate(
+          key: ValueKey(session.user.id),
         );
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) {
-        // Ante error: por seguridad, destruimos timer
-        timeout.stop();
-        return Scaffold(body: Center(child: Text('Auth error: $e')));
+      loading: () => const _AuthLoading(),
+      error: (e, _) => _AuthError(error: e),
+    );
+  }
+}
+
+/// Estado no autenticado.
+///
+/// Detiene el control de inactividad y muestra login.
+class _LoggedOutGate extends ConsumerStatefulWidget {
+  const _LoggedOutGate();
+
+  @override
+  ConsumerState<_LoggedOutGate> createState() => _LoggedOutGateState();
+}
+
+class _LoggedOutGateState extends ConsumerState<_LoggedOutGate> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Side effect aislado fuera del build.
+    ref.read(sessionTimeoutProvider).stop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const LoginPage();
+  }
+}
+
+/// Estado autenticado.
+///
+/// Antes de entrar a la app valida/arranca el control de inactividad.
+/// Si la sesión estaba vencida por inactividad persistente, `start()` ejecuta
+/// logout y el stream de auth termina reconstruyendo el gate hacia LoginPage.
+class _LoggedInGate extends ConsumerStatefulWidget {
+  const _LoggedInGate({super.key});
+
+  @override
+  ConsumerState<_LoggedInGate> createState() => _LoggedInGateState();
+}
+
+class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
+  late final Future<void> _startTimeoutFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Se crea una sola vez para evitar relanzar start() en cada rebuild.
+    _startTimeoutFuture = ref.read(sessionTimeoutProvider).start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _startTimeoutFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _AuthLoading();
+        }
+
+        if (snapshot.hasError) {
+          return _AuthError(error: snapshot.error!);
+        }
+
+        return const HorasShell();
       },
+    );
+  }
+}
+
+class _AuthLoading extends StatelessWidget {
+  const _AuthLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}
+
+class _AuthError extends ConsumerStatefulWidget {
+  final Object error;
+
+  const _AuthError({
+    required this.error,
+  });
+
+  @override
+  ConsumerState<_AuthError> createState() => _AuthErrorState();
+}
+
+class _AuthErrorState extends ConsumerState<_AuthError> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Ante error de auth, frenamos el timer por seguridad.
+    ref.read(sessionTimeoutProvider).stop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text('Auth error: ${widget.error}'),
+      ),
     );
   }
 }

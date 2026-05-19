@@ -1,60 +1,107 @@
+// lib/shared/widgets/duracion_picker.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+const int _minMinutes = 30;
+const int _maxMinutes = 600; // 10 horas.
+const int _stepMinutes = 30;
+
+/// Devuelve una etiqueta legible para una duración expresada en minutos.
+///
+/// Ejemplos:
+/// - 30  -> 30'
+/// - 60  -> 1hs
+/// - 90  -> 1hs 30'
+/// - 600 -> 10hs
 String labelMinutos30(int minutes) {
-  if (minutes <= 30) return "30'";
-  final h = minutes ~/ 60;
-  final r = minutes % 60;
-  if (r == 0) return "${h}hs";
-  return "${h}hs 30'";
+  if (minutes <= 0) return "0'";
+  if (minutes < 60) return "$minutes'";
+
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+
+  if (rest == 0) return '${hours}hs';
+
+  return "$hours hs $rest'";
 }
 
-bool _isDesktopPlatform(TargetPlatform p) =>
-    p == TargetPlatform.windows ||
-    p == TargetPlatform.macOS ||
-    p == TargetPlatform.linux;
+bool _isDesktopPlatform(TargetPlatform platform) {
+  return platform == TargetPlatform.windows ||
+      platform == TargetPlatform.macOS ||
+      platform == TargetPlatform.linux;
+}
 
+/// Ajusta los minutos al rango permitido y al múltiplo de 30 superior.
+///
+/// Ejemplos:
+/// - 10  -> 30
+/// - 31  -> 60
+/// - 61  -> 90
+/// - 700 -> 600
+int _clampToRangeAndStep(int minutes) {
+  var value = minutes;
+
+  if (value < _minMinutes) value = _minMinutes;
+  if (value > _maxMinutes) value = _maxMinutes;
+
+  final remainder = value % _stepMinutes;
+  if (remainder != 0) {
+    value += _stepMinutes - remainder;
+  }
+
+  if (value > _maxMinutes) value = _maxMinutes;
+
+  return value;
+}
+
+List<int> _durationItems() {
+  return [
+    for (int m = _minMinutes; m <= _maxMinutes; m += _stepMinutes) m,
+  ];
+}
+
+/// Abre un selector de duración entre 30 minutos y 10 horas.
+///
+/// En web/escritorio se muestra como diálogo.
+/// En mobile se muestra como bottom sheet.
+///
+/// Devuelve:
+/// - minutos seleccionados si el usuario confirma;
+/// - `null` si cancela o cierra el picker.
 Future<int?> pickDuracion30Hasta10hs(
   BuildContext context, {
   int initialMinutes = 60,
 }) async {
-  const minM = 30;
-  const maxM = 600; // ✅ 10hs
-  const step = 30;
+  final items = _durationItems();
+  final init = _clampToRangeAndStep(initialMinutes);
 
-  int clampToRangeAndStep(int m) {
-    if (m < minM) m = minM;
-    if (m > maxM) m = maxM;
-    final rem = m % step;
-    if (rem != 0) m = m + (step - rem);
-    if (m > maxM) m = maxM;
-    return m;
-  }
+  var selected = init;
 
-  final init = clampToRangeAndStep(initialMinutes);
+  final rawInitialIndex = items.indexOf(init);
+  final initialIndex = rawInitialIndex < 0 ? 0 : rawInitialIndex;
 
-  final items = <int>[
-    for (int m = minM; m <= maxM; m += step) m,
-  ];
-
-  int selected = init;
-
-  final initialIndex = items.indexOf(init).clamp(0, items.length - 1);
-  final controller = FixedExtentScrollController(initialItem: initialIndex);
+  final controller = FixedExtentScrollController(
+    initialItem: initialIndex,
+  );
 
   final platform = Theme.of(context).platform;
   final useDialog = kIsWeb || _isDesktopPlatform(platform);
 
   Widget content(BuildContext ctx) {
+    final theme = Theme.of(ctx);
+
     return SizedBox(
-      height: 340, // un poco más alto, opcional
+      height: 340,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 12),
-          const Text(
+          Text(
             "Duración (30' a 10hs)",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           Expanded(
@@ -64,9 +111,14 @@ Future<int?> pickDuracion30Hasta10hs(
               magnification: 1.12,
               useMagnifier: true,
               selectionOverlay: const CupertinoPickerDefaultSelectionOverlay(),
-              onSelectedItemChanged: (i) => selected = items[i],
+              onSelectedItemChanged: (index) {
+                selected = items[index];
+              },
               children: [
-                for (final m in items) Center(child: Text(labelMinutos30(m))),
+                for (final minutes in items)
+                  Center(
+                    child: Text(labelMinutos30(minutes)),
+                  ),
               ],
             ),
           ),
@@ -77,15 +129,15 @@ Future<int?> pickDuracion30Hasta10hs(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text("Cancelar"),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Cancelar'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx, selected),
-                    child: const Text("OK"),
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(selected),
+                    child: const Text('OK'),
                   ),
                 ),
               ],
@@ -96,24 +148,36 @@ Future<int?> pickDuracion30Hasta10hs(
     );
   }
 
-  if (useDialog) {
-    return showDialog<int>(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: content(ctx),
-        ),
-      ),
-    );
-  }
+  try {
+    if (useDialog) {
+      return await showDialog<int>(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) {
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 24,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: content(ctx),
+            ),
+          );
+        },
+      );
+    }
 
-  return showModalBottomSheet<int>(
-    context: context,
-    showDragHandle: true,
-    builder: (ctx) => SafeArea(child: content(ctx)),
-  );
+    return await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: content,
+    );
+  } finally {
+    controller.dispose();
+  }
 }

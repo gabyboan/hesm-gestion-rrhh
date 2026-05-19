@@ -1,37 +1,58 @@
+// lib/features/horas/application/horas_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../core/utils/date_fmt.dart';
 import '../data/horas_repository.dart';
-import '../domain/persona.dart';
 import '../domain/hora_registro.dart';
+import '../domain/persona.dart';
 import '../domain/tipo_hora.dart';
+
+/// ====== REPOSITORY ======
 
 final horasRepoProvider = Provider<HorasRepository>((ref) {
   final sb = ref.watch(supabaseClientProvider);
   return HorasRepository(sb);
 });
 
-/// Personas (listado del mes)  -> viene de vw_listado_horas (carreras 1 y 3)
+/// ====== LISTADOS DE PERSONAS ======
+///
+/// [listadoProvider]:
+/// Listado mensual principal. Según el comentario original, viene de
+/// `vw_listado_horas` y contempla carreras 1 y 3.
+///
+/// [listadoOficialesProvider]:
+/// Listado para horas oficiales. Según el comentario original, contempla
+/// carrera 2 y/o lo que devuelva la RPC correspondiente.
+///
+/// [listadoSegunTipoProvider]:
+/// Selector usado por la pantalla de carga. Si el tipo seleccionado es oficial,
+/// usa el listado de oficiales; en cualquier otro caso usa el listado principal.
+
 final listadoProvider = FutureProvider<List<Persona>>((ref) async {
   return ref.watch(horasRepoProvider).listadoMes();
 });
 
-/// Personas (listado HORAS OFICIALES) -> carrera 2 (y/o todas según tu RPC)
 final listadoOficialesProvider = FutureProvider<List<Persona>>((ref) async {
   return ref.watch(horasRepoProvider).listadoHorasOficiales();
 });
 
-/// Selector de listado según tipo (para CargarHorasPage)
 final listadoSegunTipoProvider = FutureProvider<List<Persona>>((ref) async {
   final tipo = ref.watch(tipoHoraProvider);
+
   if (tipo == TipoHora.oficial) {
     return ref.watch(listadoOficialesProvider.future);
   }
+
   return ref.watch(listadoProvider.future);
 });
 
-/// ✅ NUEVO (CORRECTO): index por key (dni|carreraId) incluyendo normales + oficiales
+/// ====== ÍNDICES DE PERSONAS ======
+///
+/// Índice principal por `dni|carreraId`.
+///
+/// Es importante usar esta clave compuesta porque una misma persona puede
+/// aparecer en más de una carrera. Indexar solo por DNI puede pisar datos.
 final personasByKeyProvider = Provider<Map<String, Persona>>((ref) {
   final normales = ref.watch(listadoProvider).valueOrNull ?? <Persona>[];
   final oficiales =
@@ -42,35 +63,50 @@ final personasByKeyProvider = Provider<Map<String, Persona>>((ref) {
     ...oficiales,
   ];
 
-  return {for (final p in all) p.key: p};
+  return {
+    for (final p in all) p.key: p,
+  };
 });
 
-/// (opcional) Mantengo tu dni->Persona por si lo usa otra pantalla.
-/// ⚠️ Ojo: si una persona está en varias carreras, este map pisa.
+/// Índice opcional por DNI.
+///
+/// Precaución:
+/// Si una persona aparece en varias carreras, este mapa conserva solo una
+/// entrada por DNI. La última ocurrencia pisa a las anteriores.
 final personasByDniProvider = Provider<Map<int, Persona>>((ref) {
-  final all = ref.watch(personasByKeyProvider).values.toList();
+  final all = ref.watch(personasByKeyProvider).values;
+
   final map = <int, Persona>{};
   for (final p in all) {
     map[p.dni] = p;
   }
+
   return map;
 });
 
-/// UI state
+/// ====== ESTADO DE UI ======
+
 final selectedPersonaProvider = StateProvider<Persona?>((ref) => null);
+
 final fechaProvider = StateProvider<DateTime>((ref) => DateTime.now());
+
 final tipoHoraProvider = StateProvider<TipoHora>((ref) => TipoHora.particular);
+
 final minutosProvider = StateProvider<int?>((ref) => null);
 
-/// Periodo
+/// ====== PERÍODO ======
+
 final periodoProvider = StateProvider<DateTime>(
   (ref) => DateFmt.periodoActual(),
 );
 
-/// Registros del mes de UNA persona
+/// ====== REGISTROS ======
+
+/// Registros del mes para la persona seleccionada.
 final registrosProvider = FutureProvider<List<HoraRegistro>>((ref) async {
   final persona = ref.watch(selectedPersonaProvider);
   final periodo = ref.watch(periodoProvider);
+
   if (persona == null) return [];
 
   return ref.watch(horasRepoProvider).registrosMes(
@@ -80,39 +116,60 @@ final registrosProvider = FutureProvider<List<HoraRegistro>>((ref) async {
       );
 });
 
-/// Registros del periodo para TODOS
+/// Registros del período seleccionado para todas las personas.
 final registrosPeriodoProvider =
     FutureProvider<List<HoraRegistro>>((ref) async {
   final periodo = ref.watch(periodoProvider);
+
   return ref.watch(horasRepoProvider).registrosPeriodo(periodo: periodo);
 });
 
-/// ====== Buscador + ORDEN ======
+/// ====== BUSCADOR Y ORDEN ======
+
 final searchProvider = StateProvider<String>((ref) => '');
 
-enum OrdenHoras { dni, apellido, carrera }
+enum OrdenHoras {
+  dni,
+  apellido,
+  carrera,
+}
 
 final ordenProvider = StateProvider<OrdenHoras>((ref) => OrdenHoras.apellido);
+
 final ordenAscProvider = StateProvider<bool>((ref) => true);
 
+String _personaKeyFromRegistro(HoraRegistro r) => '${r.dni}|${r.carreraId}';
+
+bool _containsCI(String source, String query) {
+  return source.toLowerCase().contains(query.toLowerCase());
+}
+
+int _cmpInt(int a, int b) => a.compareTo(b);
+
+int _cmpStr(String a, String b) {
+  return a.toLowerCase().compareTo(b.toLowerCase());
+}
+
+/// Registros filtrados por búsqueda y ordenados según la opción activa.
+///
+/// La búsqueda compara contra:
+/// - DNI.
+/// - Apellido.
+/// - Nombre.
+/// - Carrera ID.
+///
+/// Para obtener apellido y nombre se usa [personasByKeyProvider], no DNI solo,
+/// para evitar errores cuando una persona aparece en más de una carrera.
 final registrosFiltradosProvider =
     Provider<AsyncValue<List<HoraRegistro>>>((ref) {
   final registrosAsync = ref.watch(registrosPeriodoProvider);
-
-  // ✅ cambiamos a byKey
   final byKey = ref.watch(personasByKeyProvider);
 
   final q = ref.watch(searchProvider).trim().toLowerCase();
   final orden = ref.watch(ordenProvider);
   final asc = ref.watch(ordenAscProvider);
 
-  bool containsCI(String a, String b) =>
-      a.toLowerCase().contains(b.toLowerCase());
-
-  int cmpInt(int a, int b) => a.compareTo(b);
-  int cmpStr(String a, String b) => a.toLowerCase().compareTo(b.toLowerCase());
-
-  Persona? personaDe(HoraRegistro r) => byKey['${r.dni}|${r.carreraId}'];
+  Persona? personaDe(HoraRegistro r) => byKey[_personaKeyFromRegistro(r)];
 
   int compare(HoraRegistro a, HoraRegistro b) {
     final pa = personaDe(a);
@@ -120,17 +177,21 @@ final registrosFiltradosProvider =
 
     switch (orden) {
       case OrdenHoras.dni:
-        return cmpInt(a.dni, b.dni);
+        return _cmpInt(a.dni, b.dni);
 
       case OrdenHoras.carrera:
-        final c = cmpInt(a.carreraId, b.carreraId);
-        return c != 0 ? c : cmpInt(a.dni, b.dni);
+        final carrera = _cmpInt(a.carreraId, b.carreraId);
+        if (carrera != 0) return carrera;
+
+        return _cmpInt(a.dni, b.dni);
 
       case OrdenHoras.apellido:
-        final aa = (pa?.apellido ?? '');
-        final ab = (pb?.apellido ?? '');
-        final c = cmpStr(aa, ab);
-        return c != 0 ? c : cmpInt(a.dni, b.dni);
+        final apellidoA = pa?.apellido ?? '';
+        final apellidoB = pb?.apellido ?? '';
+        final apellido = _cmpStr(apellidoA, apellidoB);
+        if (apellido != 0) return apellido;
+
+        return _cmpInt(a.dni, b.dni);
     }
   }
 
@@ -139,24 +200,41 @@ final registrosFiltradosProvider =
 
     for (final r in rows) {
       final p = personaDe(r);
-      final apellido = (p?.apellido ?? '');
-      final nombre = (p?.nombre ?? '');
+      final apellido = p?.apellido ?? '';
+      final nombre = p?.nombre ?? '';
 
       if (q.isNotEmpty) {
-        final ok = r.dni.toString().contains(q) ||
-            containsCI(apellido, q) ||
-            containsCI(nombre, q) ||
+        final matches = r.dni.toString().contains(q) ||
+            _containsCI(apellido, q) ||
+            _containsCI(nombre, q) ||
             r.carreraId.toString().contains(q);
-        if (!ok) continue;
+
+        if (!matches) continue;
       }
 
       out.add(r);
     }
 
     out.sort((a, b) => asc ? compare(a, b) : compare(b, a));
+
     return out;
   });
 });
+
+/// ====== INVALIDACIONES ======
+
+void _invalidateListados(Ref ref) {
+  ref.invalidate(listadoProvider);
+  ref.invalidate(listadoOficialesProvider);
+  ref.invalidate(listadoSegunTipoProvider);
+}
+
+void _invalidateRegistros(Ref ref) {
+  ref.invalidate(registrosProvider);
+  ref.invalidate(registrosPeriodoProvider);
+}
+
+/// ====== CARGA DE HORAS ======
 
 class CargarHoraController extends AsyncNotifier<void> {
   @override
@@ -164,7 +242,9 @@ class CargarHoraController extends AsyncNotifier<void> {
 
   Future<void> submit() async {
     final persona = ref.read(selectedPersonaProvider);
-    if (persona == null) throw Exception('Seleccioná una persona');
+    if (persona == null) {
+      throw Exception('Seleccioná una persona');
+    }
 
     final fecha = ref.read(fechaProvider);
     final tipo = ref.read(tipoHoraProvider);
@@ -184,17 +264,15 @@ class CargarHoraController extends AsyncNotifier<void> {
 
     ref.read(minutosProvider.notifier).state = null;
 
-    ref.invalidate(listadoProvider);
-    ref.invalidate(listadoOficialesProvider);
-    ref.invalidate(listadoSegunTipoProvider);
-
-    ref.invalidate(registrosProvider);
-    ref.invalidate(registrosPeriodoProvider);
+    _invalidateListados(ref);
+    _invalidateRegistros(ref);
   }
 }
 
 final cargarHoraControllerProvider =
     AsyncNotifierProvider<CargarHoraController, void>(CargarHoraController.new);
+
+/// ====== BORRADO DE HORAS ======
 
 class BorrarHoraController extends AsyncNotifier<bool> {
   @override
@@ -202,12 +280,13 @@ class BorrarHoraController extends AsyncNotifier<bool> {
 
   Future<bool> borrar(int id) async {
     state = const AsyncLoading();
+
     try {
       final ok = await ref.read(horasRepoProvider).borrarHora(id: id);
+
       state = AsyncData(ok);
 
-      ref.invalidate(registrosProvider);
-      ref.invalidate(registrosPeriodoProvider);
+      _invalidateRegistros(ref);
 
       return ok;
     } catch (e, st) {

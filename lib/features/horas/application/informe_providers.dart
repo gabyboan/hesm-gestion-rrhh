@@ -5,39 +5,71 @@ import '../domain/hora_registro.dart';
 import '../domain/persona.dart';
 import 'horas_providers.dart';
 
-//// ====== INFORME ======
-
+/// ====== INFORME ======
+///
+/// Construye las filas del informe de horas agrupando registros por persona
+/// y carrera.
+///
+/// Clave de agrupación:
+///   dni|carreraId
+///
+/// Reglas principales:
+/// - PARTICULAR: suma minutos aplicados. Si no hay aplicados pero sí excedidos,
+///   usa minutos excedidos.
+/// - ENFERMEDAD: solo marca el día. No suma minutos.
+/// - OFICIAL: suma minutos reales, porque `minutosAplicados` puede venir en 0.
+/// - Otros tipos de registros se ignoran.
+///
+/// Providers:
+/// - [informeRowsProvider]: usado por pantalla, respeta filtros.
+/// - [informeRowsExportProvider]: usado por exportación, ignora filtros visuales.
 enum InformeFiltro {
   soloConUso,
   particulares,
   enfermedad,
   oficiales,
-  excedidos
+  excedidos,
 }
 
 final informeFiltrosProvider = StateProvider<Set<InformeFiltro>>((ref) => {});
 
-String _k(int dni, int carreraId) => '$dni|$carreraId';
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+
+Map<String, Persona> _personasByKey(Iterable<Persona> personas) {
+  return {
+    for (final p in personas) p.key: p,
+  };
+}
 
 class InformeRow {
   final Persona persona;
 
-  /// día -> minutos (por tipo)
+  /// Día -> minutos particulares.
   final Map<DateTime, int> particularesPorDia;
 
-  /// enfermedad: solo marca día (valor 1)
+  /// Día -> marca de enfermedad.
+  ///
+  /// El valor es siempre 1 porque ENFERMEDAD no consume minutos en el informe.
+  /// Solo interesa saber que ese día hubo registro de enfermedad.
   final Map<DateTime, int> enfermedadPorDia;
 
-  /// oficiales: minutos reales por día
+  /// Día -> minutos oficiales reales.
   final Map<DateTime, int> oficialesPorDia;
 
-  InformeRow({
+  const InformeRow({
     required this.persona,
     required this.particularesPorDia,
     required this.enfermedadPorDia,
     required this.oficialesPorDia,
   });
+
+  bool get tieneParticulares => particularesPorDia.isNotEmpty;
+
+  bool get tieneEnfermedad => enfermedadPorDia.isNotEmpty;
+
+  bool get tieneOficiales => oficialesPorDia.isNotEmpty;
+
+  bool get tieneUso => tieneParticulares || tieneEnfermedad || tieneOficiales;
 }
 
 class _Flags {
@@ -47,180 +79,215 @@ class _Flags {
   bool tieneExc = false;
 }
 
+/// Construye las filas del informe.
+///
+/// [aplicarFiltros]:
+/// - true: respeta los filtros activos de pantalla.
+/// - false: ignora filtros. Usado para exportar todo el período.
+///
+/// Importante:
+/// Los filtros se combinan de forma acumulativa.
+///
+/// Ejemplo:
+/// Si están activos `particulares` y `enfermedad`, la persona debe tener ambos
+/// tipos para aparecer.
+///
+/// El filtro `excedidos`, cuando está activo, considera únicamente registros
+/// excedidos. No muestra todos los registros de una persona que tuvo al menos
+/// un excedente.
 List<InformeRow> _buildInforme({
   required List<HoraRegistro> registros,
   required Map<String, Persona> byKey,
   required Set<InformeFiltro> filtros,
-  required bool ignoreFiltros, // export = true
+  required bool aplicarFiltros,
 }) {
-  bool allowExcedidos(HoraRegistro r) {
-    if (!filtros.contains(InformeFiltro.excedidos)) return true;
-    return (r.excedido == true) || ((r.minutosExcedidos ?? 0) > 0);
-  }
-
   final part = <String, Map<DateTime, int>>{};
   final enf = <String, Map<DateTime, int>>{};
   final ofi = <String, Map<DateTime, int>>{};
   final flags = <String, _Flags>{};
 
+  final filtrarExcedidos =
+      aplicarFiltros && filtros.contains(InformeFiltro.excedidos);
+
   void addMin(
     Map<String, Map<DateTime, int>> bucket,
     String key,
     DateTime d,
-    int m,
+    int minutos,
   ) {
     bucket.putIfAbsent(key, () => <DateTime, int>{});
-    bucket[key]![d] = (bucket[key]![d] ?? 0) + m;
+    bucket[key]![d] = (bucket[key]![d] ?? 0) + minutos;
   }
 
   for (final r in registros) {
-    if (!ignoreFiltros) {
-      if (!allowExcedidos(r)) continue;
+    if (filtrarExcedidos && !r.tieneExcedente) {
+      continue;
     }
 
-    final tipo = (r.tipo ?? '').toUpperCase();
-    final key = _k(r.dni, r.carreraId);
+    final key = r.personaKey;
     final d = _day(r.fecha);
 
     flags.putIfAbsent(key, () => _Flags());
 
-    // ✅ ENFERMEDAD: solo fecha (no depende de minutos)
-    if (tipo == 'ENFERMEDAD') {
+    // ENFERMEDAD:
+    // Solo marca fecha. No depende de minutos.
+    if (r.esEnfermedad) {
       enf.putIfAbsent(key, () => <DateTime, int>{});
       enf[key]![d] = 1;
-      flags[key]!.tieneEnf = true;
 
-      if ((r.excedido == true) || ((r.minutosExcedidos ?? 0) > 0)) {
-        flags[key]!.tieneExc = true;
-      }
+      flags[key]!.tieneEnf = true;
+      flags[key]!.tieneExc = flags[key]!.tieneExc || r.tieneExcedente;
+
       continue;
     }
 
-    // ✅ PARTICULAR: usar aplicados (o excedidos si aplicados=0 y hubo excedido)
-    if (tipo == 'PARTICULAR') {
-      final aplicados = (r.minutosAplicados ?? r.minutos ?? 0);
-      final exc = (r.minutosExcedidos ?? 0);
-      final m = (aplicados > 0) ? aplicados : (exc > 0 ? exc : 0);
+    // PARTICULAR:
+    // Prioriza minutos aplicados. Si aplicados es 0 pero hubo excedente,
+    // se muestran los minutos excedidos.
+    if (r.esParticular) {
+      final aplicados = r.minutosAplicados;
+      final excedidos = r.minutosExcedidos;
+      final minutos =
+          aplicados > 0 ? aplicados : (excedidos > 0 ? excedidos : 0);
 
-      if (m > 0) {
-        addMin(part, key, d, m);
+      if (minutos > 0) {
+        addMin(part, key, d, minutos);
         flags[key]!.tienePart = true;
       }
 
-      if ((r.excedido == true) || ((r.minutosExcedidos ?? 0) > 0)) {
-        flags[key]!.tieneExc = true;
-      }
+      flags[key]!.tieneExc = flags[key]!.tieneExc || r.tieneExcedente;
 
       continue;
     }
 
-    // ✅ OFICIAL: usar minutos reales (porque en DB minutos_aplicados suele ser 0)
-    if (tipo == 'OFICIAL') {
-      final m = (r.minutos ?? 0);
+    // OFICIAL:
+    // Usa minutos reales, porque en base de datos `minutosAplicados`
+    // suele venir en 0.
+    if (r.esOficial) {
+      final minutos = r.minutos ?? 0;
 
-      if (m > 0) {
-        addMin(ofi, key, d, m);
+      if (minutos > 0) {
+        addMin(ofi, key, d, minutos);
         flags[key]!.tieneOfi = true;
       }
 
-      if ((r.excedido == true) || ((r.minutosExcedidos ?? 0) > 0)) {
-        flags[key]!.tieneExc = true;
-      }
+      flags[key]!.tieneExc = flags[key]!.tieneExc || r.tieneExcedente;
 
       continue;
     }
 
-    // Otros tipos: ignorar
+    // Otros tipos: ignorar.
   }
 
   final out = <InformeRow>[];
 
   for (final entry in byKey.entries) {
     final key = entry.key;
-    final p = entry.value;
+    final persona = entry.value;
 
-    final partDia = part[key] ?? <DateTime, int>{};
-    final enfDia = enf[key] ?? <DateTime, int>{};
-    final ofiDia = ofi[key] ?? <DateTime, int>{};
+    final row = InformeRow(
+      persona: persona,
+      particularesPorDia: part[key] ?? <DateTime, int>{},
+      enfermedadPorDia: enf[key] ?? <DateTime, int>{},
+      oficialesPorDia: ofi[key] ?? <DateTime, int>{},
+    );
+
     final f = flags[key] ?? _Flags();
 
-    final tieneUso =
-        partDia.isNotEmpty || enfDia.isNotEmpty || ofiDia.isNotEmpty;
+    if (aplicarFiltros) {
+      // Solo con uso:
+      // oculta personas sin registros en el período.
+      if (filtros.contains(InformeFiltro.soloConUso) && !row.tieneUso) {
+        continue;
+      }
 
-    if (!ignoreFiltros) {
-      // Solo con uso
-      if (filtros.contains(InformeFiltro.soloConUso) && !tieneUso) continue;
-
-      // filtros por tipo
+      // Filtros por tipo:
+      // son acumulativos, no alternativos.
       final wantPart = filtros.contains(InformeFiltro.particulares);
       final wantEnf = filtros.contains(InformeFiltro.enfermedad);
       final wantOfi = filtros.contains(InformeFiltro.oficiales);
+
       if (wantPart && !f.tienePart) continue;
       if (wantEnf && !f.tieneEnf) continue;
       if (wantOfi && !f.tieneOfi) continue;
 
-      // excedidos
-      if (filtros.contains(InformeFiltro.excedidos) && !f.tieneExc) continue;
+      // Excedidos:
+      // muestra solo personas con al menos un registro excedido considerado.
+      if (filtros.contains(InformeFiltro.excedidos) && !f.tieneExc) {
+        continue;
+      }
     }
 
-    out.add(
-      InformeRow(
-        persona: p,
-        particularesPorDia: partDia,
-        enfermedadPorDia: enfDia,
-        oficialesPorDia: ofiDia,
-      ),
-    );
+    out.add(row);
   }
 
-  // orden: apellido, nombre, dni, carrera
+  // Orden estable del informe:
+  // apellido, nombre, dni, carrera.
   out.sort((a, b) {
     final ap = a.persona.apellido
         .toLowerCase()
         .compareTo(b.persona.apellido.toLowerCase());
     if (ap != 0) return ap;
+
     final no = a.persona.nombre
         .toLowerCase()
         .compareTo(b.persona.nombre.toLowerCase());
     if (no != 0) return no;
+
     final dn = a.persona.dni.compareTo(b.persona.dni);
     if (dn != 0) return dn;
+
     return a.persona.carreraId.compareTo(b.persona.carreraId);
   });
 
   return out;
 }
 
-/// ✅ Provider para PANTALLA (respeta filtros)
+/// Provider para PANTALLA.
+///
+/// Respeta los filtros activos en [informeFiltrosProvider].
+///
+/// Se esperan los listados completos para evitar un informe vacío temporal
+/// cuando `personasByKeyProvider` todavía no terminó de cargar.
 final informeRowsProvider = FutureProvider<List<InformeRow>>((ref) async {
   final registros = await ref.watch(registrosPeriodoProvider.future);
-  final byKey = ref.watch(personasByKeyProvider);
   final filtros = ref.watch(informeFiltrosProvider);
+
+  final normales = await ref.watch(listadoProvider.future);
+  final oficiales = await ref.watch(listadoOficialesProvider.future);
+
+  final byKey = _personasByKey([
+    ...normales,
+    ...oficiales,
+  ]);
 
   return _buildInforme(
     registros: registros,
     byKey: byKey,
     filtros: filtros,
-    ignoreFiltros: false,
+    aplicarFiltros: true,
   );
 });
 
-/// ✅ Provider para EXPORT (ignora filtros y devuelve TODOS siempre)
+/// Provider para EXPORTACIÓN.
+///
+/// Ignora los filtros visuales activos y devuelve todas las personas
+/// correspondientes al período seleccionado.
 final informeRowsExportProvider = FutureProvider<List<InformeRow>>((ref) async {
   final registros = await ref.watch(registrosPeriodoProvider.future);
 
-  // ✅ Esperar listados completos (evita valueOrNull vacío)
   final normales = await ref.watch(listadoProvider.future);
   final oficiales = await ref.watch(listadoOficialesProvider.future);
 
-  final byKey = <String, Persona>{
-    for (final p in [...normales, ...oficiales]) p.key: p,
-  };
+  final byKey = _personasByKey([
+    ...normales,
+    ...oficiales,
+  ]);
 
   return _buildInforme(
     registros: registros,
     byKey: byKey,
     filtros: const <InformeFiltro>{},
-    ignoreFiltros: true,
+    aplicarFiltros: false,
   );
 });
