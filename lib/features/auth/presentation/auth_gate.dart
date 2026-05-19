@@ -1,36 +1,21 @@
 // lib/features/auth/presentation/auth_gate.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../../core/supabase/supabase_provider.dart';
+//import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_activity_listener.dart';
+//import '../../../core/supabase/supabase_provider.dart';
 import '../../horas/presentation/horas_shell.dart';
 import '../application/session_timeout_provider.dart';
-import '../data/auth_repository.dart';
+//import '../data/auth_repository.dart';
 import 'login_page.dart';
 
 /// Repositorio de autenticación.
+import '../application/auth_providers.dart';
+
 ///
 /// Se define acá porque este gate es el punto (puerta) de entrada de auth para la UI.
-final authRepoProvider = Provider<AuthRepository>((ref) {
-  final sb = ref.watch(supabaseClientProvider);
-  return AuthRepository(sb);
-});
 
-/// Sesión actual de Supabase.
-///
-/// Emite primero la sesión actualmente disponible y luego escucha los cambios
-/// futuros de autenticación.
-///
-/// Esto evita depender de que Supabase emita inmediatamente un evento inicial.
-final authSessionProvider = StreamProvider<Session?>((ref) async* {
-  final repo = ref.watch(authRepoProvider);
-
-  yield repo.session;
-
-  yield* repo.onAuthStateChange.map((state) => state.session);
-});
-
+/// Sesión actual de Supabase
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
 
@@ -115,7 +100,9 @@ class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
           return _AuthError(error: snapshot.error!);
         }
 
-        return const HorasShell();
+        return const AuthActivityListener(
+          child: HorasShell(),
+        );
       },
     );
   }

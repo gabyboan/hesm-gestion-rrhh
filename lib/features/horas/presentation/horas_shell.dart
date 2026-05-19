@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../auth/presentation/auth_gate.dart';
+//import '../../auth/presentation/auth_gate.dart';
+import '../../auth/application/auth_providers.dart';
 import 'cargar/cargar_horas_page.dart';
 import 'informe/informe_page.dart';
 import 'ver/ver_horas_page.dart';

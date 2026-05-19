@@ -1,4 +1,3 @@
-// lib/features/horas/presentation/informe_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,10 +33,19 @@ class InformePage extends ConsumerWidget {
     return dias.map(_ddmm).join(" | ");
   }
 
+  String _cleanError(Object e) {
+    final msg = e.toString().trim();
+    if (msg.isEmpty) return 'error desconocido';
+
+    return msg.replaceFirst('Exception: ', '');
+  }
+
   // ===== Selector de período (mes) =====
 
   Future<DateTime?> _pickPeriodoDialog(
-      BuildContext context, WidgetRef ref) async {
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final current = ref.read(periodoProvider);
     final base = DateFmt.maxMonthStart(DateTime.now(), current);
     final meses = DateFmt.mesesHaciaAtras(base: base, count: 36);
@@ -56,7 +64,7 @@ class InformePage extends ConsumerWidget {
             itemBuilder: (_, i) {
               final m = meses[i];
               final selected =
-                  (m.year == current.year && m.month == current.month);
+                  m.year == current.year && m.month == current.month;
 
               return ListTile(
                 title: Text(DateFmt.mes(m)),
@@ -88,26 +96,32 @@ class InformePage extends ConsumerWidget {
 
           ref.read(periodoProvider.notifier).state = DateFmt.monthStart(picked);
 
-          // refrescar dataset base + informe
           ref.invalidate(registrosPeriodoProvider);
           ref.invalidate(informeRowsProvider);
         },
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+          padding: const EdgeInsets.symmetric(
+            vertical: 6,
+            horizontal: 10,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 DateFmt.mes(periodo),
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
                 DateFmt.anio(periodo),
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(width: 10),
               const Icon(Icons.expand_more),
@@ -124,22 +138,43 @@ class InformePage extends ConsumerWidget {
 
     final periodo = DateFmt.monthStart(picked);
 
-    // 1) setear periodo
-    ref.read(periodoProvider.notifier).state = periodo;
+    try {
+      ref.read(periodoProvider.notifier).state = periodo;
 
-    // 2) invalidar TODO lo dependiente del periodo (clave para que oficiales salga)
-    ref.invalidate(registrosPeriodoProvider);
-    ref.invalidate(informeRowsExportProvider);
+      ref.invalidate(registrosPeriodoProvider);
+      ref.invalidate(informeRowsExportProvider);
 
-    // 3) traer rows ya recalculados (incluye oficialesPorDia)
-    final rows = await ref.read(informeRowsExportProvider.future);
+      final rows = await ref.read(informeRowsExportProvider.future);
 
-    await exportInformeXlsx(periodo: periodo, rows: rows);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Excel exportado')),
+      final exported = await exportInformeXlsx(
+        periodo: periodo,
+        rows: rows,
       );
+
+      if (!context.mounted) return;
+
+      if (exported) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('Excel exportado'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('No se pudo exportar: ${_cleanError(e)}'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
     }
   }
 
@@ -153,7 +188,10 @@ class InformePage extends ConsumerWidget {
     return SizedBox(
       width: width,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 10,
+        ),
         child: Text(
           text,
           maxLines: 2,
@@ -177,15 +215,17 @@ class InformePage extends ConsumerWidget {
   }) {
     return LayoutBuilder(
       builder: (context, c) {
+        final cs = Theme.of(context).colorScheme;
+
         const wEnf = 220.0;
         const wNombre = 320.0;
         final wPart = (c.maxWidth - wEnf - wNombre).clamp(200.0, 20000.0);
 
-        final borderColor = Colors.black.withOpacity(.08);
-
         return Container(
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: borderColor)),
+            border: Border(
+              bottom: BorderSide(color: cs.outlineVariant),
+            ),
           ),
           child: Row(
             children: [
@@ -195,7 +235,13 @@ class InformePage extends ConsumerWidget {
                 width: wPart,
                 child: Row(
                   children: [
-                    Expanded(child: _cell(part, width: wPart, bold: header)),
+                    Expanded(
+                      child: _cell(
+                        part,
+                        width: wPart,
+                        bold: header,
+                      ),
+                    ),
                     if (trailingSmall.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(right: 10),
@@ -203,7 +249,7 @@ class InformePage extends ConsumerWidget {
                           trailingSmall,
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: Colors.black.withOpacity(.55),
+                            color: cs.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -246,29 +292,40 @@ class InformePage extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _chip(ref, filtros, InformeFiltro.soloConUso, "Solo con uso"),
-                _chip(ref, filtros, InformeFiltro.particulares, "Particulares"),
-                _chip(ref, filtros, InformeFiltro.enfermedad, "Enfermedad"),
-                _chip(ref, filtros, InformeFiltro.oficiales, "Oficiales"),
-                _chip(ref, filtros, InformeFiltro.excedidos, "Excedidos"),
+                _chip(ref, filtros, InformeFiltro.soloConUso, 'Solo con uso'),
+                _chip(
+                  ref,
+                  filtros,
+                  InformeFiltro.particulares,
+                  'Particulares',
+                ),
+                _chip(ref, filtros, InformeFiltro.enfermedad, 'Enfermedad'),
+                _chip(ref, filtros, InformeFiltro.oficiales, 'Oficiales'),
+                _chip(ref, filtros, InformeFiltro.excedidos, 'Excedidos'),
               ],
             ),
           ),
           const SizedBox(height: 12),
           _row3cols(
-            enf: "Enfermedad",
-            nombre: "Apellido, Nombre",
-            part: "Particulares",
-            trailingSmall: "",
+            enf: 'Enfermedad',
+            nombre: 'Apellido, Nombre',
+            part: 'Particulares',
+            trailingSmall: '',
             header: true,
           ),
           Expanded(
             child: async.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text("Error: $e")),
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              error: (e, _) => Center(
+                child: Text('Error: ${_cleanError(e)}'),
+              ),
               data: (rows) {
                 if (rows.isEmpty) {
-                  return const Center(child: Text("Sin resultados"));
+                  return const Center(
+                    child: Text('Sin resultados'),
+                  );
                 }
 
                 return ListView.builder(
@@ -278,13 +335,15 @@ class InformePage extends ConsumerWidget {
                     final p = r.persona;
 
                     final enfTxt = _resumenEnfermedad(r.enfermedadPorDia);
-                    final partTxt = _resumenParticulares(r.particularesPorDia);
+                    final partTxt = _resumenParticulares(
+                      r.particularesPorDia,
+                    );
 
                     return _row3cols(
                       enf: enfTxt,
-                      nombre: "${p.apellido}, ${p.nombre}",
+                      nombre: '${p.apellido}, ${p.nombre}',
                       part: partTxt,
-                      trailingSmall: "DNI ${p.dni} • C${p.carreraId}",
+                      trailingSmall: 'DNI ${p.dni} • C${p.carreraId}',
                     );
                   },
                 );
@@ -303,16 +362,19 @@ class InformePage extends ConsumerWidget {
     String label,
   ) {
     final selected = filtros.contains(f);
+
     return FilterChip(
       selected: selected,
       label: Text(label),
       onSelected: (v) {
         final next = {...filtros};
+
         if (v) {
           next.add(f);
         } else {
           next.remove(f);
         }
+
         ref.read(informeFiltrosProvider.notifier).state = next;
       },
     );

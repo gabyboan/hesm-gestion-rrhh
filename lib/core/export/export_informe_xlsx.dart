@@ -28,13 +28,19 @@ String _resumenMinutosConFecha(Map<DateTime, int> porDia) {
   return dias.map((d) => "${_hhmm(porDia[d]!)} ${_ddmm(d)}").join(" | ");
 }
 
-Future<void> exportInformeXlsx({
+/// Exporta el informe mensual a XLSX.
+///
+/// Devuelve:
+/// - true: si el archivo fue guardado correctamente.
+/// - false: si el usuario canceló la ventana de guardado.
+/// - throw: si hubo un error real generando o guardando el archivo.
+Future<bool> exportInformeXlsx({
   required DateTime periodo,
   required List<InformeRow> rows,
 }) async {
   final excel = Excel.createExcel();
 
-  // ✅ borrar la hoja default (Sheet1)
+  // Borrar la hoja default.
   final defaultName = excel.sheets.keys.first;
   excel.delete(defaultName);
 
@@ -52,7 +58,7 @@ Future<void> exportInformeXlsx({
     verticalAlign: VerticalAlign.Center,
   );
 
-  // ===== Encabezados (fila 3)
+  // ===== Encabezados
   final headerStyle = CellStyle(
     bold: true,
     horizontalAlign: HorizontalAlign.Center,
@@ -69,28 +75,32 @@ Future<void> exportInformeXlsx({
   sheet.cell(CellIndex.indexByString('B3')).cellStyle = headerStyle;
   sheet.cell(CellIndex.indexByString('C3')).cellStyle = headerStyle;
 
-  // ===== Datos particulares/enfermedad (desde fila 4)
+  // ===== Datos particulares / enfermedad
   var rExcel = 4;
+
   for (final r in rows) {
     final p = r.persona;
 
     sheet.cell(CellIndex.indexByString('A$rExcel')).value =
         TextCellValue(_resumenEnfermedad(r.enfermedadPorDia));
+
     sheet.cell(CellIndex.indexByString('B$rExcel')).value =
         TextCellValue("${p.apellido}, ${p.nombre}");
+
     sheet.cell(CellIndex.indexByString('C$rExcel')).value =
         TextCellValue(_resumenMinutosConFecha(r.particularesPorDia));
+
     rExcel++;
   }
 
-  // ===== Sección oficiales al final
+  // ===== Sección oficiales
   rExcel += 2;
 
-  // Separador / título sección
   sheet.merge(
     CellIndex.indexByString('A$rExcel'),
     CellIndex.indexByString('C$rExcel'),
   );
+
   final ofTitle = sheet.cell(CellIndex.indexByString('A$rExcel'));
   ofTitle.value = TextCellValue('HORAS OFICIALES');
   ofTitle.cellStyle = CellStyle(
@@ -102,7 +112,6 @@ Future<void> exportInformeXlsx({
 
   rExcel++;
 
-  // Encabezados oficiales
   sheet.cell(CellIndex.indexByString('A$rExcel')).value =
       TextCellValue('Oficiales');
   sheet.cell(CellIndex.indexByString('B$rExcel')).value =
@@ -116,24 +125,28 @@ Future<void> exportInformeXlsx({
 
   rExcel++;
 
-  // Filas oficiales: solo quienes tengan algo (si querés TODOS, decímelo)
   for (final r in rows) {
     if (r.oficialesPorDia.isEmpty) continue;
 
     final p = r.persona;
 
     sheet.cell(CellIndex.indexByString('A$rExcel')).value = TextCellValue('SI');
+
     sheet.cell(CellIndex.indexByString('B$rExcel')).value =
         TextCellValue("${p.apellido}, ${p.nombre}");
+
     sheet.cell(CellIndex.indexByString('C$rExcel')).value =
         TextCellValue(_resumenMinutosConFecha(r.oficialesPorDia));
 
     rExcel++;
   }
 
-  // Guardar
+  // ===== Generar bytes
   final outBytes = excel.encode();
-  if (outBytes == null) throw Exception('No se pudo generar XLSX');
+
+  if (outBytes == null) {
+    throw Exception('No se pudo generar XLSX');
+  }
 
   final suggestedName =
       "${DateFormat('MM', 'es').format(periodo)}-${DateFormat('MMMM yyyy', 'es').format(periodo)}.xlsx";
@@ -144,7 +157,11 @@ Future<void> exportInformeXlsx({
       XTypeGroup(label: 'Excel', extensions: ['xlsx']),
     ],
   );
-  if (saveLocation == null) return;
+
+  // Usuario canceló.
+  if (saveLocation == null) {
+    return false;
+  }
 
   final file = XFile.fromData(
     Uint8List.fromList(outBytes),
@@ -154,4 +171,6 @@ Future<void> exportInformeXlsx({
   );
 
   await file.saveTo(saveLocation.path);
+
+  return true;
 }
