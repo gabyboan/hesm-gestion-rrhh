@@ -5,28 +5,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:intl/intl.dart';
 
 import '../../features/horas/application/informe_providers.dart';
-
-String _ddmm(DateTime d) =>
-    "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}";
-
-String _hhmm(int minutes) {
-  final h = minutes ~/ 60;
-  final m = minutes % 60;
-  if (h == 0) return "${m}'";
-  return "$h:${m.toString().padLeft(2, '0')}";
-}
-
-String _resumenEnfermedad(Map<DateTime, int> porDia) {
-  if (porDia.isEmpty) return '';
-  final dias = porDia.keys.toList()..sort();
-  return dias.map(_ddmm).join(" | ");
-}
-
-String _resumenMinutosConFecha(Map<DateTime, int> porDia) {
-  if (porDia.isEmpty) return '';
-  final dias = porDia.keys.toList()..sort();
-  return dias.map((d) => "${_hhmm(porDia[d]!)} ${_ddmm(d)}").join(" | ");
-}
+import '../utils/date_fmt.dart';
 
 /// Exporta el informe mensual a XLSX.
 ///
@@ -82,13 +61,13 @@ Future<bool> exportInformeXlsx({
     final p = r.persona;
 
     sheet.cell(CellIndex.indexByString('A$rExcel')).value =
-        TextCellValue(_resumenEnfermedad(r.enfermedadPorDia));
+        TextCellValue(DateFmt.resumenFechasDdmm(r.enfermedadPorDia));
 
     sheet.cell(CellIndex.indexByString('B$rExcel')).value =
         TextCellValue("${p.apellido}, ${p.nombre}");
 
     sheet.cell(CellIndex.indexByString('C$rExcel')).value =
-        TextCellValue(_resumenMinutosConFecha(r.particularesPorDia));
+        TextCellValue(DateFmt.resumenMinutosConFecha(r.particularesPorDia));
 
     rExcel++;
   }
@@ -136,7 +115,7 @@ Future<bool> exportInformeXlsx({
         TextCellValue("${p.apellido}, ${p.nombre}");
 
     sheet.cell(CellIndex.indexByString('C$rExcel')).value =
-        TextCellValue(_resumenMinutosConFecha(r.oficialesPorDia));
+        TextCellValue(DateFmt.resumenMinutosConFecha(r.oficialesPorDia));
 
     rExcel++;
   }

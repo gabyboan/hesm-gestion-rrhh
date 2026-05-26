@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/ui/app_snackbar.dart';
+import '../../../core/utils/error_text.dart';
 import '../../auth/application/auth_providers.dart';
 import '../../horas/presentation/cargar/cargar_horas_page.dart';
 import '../../horas/presentation/informe/informe_page.dart';
@@ -57,22 +59,11 @@ class _MainShellState extends ConsumerState<MainShell> {
 
       setState(() => _signingOut = false);
 
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('No se pudo cerrar sesión: ${_cleanError(e)}'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      AppSnackBar.error(
+        context,
+        'No se pudo cerrar sesión: ${cleanError(e)}',
+      );
     }
-  }
-
-  String _cleanError(Object e) {
-    final msg = e.toString().trim();
-    if (msg.isEmpty) return 'error desconocido';
-
-    return msg.replaceFirst('Exception: ', '');
   }
 
   void _setIndex(int value) {

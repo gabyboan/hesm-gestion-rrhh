@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../../core/utils/date_fmt.dart';
 import '../../application/horas_providers.dart';
 import '../../domain/persona.dart';
@@ -49,27 +50,6 @@ class CargarHorasPage extends ConsumerWidget {
 
       ref.read(selectedPersonaProvider.notifier).state = resolved;
     });
-  }
-
-  void _showMessage(
-    BuildContext context,
-    String message, {
-    bool error = false,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    final messenger = ScaffoldMessenger.of(context);
-
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: error ? cs.error : Colors.green.shade700,
-      ),
-    );
   }
 
   String _errorMessage(Object e) {
@@ -170,10 +150,10 @@ class CargarHorasPage extends ConsumerWidget {
         await ref.read(cargarHoraControllerProvider.notifier).submit();
 
         if (!context.mounted) return;
-        _showMessage(context, 'Guardado con éxito');
+        AppSnackBar.success(context, 'Guardado con éxito');
       } catch (e) {
         if (!context.mounted) return;
-        _showMessage(context, _errorMessage(e), error: true);
+        AppSnackBar.error(context, _errorMessage(e));
       }
     }
 
