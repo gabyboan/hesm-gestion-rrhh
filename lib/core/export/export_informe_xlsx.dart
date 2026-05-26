@@ -6,6 +6,10 @@ import 'package:intl/intl.dart';
 
 import '../../features/horas/application/informe_providers.dart';
 import '../utils/date_fmt.dart';
+import '../utils/file_ext.dart';
+
+const _xlsxMimeType =
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /// Exporta el informe mensual a XLSX.
 ///
@@ -145,11 +149,10 @@ Future<bool> exportInformeXlsx({
   final file = XFile.fromData(
     Uint8List.fromList(outBytes),
     name: suggestedName,
-    mimeType:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    mimeType: _xlsxMimeType,
   );
 
-  await file.saveTo(saveLocation.path);
+  await file.saveTo(ensureFileExtension(saveLocation.path, 'xlsx'));
 
   return true;
 }
