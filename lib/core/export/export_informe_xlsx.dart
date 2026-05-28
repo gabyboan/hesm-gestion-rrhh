@@ -11,6 +11,8 @@ import '../utils/file_ext.dart';
 const _xlsxMimeType =
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
+const _carrerasParticularesEnfermedad = {1, 3};
+
 /// Exporta el informe mensual a XLSX.
 ///
 /// Devuelve:
@@ -61,7 +63,11 @@ Future<bool> exportInformeXlsx({
   // ===== Datos particulares / enfermedad
   var rExcel = 4;
 
-  for (final r in rows) {
+  final rowsParticularesEnfermedad = rows.where((row) {
+    return _carrerasParticularesEnfermedad.contains(row.persona.carreraId);
+  });
+
+  for (final r in rowsParticularesEnfermedad) {
     final p = r.persona;
 
     sheet.cell(CellIndex.indexByString('A$rExcel')).value =
@@ -108,9 +114,11 @@ Future<bool> exportInformeXlsx({
 
   rExcel++;
 
-  for (final r in rows) {
-    if (r.oficialesPorDia.isEmpty) continue;
+  final rowsOficialesConUso = rows.where((row) {
+    return row.oficialesPorDia.isNotEmpty;
+  });
 
+  for (final r in rowsOficialesConUso) {
     final p = r.persona;
 
     sheet.cell(CellIndex.indexByString('A$rExcel')).value = TextCellValue('SI');

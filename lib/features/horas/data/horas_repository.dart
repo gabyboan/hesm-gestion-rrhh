@@ -106,6 +106,24 @@ class HorasRepository {
     return rows.map(HoraRegistro.fromJson).toList();
   }
 
+  /// Periodos con registros cargados.
+  ///
+  /// Se usa para mostrar meses sin datos deshabilitados, sin ocultar huecos
+  /// entre meses cargados.
+  Future<Set<DateTime>> periodosConRegistros() async {
+    final res = await _sb
+        .from('horas_registros')
+        .select('periodo')
+        .order('periodo', ascending: false);
+
+    final rows = _asRows(res);
+
+    return {
+      for (final row in rows)
+        _monthStart(_asDate(row['periodo'], field: 'periodo')),
+    };
+  }
+
   /// Carga un registro de hora.
   ///
   /// [tipoDb] debe coincidir con el valor esperado por la RPC/Postgres.
@@ -179,4 +197,26 @@ class HorasRepository {
 
     return '$year-$month-$day';
   }
+
+  DateTime _asDate(
+    dynamic value, {
+    required String field,
+  }) {
+    if (value == null) {
+      throw FormatException('Campo fecha requerido ausente: $field');
+    }
+
+    if (value is DateTime) {
+      return DateTime(value.year, value.month, value.day);
+    }
+
+    final parsed = DateTime.tryParse(value.toString());
+    if (parsed == null) {
+      throw FormatException('No se pudo convertir a DateTime el campo $field');
+    }
+
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  DateTime _monthStart(DateTime d) => DateTime(d.year, d.month, 1);
 }

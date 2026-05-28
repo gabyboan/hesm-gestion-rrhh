@@ -124,6 +124,10 @@ final registrosPeriodoProvider =
   return ref.watch(horasRepoProvider).registrosPeriodo(periodo: periodo);
 });
 
+final periodosConRegistrosProvider = FutureProvider<Set<DateTime>>((ref) {
+  return ref.watch(horasRepoProvider).periodosConRegistros();
+});
+
 /// ====== BUSCADOR Y ORDEN ======
 
 final searchProvider = StateProvider<String>((ref) => '');
@@ -232,6 +236,7 @@ void _invalidateListados(Ref ref) {
 void _invalidateRegistros(Ref ref) {
   ref.invalidate(registrosProvider);
   ref.invalidate(registrosPeriodoProvider);
+  ref.invalidate(periodosConRegistrosProvider);
 }
 
 /// ====== CARGA DE HORAS ======

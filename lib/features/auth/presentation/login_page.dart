@@ -51,6 +51,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             email: _email.text,
             password: _pass.text,
           );
+
+      ref.invalidate(authSessionProvider);
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = _authErrorMessage(e));

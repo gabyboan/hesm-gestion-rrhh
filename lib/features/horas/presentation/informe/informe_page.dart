@@ -18,37 +18,70 @@ class InformePage extends ConsumerWidget {
   Future<DateTime?> _pickPeriodoDialog(
     BuildContext context,
     WidgetRef ref,
-  ) {
+  ) async {
     final current = ref.read(periodoProvider);
+    Set<DateTime>? periodosConRegistros;
+    try {
+      periodosConRegistros =
+          await ref.read(periodosConRegistrosProvider.future);
+    } catch (_) {
+      periodosConRegistros = null;
+    }
+    if (!context.mounted) return null;
+
+    if (periodosConRegistros != null && periodosConRegistros.isEmpty) {
+      AppSnackBar.error(context, 'No hay meses con horas cargadas');
+      return null;
+    }
+
     return showInformePeriodoDialog(
       context: context,
       current: current,
+      periodosConRegistros: periodosConRegistros,
     );
   }
 
   Future<void> _changePeriodo(BuildContext context, WidgetRef ref) async {
-    final picked = await _pickPeriodoDialog(context, ref);
-    if (picked == null) return;
+    try {
+      final picked = await _pickPeriodoDialog(context, ref);
+      if (picked == null) return;
+      if (!context.mounted) return;
 
-    ref.read(periodoProvider.notifier).state = DateFmt.monthStart(picked);
+      final periodo = DateFmt.monthStart(picked);
+      ref.read(periodoProvider.notifier).state = periodo;
 
-    ref.invalidate(registrosPeriodoProvider);
-    ref.invalidate(informeRowsProvider);
+      ref.invalidate(registrosPeriodoProvider);
+      ref.invalidate(informeRowsProvider);
+    } catch (e) {
+      if (!context.mounted) return;
+
+      AppSnackBar.error(
+        context,
+        'No se pudo abrir el selector: ${cleanError(e)}',
+      );
+    }
   }
 
   Future<void> _exportExcelMes(BuildContext context, WidgetRef ref) async {
-    final picked = await _pickPeriodoDialog(context, ref);
-    if (picked == null) return;
-
-    final periodo = DateFmt.monthStart(picked);
-
     try {
+      final picked = await _pickPeriodoDialog(context, ref);
+      if (picked == null) return;
+      if (!context.mounted) return;
+
+      final periodo = DateFmt.monthStart(picked);
+
       ref.read(periodoProvider.notifier).state = periodo;
 
       ref.invalidate(registrosPeriodoProvider);
       ref.invalidate(informeRowsExportProvider);
 
       final rows = await ref.read(informeRowsExportProvider.future);
+      if (!rows.any((row) => row.tieneUso)) {
+        if (!context.mounted) return;
+
+        AppSnackBar.error(context, 'No hay horas cargadas para exportar');
+        return;
+      }
 
       final exported = await exportInformeXlsx(
         periodo: periodo,

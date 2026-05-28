@@ -276,11 +276,13 @@ class PersonaPickerSheet extends StatefulWidget {
 class PeriodoPickerSheet extends StatelessWidget {
   final List<DateTime> meses;
   final DateTime current;
+  final Set<int>? enabledMonthKeys;
 
   const PeriodoPickerSheet({
     super.key,
     required this.meses,
     required this.current,
+    required this.enabledMonthKeys,
   });
 
   @override
@@ -310,12 +312,17 @@ class PeriodoPickerSheet extends StatelessWidget {
                   final mes = meses[index];
                   final selected =
                       mes.year == current.year && mes.month == current.month;
+                  final enabled = enabledMonthKeys == null ||
+                      enabledMonthKeys!.contains(DateFmt.monthKey(mes));
 
                   return ListTile(
                     title: Text(DateFmt.mes(mes)),
-                    subtitle: Text(DateFmt.anio(mes)),
+                    subtitle:
+                        Text(enabled ? DateFmt.anio(mes) : 'Sin registros'),
                     trailing: selected ? const Icon(Icons.check) : null,
-                    onTap: () => Navigator.of(context).pop(mes),
+                    enabled: enabled,
+                    onTap:
+                        enabled ? () => Navigator.of(context).pop(mes) : null,
                   );
                 },
               ),

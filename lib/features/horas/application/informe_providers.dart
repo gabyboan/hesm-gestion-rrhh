@@ -250,11 +250,15 @@ List<InformeRow> _buildInforme({
 /// Se esperan los listados completos para evitar un informe vacío temporal
 /// cuando `personasByKeyProvider` todavía no terminó de cargar.
 final informeRowsProvider = FutureProvider<List<InformeRow>>((ref) async {
-  final registros = await ref.watch(registrosPeriodoProvider.future);
+  final registrosFuture = ref.watch(registrosPeriodoProvider.future);
+  final normalesFuture = ref.watch(listadoProvider.future);
+  final oficialesFuture = ref.watch(listadoOficialesProvider.future);
+
+  final registros = await registrosFuture;
   final filtros = ref.watch(informeFiltrosProvider);
 
-  final normales = await ref.watch(listadoProvider.future);
-  final oficiales = await ref.watch(listadoOficialesProvider.future);
+  final normales = await normalesFuture;
+  final oficiales = await oficialesFuture;
 
   final byKey = _personasByKey([
     ...normales,
@@ -274,10 +278,13 @@ final informeRowsProvider = FutureProvider<List<InformeRow>>((ref) async {
 /// Ignora los filtros visuales activos y devuelve todas las personas
 /// correspondientes al período seleccionado.
 final informeRowsExportProvider = FutureProvider<List<InformeRow>>((ref) async {
-  final registros = await ref.watch(registrosPeriodoProvider.future);
+  final registrosFuture = ref.watch(registrosPeriodoProvider.future);
+  final normalesFuture = ref.watch(listadoProvider.future);
+  final oficialesFuture = ref.watch(listadoOficialesProvider.future);
 
-  final normales = await ref.watch(listadoProvider.future);
-  final oficiales = await ref.watch(listadoOficialesProvider.future);
+  final registros = await registrosFuture;
+  final normales = await normalesFuture;
+  final oficiales = await oficialesFuture;
 
   final byKey = _personasByKey([
     ...normales,

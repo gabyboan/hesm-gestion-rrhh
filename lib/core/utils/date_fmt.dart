@@ -35,6 +35,11 @@ class DateFmt {
   /// Primer día del mes de una fecha.
   static DateTime monthStart(DateTime d) => DateTime(d.year, d.month, 1);
 
+  static int monthKey(DateTime d) {
+    final m = monthStart(d);
+    return (m.year * 100) + m.month;
+  }
+
   /// Periodo actual = primer día del mes actual.
   static DateTime periodoActual() => monthStart(DateTime.now());
 
