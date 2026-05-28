@@ -1,22 +1,14 @@
 // lib/features/auth/presentation/auth_gate.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-//import 'package:supabase_flutter/supabase_flutter.dart';
-import 'auth_activity_listener.dart';
-//import '../../../core/supabase/supabase_provider.dart';
-//import '../../horas/presentation/horas_shell.dart';
+
 import '../../shell/presentation/main_shell.dart';
+import '../application/auth_providers.dart';
 import '../application/session_timeout_provider.dart';
-//import '../data/auth_repository.dart';
+import 'auth_activity_listener.dart';
 import 'login_page.dart';
 
-/// Repositorio de autenticación.
-import '../application/auth_providers.dart';
-
-///
-/// Se define acá porque este gate es el punto (puerta) de entrada de auth para la UI.
-
-/// Sesión actual de Supabase
+/// Sesión actual de Supabase.
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
 
@@ -54,8 +46,6 @@ class _LoggedOutGateState extends ConsumerState<_LoggedOutGate> {
   @override
   void initState() {
     super.initState();
-
-    // Side effect aislado fuera del build.
     ref.read(sessionTimeoutProvider).stop();
   }
 
@@ -83,8 +73,6 @@ class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
   @override
   void initState() {
     super.initState();
-
-    // Se crea una sola vez para evitar relanzar start() en cada rebuild.
     _startTimeoutFuture = ref.read(sessionTimeoutProvider).start();
   }
 
@@ -137,8 +125,6 @@ class _AuthErrorState extends ConsumerState<_AuthError> {
   @override
   void initState() {
     super.initState();
-
-    // Ante error de auth, frenamos el timer por seguridad.
     ref.read(sessionTimeoutProvider).stop();
   }
 

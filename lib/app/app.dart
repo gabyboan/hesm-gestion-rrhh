@@ -15,25 +15,17 @@ class App extends ConsumerWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'HESM - Gestión RRHH',
-
-      // Tema controlado por provider
       themeMode: themeMode,
-
-      // Tema claro
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
         colorSchemeSeed: const Color(0xFF4F46E5),
       ),
-
-      // Tema oscuro
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         colorSchemeSeed: const Color(0xFF4F46E5),
       ),
-
-      // Español (Argentina)
       locale: const Locale('es', 'AR'),
       supportedLocales: const [
         Locale('es', 'AR'),
@@ -46,7 +38,6 @@ class App extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-
       home: const AuthGate(),
     );
   }

@@ -11,7 +11,7 @@ import 'app/app.dart';
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Evita doble instancia (solo Windows)
+  // Evita doble instancia en Windows.
   if (Platform.isWindows) {
     await WindowsSingleInstance.ensureSingleInstance(
       args,
@@ -20,7 +20,7 @@ Future<void> main(List<String> args) async {
     );
   }
 
-  // ✅ Cargar variables desde credenciales.env
+  // Carga variables desde credenciales.env.
   await dotenv.load(fileName: 'credenciales.env');
 
   final supabaseUrl = dotenv.env['SUPABASE_URL'];
@@ -36,6 +36,9 @@ Future<void> main(List<String> args) async {
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
+    authOptions: const FlutterAuthClientOptions(
+      localStorage: EmptyLocalStorage(),
+    ),
   );
 
   runApp(const ProviderScope(child: App()));

@@ -175,8 +175,32 @@ class VerHorasPage extends ConsumerWidget {
     WidgetRef ref,
   ) async {
     final current = ref.read(periodoProvider);
-    final base = DateFmt.maxMonthStart(DateTime.now(), current);
+    Set<DateTime>? periodosConRegistros;
+    try {
+      periodosConRegistros =
+          await ref.read(periodosConRegistrosProvider.future);
+    } catch (_) {
+      periodosConRegistros = null;
+    }
+    if (!context.mounted) return null;
+
+    if (periodosConRegistros != null && periodosConRegistros.isEmpty) {
+      AppSnackBar.error(context, 'No hay meses con horas cargadas');
+      return null;
+    }
+
+    var base = DateFmt.periodoActual();
+    for (final periodo in periodosConRegistros ?? const <DateTime>{}) {
+      base = DateFmt.maxMonthStart(base, periodo);
+    }
+
     final meses = DateFmt.mesesHaciaAtras(base: base, count: 36);
+    final periodosKeys = periodosConRegistros == null
+        ? null
+        : {
+            for (final periodo in periodosConRegistros)
+              DateFmt.monthKey(periodo),
+          };
 
     return showModalBottomSheet<DateTime>(
       context: context,
@@ -187,6 +211,7 @@ class VerHorasPage extends ConsumerWidget {
         return PeriodoPickerSheet(
           meses: meses,
           current: current,
+          enabledMonthKeys: periodosKeys,
         );
       },
     );
@@ -271,9 +296,10 @@ class VerHorasPage extends ConsumerWidget {
             onTap: () async {
               final picked = await _pickPeriodo(context, ref);
               if (picked == null) return;
+              if (!context.mounted) return;
 
-              ref.read(periodoProvider.notifier).state =
-                  DateFmt.monthStart(picked);
+              final periodo = DateFmt.monthStart(picked);
+              ref.read(periodoProvider.notifier).state = periodo;
             },
           ),
           const SizedBox(height: 12),
