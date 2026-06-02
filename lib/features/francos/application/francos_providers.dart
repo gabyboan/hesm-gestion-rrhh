@@ -43,7 +43,7 @@ class FrancoFormData {
   final int dni;
   final int carreraId;
   final DateTime fecha;
-  final int cantidad;
+  final int minutos;
   final String motivo;
   final String? observacion;
 
@@ -51,7 +51,7 @@ class FrancoFormData {
     required this.dni,
     required this.carreraId,
     required this.fecha,
-    required this.cantidad,
+    required this.minutos,
     required this.motivo,
     this.observacion,
   });
@@ -69,7 +69,7 @@ class GuardarFrancoController extends AsyncNotifier<void> {
             dni: data.dni,
             carreraId: data.carreraId,
             fecha: data.fecha,
-            cantidad: data.cantidad,
+            minutos: data.minutos,
             motivo: data.motivo,
             observacion: data.observacion,
           );
@@ -92,7 +92,7 @@ class GuardarFrancoController extends AsyncNotifier<void> {
       await ref.read(francosRepoProvider).modificar(
             id: id,
             fecha: data.fecha,
-            cantidad: data.cantidad,
+            minutos: data.minutos,
             motivo: data.motivo,
             observacion: data.observacion,
           );

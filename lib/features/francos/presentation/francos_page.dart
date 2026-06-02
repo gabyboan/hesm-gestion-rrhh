@@ -9,6 +9,20 @@ import '../application/francos_providers.dart';
 import '../domain/franco_movimiento.dart';
 import '../domain/franco_persona.dart';
 
+String _formatMinutes(int minutes) {
+  final value = minutes.abs();
+  final sign = minutes < 0 ? '-' : '';
+  final hours = value ~/ 60;
+  final rest = value % 60;
+
+  return '$sign$hours:${rest.toString().padLeft(2, '0')}';
+}
+
+String _formatSignedMinutes(int minutes) {
+  final sign = minutes > 0 ? '+' : '';
+  return '$sign${_formatMinutes(minutes)}';
+}
+
 class FrancosPage extends ConsumerWidget {
   const FrancosPage({super.key});
 
@@ -33,7 +47,9 @@ class FrancosPage extends ConsumerWidget {
     required FrancoPersona? current,
   }) {
     if (resolved == null) return;
-    if (current?.key == resolved.key && current?.saldo == resolved.saldo) {
+    if (current?.key == resolved.key &&
+        current?.saldoMinutos == resolved.saldoMinutos &&
+        current?.tieneHorasCargadas == resolved.tieneHorasCargadas) {
       return;
     }
 
@@ -41,7 +57,9 @@ class FrancosPage extends ConsumerWidget {
       if (!context.mounted) return;
 
       final latest = ref.read(selectedFrancoPersonaProvider);
-      if (latest?.key == resolved.key && latest?.saldo == resolved.saldo) {
+      if (latest?.key == resolved.key &&
+          latest?.saldoMinutos == resolved.saldoMinutos &&
+          latest?.tieneHorasCargadas == resolved.tieneHorasCargadas) {
         return;
       }
 
@@ -195,7 +213,7 @@ class FrancosPage extends ConsumerWidget {
                                 context: context,
                                 ref: ref,
                                 persona: resolved!,
-                                mode: movimiento.cantidad > 0
+                                mode: movimiento.minutos > 0
                                     ? _FrancoFormMode.add
                                     : _FrancoFormMode.subtract,
                                 movimiento: movimiento,
@@ -250,7 +268,7 @@ class FrancosPage extends ConsumerWidget {
                               context: context,
                               ref: ref,
                               persona: resolved!,
-                              mode: movimiento.cantidad > 0
+                              mode: movimiento.minutos > 0
                                   ? _FrancoFormMode.add
                                   : _FrancoFormMode.subtract,
                               movimiento: movimiento,
@@ -348,10 +366,20 @@ class _PersonasList extends StatelessWidget {
         return ListTile(
           selected: selected,
           leading: CircleAvatar(
-            child: Text(persona.saldo.toString()),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: const EdgeInsets.all(3),
+                child: Text(_formatMinutes(persona.saldoMinutos)),
+              ),
+            ),
           ),
           title: Text('${persona.apellido}, ${persona.nombre}'),
-          subtitle: Text('DNI ${persona.dni} - ${persona.carrera}'),
+          subtitle: Text(
+            persona.tieneHorasCargadas
+                ? 'DNI ${persona.dni} - ${persona.carrera}'
+                : 'DNI ${persona.dni} - ${persona.carrera} - Sin horas cargadas',
+          ),
           trailing: selected ? const Icon(Icons.check_circle) : null,
           onTap: () => onSelected(persona),
         );
@@ -386,6 +414,8 @@ class _FrancoDetalle extends ConsumerWidget {
     }
 
     final movimientos = ref.watch(francosMovimientosProvider);
+    final bancoHabilitado = persona.tieneHorasCargadas;
+    final accionesHabilitadas = bancoHabilitado && !busy;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,9 +423,16 @@ class _FrancoDetalle extends ConsumerWidget {
         _SaldoHeader(
           persona: persona,
           busy: busy,
-          onAdd: onAdd,
-          onSubtract: onSubtract,
+          onAdd: bancoHabilitado ? onAdd : null,
+          onSubtract: bancoHabilitado ? onSubtract : null,
         ),
+        if (!bancoHabilitado) ...[
+          const SizedBox(height: 8),
+          const _InfoBox(
+            text:
+                'Banco de horas deshabilitado: primero carga horas en legajo digital.',
+          ),
+        ],
         const SizedBox(height: 12),
         Expanded(
           child: movimientos.when(
@@ -413,7 +450,7 @@ class _FrancoDetalle extends ConsumerWidget {
                   final movimiento = rows[index];
                   return _MovimientoTile(
                     movimiento: movimiento,
-                    busy: busy,
+                    enabled: accionesHabilitadas,
                     onEdit: () => onEdit(movimiento),
                     onDelete: () => onDelete(movimiento),
                   );
@@ -448,7 +485,7 @@ class _SaldoHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final saldoColor = persona.saldo < 0 ? cs.error : cs.primary;
+    final saldoColor = persona.saldoMinutos < 0 ? cs.error : cs.primary;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -471,7 +508,7 @@ class _SaldoHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Saldo: ${persona.saldo}',
+                    'Saldo: ${_formatMinutes(persona.saldoMinutos)} hs',
                     style: TextStyle(
                       color: saldoColor,
                       fontSize: 20,
@@ -502,13 +539,13 @@ class _SaldoHeader extends StatelessWidget {
 
 class _MovimientoTile extends StatelessWidget {
   final FrancoMovimiento movimiento;
-  final bool busy;
+  final bool enabled;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _MovimientoTile({
     required this.movimiento,
-    required this.busy,
+    required this.enabled,
     required this.onEdit,
     required this.onDelete,
   });
@@ -516,9 +553,8 @@ class _MovimientoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final positive = movimiento.cantidad > 0;
+    final positive = movimiento.minutos > 0;
     final color = positive ? Colors.green.shade700 : cs.error;
-    final sign = positive ? '+' : '';
     final loadedAt =
         DateFormat('dd/MM/yyyy HH:mm').format(movimiento.createdAt);
 
@@ -527,7 +563,13 @@ class _MovimientoTile extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: 0.12),
         foregroundColor: color,
-        child: Text('$sign${movimiento.cantidad}'),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: const EdgeInsets.all(3),
+            child: Text(_formatSignedMinutes(movimiento.minutos)),
+          ),
+        ),
       ),
       title: Text(
         '${DateFmt.ddmmyyyy(movimiento.fecha)} - ${movimiento.motivo}',
@@ -546,12 +588,12 @@ class _MovimientoTile extends StatelessWidget {
         children: [
           IconButton(
             tooltip: 'Modificar',
-            onPressed: busy ? null : onEdit,
+            onPressed: enabled ? onEdit : null,
             icon: const Icon(Icons.edit_outlined),
           ),
           IconButton(
             tooltip: 'Anular',
-            onPressed: busy ? null : onDelete,
+            onPressed: enabled ? onDelete : null,
             icon: const Icon(Icons.delete_outline),
           ),
         ],
@@ -582,7 +624,7 @@ class _FrancoFormDialog extends StatefulWidget {
 
 class _FrancoFormDialogState extends State<_FrancoFormDialog> {
   late DateTime _fecha;
-  late final TextEditingController _cantidad;
+  late final TextEditingController _minutos;
   late final TextEditingController _motivo;
   late final TextEditingController _observacion;
 
@@ -595,8 +637,8 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
 
     final movimiento = widget.movimiento;
     _fecha = movimiento?.fecha ?? DateTime.now();
-    _cantidad = TextEditingController(
-      text: (movimiento?.cantidad.abs() ?? 1).toString(),
+    _minutos = TextEditingController(
+      text: (movimiento?.minutos.abs() ?? 60).toString(),
     );
     _motivo = TextEditingController(
       text: movimiento?.motivo ?? (_isSubtract ? 'Uso de franco' : 'Alta'),
@@ -608,7 +650,7 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
 
   @override
   void dispose() {
-    _cantidad.dispose();
+    _minutos.dispose();
     _motivo.dispose();
     _observacion.dispose();
     super.dispose();
@@ -629,12 +671,12 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
   }
 
   void _submit() {
-    final cantidadAbs = int.tryParse(_cantidad.text.trim());
+    final minutosAbs = int.tryParse(_minutos.text.trim());
     final motivo = _motivo.text.trim();
     final observacion = _observacion.text.trim();
 
-    if (cantidadAbs == null || cantidadAbs <= 0) {
-      AppSnackBar.error(context, 'Ingresa una cantidad mayor a cero');
+    if (minutosAbs == null || minutosAbs <= 0) {
+      AppSnackBar.error(context, 'Ingresa minutos mayores a cero');
       return;
     }
 
@@ -643,14 +685,14 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
       return;
     }
 
-    final signed = _isSubtract ? -cantidadAbs : cantidadAbs;
+    final signed = _isSubtract ? -minutosAbs : minutosAbs;
 
     Navigator.of(context).pop(
       FrancoFormData(
         dni: widget.persona.dni,
         carreraId: widget.persona.carreraId,
         fecha: _fecha,
-        cantidad: signed,
+        minutos: signed,
         motivo: motivo,
         observacion: observacion.isEmpty ? null : observacion,
       ),
@@ -694,10 +736,10 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
             ),
             const SizedBox(height: 12),
             TextField(
-              controller: _cantidad,
+              controller: _minutos,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Cantidad',
+                labelText: 'Minutos',
                 border: OutlineInputBorder(),
               ),
             ),
