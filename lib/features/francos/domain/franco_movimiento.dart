@@ -4,7 +4,7 @@ class FrancoMovimiento {
   final int carreraId;
   final DateTime fecha;
   final DateTime periodo;
-  final int cantidad;
+  final int minutos;
   final String motivo;
   final String observacion;
   final String usuarioCarga;
@@ -20,7 +20,7 @@ class FrancoMovimiento {
     required this.carreraId,
     required this.fecha,
     required this.periodo,
-    required this.cantidad,
+    required this.minutos,
     required this.motivo,
     required this.observacion,
     required this.usuarioCarga,
@@ -46,7 +46,7 @@ class FrancoMovimiento {
       carreraId: _asInt(json['carrera_id'], field: 'carrera_id'),
       fecha: _asDate(json['fecha'], field: 'fecha'),
       periodo: _asDate(json['periodo'], field: 'periodo'),
-      cantidad: _asInt(json['cantidad'], field: 'cantidad'),
+      minutos: _asInt(json['minutos'], field: 'minutos'),
       motivo: _asString(json['motivo']),
       observacion: _asString(json['observacion']),
       usuarioCarga: _asString(json['usuario_carga']),

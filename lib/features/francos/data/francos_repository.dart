@@ -44,7 +44,7 @@ class FrancosRepository {
     required int dni,
     required int carreraId,
     required DateTime fecha,
-    required int cantidad,
+    required int minutos,
     required String motivo,
     String? observacion,
   }) async {
@@ -54,7 +54,7 @@ class FrancosRepository {
         'p_dni': dni,
         'p_carrera_id': carreraId,
         'p_fecha': _toYmd(fecha),
-        'p_cantidad': cantidad,
+        'p_minutos': minutos,
         'p_motivo': motivo,
         'p_observacion': observacion,
       },
@@ -64,7 +64,7 @@ class FrancosRepository {
   Future<void> modificar({
     required int id,
     required DateTime fecha,
-    required int cantidad,
+    required int minutos,
     required String motivo,
     String? observacion,
   }) async {
@@ -73,7 +73,7 @@ class FrancosRepository {
       params: {
         'p_id': id,
         'p_fecha': _toYmd(fecha),
-        'p_cantidad': cantidad,
+        'p_minutos': minutos,
         'p_motivo': motivo,
         'p_observacion': observacion,
       },

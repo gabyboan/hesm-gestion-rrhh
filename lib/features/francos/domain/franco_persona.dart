@@ -4,7 +4,8 @@ class FrancoPersona {
   final String nombre;
   final int carreraId;
   final String carrera;
-  final int saldo;
+  final int saldoMinutos;
+  final bool tieneHorasCargadas;
 
   const FrancoPersona({
     required this.dni,
@@ -12,7 +13,8 @@ class FrancoPersona {
     required this.nombre,
     required this.carreraId,
     required this.carrera,
-    required this.saldo,
+    required this.saldoMinutos,
+    required this.tieneHorasCargadas,
   });
 
   String get key => '$dni|$carreraId';
@@ -34,7 +36,11 @@ class FrancoPersona {
       nombre: _asString(json['nombre']),
       carreraId: _asInt(json['carrera_id'], field: 'carrera_id'),
       carrera: _asString(json['carrera']),
-      saldo: _asInt(json['saldo'], field: 'saldo'),
+      saldoMinutos: _asInt(json['saldo_minutos'], field: 'saldo_minutos'),
+      tieneHorasCargadas: _asBool(
+        json['tiene_horas_cargadas'],
+        field: 'tiene_horas_cargadas',
+      ),
     );
   }
 
@@ -57,5 +63,24 @@ class FrancoPersona {
     if (parsed != null) return parsed;
 
     throw FormatException('No se pudo convertir a int el campo $field: $value');
+  }
+
+  static bool _asBool(
+    dynamic value, {
+    required String field,
+  }) {
+    if (value == null) {
+      throw FormatException('Campo booleano requerido ausente: $field');
+    }
+
+    if (value is bool) return value;
+
+    final text = value.toString().trim().toLowerCase();
+    if (text == 'true' || text == 't' || text == '1') return true;
+    if (text == 'false' || text == 'f' || text == '0') return false;
+
+    throw FormatException(
+      'No se pudo convertir a bool el campo $field: $value',
+    );
   }
 }
