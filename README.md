@@ -31,6 +31,26 @@ particulares, enfermedad y horas oficiales.
 - Excel export
 - Windows desktop
 
+## Configuracion
+
+La app necesita las credenciales publicas de Supabase. Se pueden pasar por
+`--dart-define`:
+
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+Para desarrollo local tambien se puede copiar la plantilla:
+
+```bash
+cp credenciales.env.example credenciales.env
+```
+
+No commitear `credenciales.env`, claves `service_role`, connection strings ni
+dumps con datos reales.
+
 ## Estructura
 
 El proyecto esta organizado por features:

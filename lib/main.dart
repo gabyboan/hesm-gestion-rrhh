@@ -20,17 +20,31 @@ Future<void> main(List<String> args) async {
     );
   }
 
-  // Carga variables desde credenciales.env.
-  await dotenv.load(fileName: 'credenciales.env');
+  const definedSupabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  const definedSupabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  final supabaseUrl = dotenv.env['SUPABASE_URL'];
-  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+  if (definedSupabaseUrl.isEmpty || definedSupabaseAnonKey.isEmpty) {
+    try {
+      await dotenv.load(fileName: 'credenciales.env');
+    } catch (_) {}
+  }
+
+  final supabaseUrl = definedSupabaseUrl.isNotEmpty
+      ? definedSupabaseUrl
+      : dotenv.env['SUPABASE_URL'];
+  final supabaseAnonKey = definedSupabaseAnonKey.isNotEmpty
+      ? definedSupabaseAnonKey
+      : dotenv.env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null || supabaseUrl.isEmpty) {
-    throw Exception('Falta SUPABASE_URL en credenciales.env');
+    throw Exception(
+      'Falta SUPABASE_URL. Usá --dart-define o credenciales.env.',
+    );
   }
   if (supabaseAnonKey == null || supabaseAnonKey.isEmpty) {
-    throw Exception('Falta SUPABASE_ANON_KEY en credenciales.env');
+    throw Exception(
+      'Falta SUPABASE_ANON_KEY. Usá --dart-define o credenciales.env.',
+    );
   }
 
   await Supabase.initialize(
