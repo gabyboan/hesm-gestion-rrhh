@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/ui/app_snackbar.dart';
 import '../../../core/utils/error_text.dart';
 import '../../auth/application/auth_providers.dart';
+import '../../francos/application/francos_providers.dart';
 import '../../francos/presentation/francos_page.dart';
 import '../../horas/presentation/cargar/cargar_horas_page.dart';
 import '../../horas/presentation/informe/informe_page.dart';
@@ -77,6 +78,15 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   void _openModule(_AppModule module) {
+    if (module == _AppModule.francos) {
+      ref.invalidate(puedeLeerFrancosProvider);
+      ref.invalidate(puedeUsarBancoFrancosProvider);
+      ref.invalidate(puedeAdministrarBancoFrancosProvider);
+      ref.invalidate(francosListadoProvider);
+      ref.invalidate(francosMovimientosProvider);
+      ref.read(selectedFrancoPersonaProvider.notifier).state = null;
+    }
+
     setState(() => _selectedModule = module);
   }
 
