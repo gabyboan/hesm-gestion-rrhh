@@ -37,10 +37,12 @@ class FrancoPersona {
       carreraId: _asInt(json['carrera_id'], field: 'carrera_id'),
       carrera: _asString(json['carrera']),
       saldoMinutos: _asInt(json['saldo_minutos'], field: 'saldo_minutos'),
-      tieneHorasCargadas: _asBool(
-        json['tiene_horas_cargadas'],
-        field: 'tiene_horas_cargadas',
-      ),
+      tieneHorasCargadas: json.containsKey('tiene_horas_cargadas')
+          ? _asBool(
+              json['tiene_horas_cargadas'],
+              field: 'tiene_horas_cargadas',
+            )
+          : true,
     );
   }
 

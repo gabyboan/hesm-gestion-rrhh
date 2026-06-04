@@ -139,11 +139,30 @@ class FrancosPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final listado = ref.watch(francosListadoProvider);
     final selected = ref.watch(selectedFrancoPersonaProvider);
     final guardarState = ref.watch(guardarFrancoControllerProvider);
     final eliminarState = ref.watch(eliminarFrancoControllerProvider);
+    final canReadFrancosAsync = ref.watch(puedeLeerFrancosProvider);
+    final canUseBankAsync = ref.watch(puedeUsarBancoFrancosProvider);
+    final canAdminBankAsync = ref.watch(puedeAdministrarBancoFrancosProvider);
     final busy = guardarState.isLoading || eliminarState.isLoading;
+    final canReadFrancos = canReadFrancosAsync.valueOrNull ?? false;
+    final canManageFrancos = canAdminBankAsync.valueOrNull ?? false;
+    final canUseFrancos = canUseBankAsync.valueOrNull ?? false;
+
+    if (canReadFrancosAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!canReadFrancos) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: _InfoBox(
+          text: 'Sin permiso para ver francos. Falta FRANCOS_LECTURA.',
+          error: true,
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -152,7 +171,7 @@ class FrancosPage extends ConsumerWidget {
           const _FrancosSearchBar(),
           const SizedBox(height: 12),
           Expanded(
-            child: listado.when(
+            child: ref.watch(francosListadoProvider).when(
               data: (items) {
                 if (items.isEmpty) {
                   return const _InfoBox(
@@ -193,6 +212,9 @@ class FrancosPage extends ConsumerWidget {
                             child: _FrancoDetalle(
                               persona: resolved,
                               busy: busy,
+                              canAddBank: canManageFrancos,
+                              canUseBank: canUseFrancos,
+                              canManageMovements: canManageFrancos,
                               onAdd: resolved == null
                                   ? null
                                   : () => _openForm(
@@ -248,6 +270,9 @@ class FrancosPage extends ConsumerWidget {
                           child: _FrancoDetalle(
                             persona: resolved,
                             busy: busy,
+                            canAddBank: canManageFrancos,
+                            canUseBank: canUseFrancos,
+                            canManageMovements: canManageFrancos,
                             onAdd: resolved == null
                                 ? null
                                 : () => _openForm(
@@ -391,6 +416,9 @@ class _PersonasList extends StatelessWidget {
 class _FrancoDetalle extends ConsumerWidget {
   final FrancoPersona? persona;
   final bool busy;
+  final bool canAddBank;
+  final bool canUseBank;
+  final bool canManageMovements;
   final VoidCallback? onAdd;
   final VoidCallback? onSubtract;
   final ValueChanged<FrancoMovimiento> onEdit;
@@ -399,6 +427,9 @@ class _FrancoDetalle extends ConsumerWidget {
   const _FrancoDetalle({
     required this.persona,
     required this.busy,
+    required this.canAddBank,
+    required this.canUseBank,
+    required this.canManageMovements,
     required this.onAdd,
     required this.onSubtract,
     required this.onEdit,
@@ -415,7 +446,8 @@ class _FrancoDetalle extends ConsumerWidget {
 
     final movimientos = ref.watch(francosMovimientosProvider);
     final bancoHabilitado = persona.tieneHorasCargadas;
-    final accionesHabilitadas = bancoHabilitado && !busy;
+    final puedeModificarMovimientos =
+        bancoHabilitado && canManageMovements && !busy;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -423,9 +455,15 @@ class _FrancoDetalle extends ConsumerWidget {
         _SaldoHeader(
           persona: persona,
           busy: busy,
-          onAdd: bancoHabilitado ? onAdd : null,
-          onSubtract: bancoHabilitado ? onSubtract : null,
+          onAdd: canAddBank ? onAdd : null,
+          onSubtract: bancoHabilitado && canUseBank ? onSubtract : null,
         ),
+        if (!canUseBank && !canAddBank) ...[
+          const SizedBox(height: 8),
+          const _InfoBox(
+            text: 'Sin permiso para cargar movimientos de francos.',
+          ),
+        ],
         if (!bancoHabilitado) ...[
           const SizedBox(height: 8),
           const _InfoBox(
@@ -450,7 +488,7 @@ class _FrancoDetalle extends ConsumerWidget {
                   final movimiento = rows[index];
                   return _MovimientoTile(
                     movimiento: movimiento,
-                    enabled: accionesHabilitadas,
+                    enabled: puedeModificarMovimientos,
                     onEdit: () => onEdit(movimiento),
                     onDelete: () => onDelete(movimiento),
                   );
@@ -518,18 +556,22 @@ class _SaldoHeader extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            IconButton.filledTonal(
-              tooltip: 'Sumar franco',
-              onPressed: busy ? null : onAdd,
-              icon: const Icon(Icons.add),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filledTonal(
-              tooltip: 'Restar franco',
-              onPressed: busy ? null : onSubtract,
-              icon: const Icon(Icons.remove),
-            ),
+            if (onAdd != null) ...[
+              const SizedBox(width: 12),
+              IconButton.filledTonal(
+                tooltip: 'Sumar franco',
+                onPressed: busy ? null : onAdd,
+                icon: const Icon(Icons.add),
+              ),
+            ],
+            if (onSubtract != null) ...[
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                tooltip: 'Restar franco',
+                onPressed: busy ? null : onSubtract,
+                icon: const Icon(Icons.remove),
+              ),
+            ],
           ],
         ),
       ),
@@ -577,12 +619,8 @@ class _MovimientoTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        [
-          if (movimiento.observacion.isNotEmpty) movimiento.observacion,
-          'Cargado por ${movimiento.usuarioCargaLabel} el $loadedAt',
-        ].join('\n'),
+        'Cargado por ${movimiento.usuarioCargaLabel} el $loadedAt',
       ),
-      isThreeLine: movimiento.observacion.isNotEmpty,
       trailing: Wrap(
         spacing: 4,
         children: [
@@ -623,10 +661,13 @@ class _FrancoFormDialog extends StatefulWidget {
 }
 
 class _FrancoFormDialogState extends State<_FrancoFormDialog> {
+  static const _minMinutes = 30;
+  static const _maxMinutes = 360;
+  static const _stepMinutes = 15;
+
   late DateTime _fecha;
-  late final TextEditingController _minutos;
+  late int _minutosAbs;
   late final TextEditingController _motivo;
-  late final TextEditingController _observacion;
 
   bool get _isEdit => widget.movimiento != null;
   bool get _isSubtract => widget.mode == _FrancoFormMode.subtract;
@@ -637,23 +678,23 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
 
     final movimiento = widget.movimiento;
     _fecha = movimiento?.fecha ?? DateTime.now();
-    _minutos = TextEditingController(
-      text: (movimiento?.minutos.abs() ?? 60).toString(),
-    );
+    _minutosAbs = _normalizeMinutes(movimiento?.minutos.abs() ?? 60);
     _motivo = TextEditingController(
-      text: movimiento?.motivo ?? (_isSubtract ? 'Uso de franco' : 'Alta'),
-    );
-    _observacion = TextEditingController(
-      text: movimiento?.observacion ?? '',
+      text: movimiento?.motivo ?? (_isSubtract ? 'Uso de franco' : 'Recarga'),
     );
   }
 
   @override
   void dispose() {
-    _minutos.dispose();
     _motivo.dispose();
-    _observacion.dispose();
     super.dispose();
+  }
+
+  int _normalizeMinutes(int minutes) {
+    final clamped = minutes.clamp(_minMinutes, _maxMinutes);
+    final rounded = ((clamped / _stepMinutes).round() * _stepMinutes)
+        .clamp(_minMinutes, _maxMinutes);
+    return rounded;
   }
 
   Future<void> _pickDate() async {
@@ -671,21 +712,14 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
   }
 
   void _submit() {
-    final minutosAbs = int.tryParse(_minutos.text.trim());
     final motivo = _motivo.text.trim();
-    final observacion = _observacion.text.trim();
-
-    if (minutosAbs == null || minutosAbs <= 0) {
-      AppSnackBar.error(context, 'Ingresa minutos mayores a cero');
-      return;
-    }
 
     if (motivo.isEmpty) {
       AppSnackBar.error(context, 'Ingresa un motivo');
       return;
     }
 
-    final signed = _isSubtract ? -minutosAbs : minutosAbs;
+    final signed = _isSubtract ? -_minutosAbs : _minutosAbs;
 
     Navigator.of(context).pop(
       FrancoFormData(
@@ -694,7 +728,6 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
         fecha: _fecha,
         minutos: signed,
         motivo: motivo,
-        observacion: observacion.isEmpty ? null : observacion,
       ),
     );
   }
@@ -735,30 +768,19 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _minutos,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Minutos',
-                border: OutlineInputBorder(),
-              ),
+            _DurationPicker(
+              value: _minutosAbs,
+              minMinutes: _minMinutes,
+              maxMinutes: _maxMinutes,
+              stepMinutes: _stepMinutes,
+              onChanged: (value) => setState(() => _minutosAbs = value),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _motivo,
-              textInputAction: TextInputAction.next,
+              textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Motivo',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _observacion,
-              minLines: 2,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Observacion',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -776,6 +798,100 @@ class _FrancoFormDialogState extends State<_FrancoFormDialog> {
           label: const Text('Guardar'),
         ),
       ],
+    );
+  }
+}
+
+class _DurationPicker extends StatelessWidget {
+  final int value;
+  final int minMinutes;
+  final int maxMinutes;
+  final int stepMinutes;
+  final ValueChanged<int> onChanged;
+
+  const _DurationPicker({
+    required this.value,
+    required this.minMinutes,
+    required this.maxMinutes,
+    required this.stepMinutes,
+    required this.onChanged,
+  });
+
+  void _setValue(int value) {
+    onChanged(value.clamp(minMinutes, maxMinutes));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final canDecrease = value > minMinutes;
+    final canIncrease = value < maxMinutes;
+    final quickValues = <int>[30, 60, 90, 120, 180, 240, 300, 360];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: cs.outline),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Duracion',
+              style: TextStyle(
+                color: cs.onSurfaceVariant,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                IconButton.filledTonal(
+                  tooltip: 'Restar 15 minutos',
+                  onPressed: canDecrease
+                      ? () => _setValue(value - stepMinutes)
+                      : null,
+                  icon: const Icon(Icons.remove),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _formatMinutes(value),
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton.filledTonal(
+                  tooltip: 'Sumar 15 minutos',
+                  onPressed: canIncrease
+                      ? () => _setValue(value + stepMinutes)
+                      : null,
+                  icon: const Icon(Icons.add),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final minutes in quickValues)
+                  ChoiceChip(
+                    label: Text(_formatMinutes(minutes)),
+                    selected: value == minutes,
+                    onSelected: (_) => _setValue(minutes),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

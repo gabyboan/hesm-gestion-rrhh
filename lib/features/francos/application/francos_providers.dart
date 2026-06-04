@@ -16,7 +16,28 @@ final selectedFrancoPersonaProvider = StateProvider<FrancoPersona?>(
   (ref) => null,
 );
 
+final puedeLeerFrancosProvider = FutureProvider<bool>((ref) async {
+  final sb = ref.watch(supabaseClientProvider);
+  final res = await sb.rpc('can_francos_read');
+  return res == true;
+});
+
+final puedeUsarBancoFrancosProvider = FutureProvider<bool>((ref) async {
+  final sb = ref.watch(supabaseClientProvider);
+  final res = await sb.rpc('can_francos_use_bank');
+  return res == true;
+});
+
+final puedeAdministrarBancoFrancosProvider = FutureProvider<bool>((ref) async {
+  final sb = ref.watch(supabaseClientProvider);
+  final res = await sb.rpc('can_francos_admin_bank');
+  return res == true;
+});
+
 final francosListadoProvider = FutureProvider<List<FrancoPersona>>((ref) {
+  final puedeLeer = ref.watch(puedeLeerFrancosProvider).valueOrNull ?? false;
+  if (!puedeLeer) return Future.value(<FrancoPersona>[]);
+
   final buscar = ref.watch(francosSearchProvider).trim();
   return ref.watch(francosRepoProvider).listado(
         buscar: buscar.isEmpty ? null : buscar,
@@ -25,6 +46,9 @@ final francosListadoProvider = FutureProvider<List<FrancoPersona>>((ref) {
 
 final francosMovimientosProvider =
     FutureProvider<List<FrancoMovimiento>>((ref) {
+  final puedeLeer = ref.watch(puedeLeerFrancosProvider).valueOrNull ?? false;
+  if (!puedeLeer) return Future.value(<FrancoMovimiento>[]);
+
   final persona = ref.watch(selectedFrancoPersonaProvider);
   if (persona == null) return Future.value(<FrancoMovimiento>[]);
 
@@ -45,7 +69,6 @@ class FrancoFormData {
   final DateTime fecha;
   final int minutos;
   final String motivo;
-  final String? observacion;
 
   const FrancoFormData({
     required this.dni,
@@ -53,7 +76,6 @@ class FrancoFormData {
     required this.fecha,
     required this.minutos,
     required this.motivo,
-    this.observacion,
   });
 }
 
@@ -71,7 +93,6 @@ class GuardarFrancoController extends AsyncNotifier<void> {
             fecha: data.fecha,
             minutos: data.minutos,
             motivo: data.motivo,
-            observacion: data.observacion,
           );
 
       invalidateFrancos(ref);
@@ -94,7 +115,6 @@ class GuardarFrancoController extends AsyncNotifier<void> {
             fecha: data.fecha,
             minutos: data.minutos,
             motivo: data.motivo,
-            observacion: data.observacion,
           );
 
       invalidateFrancos(ref);
