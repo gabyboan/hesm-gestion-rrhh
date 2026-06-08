@@ -59,7 +59,7 @@ features/<modulo>/
   local.
 - El acceso a datos queda encapsulado en repositorios para no mezclar UI con
   consultas directas.
-- Las reglas sensibles deben protegerse tambien del lado de Supabase mediante
+- Las reglas sensibles tambien se protegen del lado de Supabase mediante
   permisos, RPC y politicas de acceso.
 
 ## Configuracion
