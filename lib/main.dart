@@ -33,6 +33,7 @@ class BootstrapApp extends StatefulWidget {
 
 class _BootstrapAppState extends State<BootstrapApp> {
   Object? _error;
+  StackTrace? _stackTrace;
   bool _ready = false;
 
   @override
@@ -56,7 +57,10 @@ class _BootstrapAppState extends State<BootstrapApp> {
       );
 
       if (!mounted) return;
-      setState(() => _error = error);
+      setState(() {
+        _error = error;
+        _stackTrace = stackTrace;
+      });
     }
   }
 
@@ -68,7 +72,10 @@ class _BootstrapAppState extends State<BootstrapApp> {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: BootstrapStatusPage(error: _error),
+      home: BootstrapStatusPage(
+        error: _error,
+        stackTrace: _stackTrace,
+      ),
     );
   }
 }
@@ -91,18 +98,15 @@ Future<void> _bootstrap(List<String> args) async {
   const definedSupabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const definedSupabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  if (definedSupabaseUrl.isEmpty || definedSupabaseAnonKey.isEmpty) {
-    try {
-      await dotenv.load(fileName: 'credenciales.env');
-    } catch (_) {}
-  }
+  final env = definedSupabaseUrl.isEmpty || definedSupabaseAnonKey.isEmpty
+      ? await _loadEnv()
+      : const <String, String>{};
 
-  final supabaseUrl = definedSupabaseUrl.isNotEmpty
-      ? definedSupabaseUrl
-      : dotenv.env['SUPABASE_URL'];
+  final supabaseUrl =
+      definedSupabaseUrl.isNotEmpty ? definedSupabaseUrl : env['SUPABASE_URL'];
   final supabaseAnonKey = definedSupabaseAnonKey.isNotEmpty
       ? definedSupabaseAnonKey
-      : dotenv.env['SUPABASE_ANON_KEY'];
+      : env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null || supabaseUrl.isEmpty) {
     throw Exception(
@@ -129,12 +133,77 @@ Future<void> _bootstrap(List<String> args) async {
   );
 }
 
+Future<Map<String, String>> _loadEnv() async {
+  try {
+    await dotenv.load(fileName: 'credenciales.env');
+    return dotenv.env;
+  } catch (_) {
+    return _loadEnvFromFileSystem();
+  }
+}
+
+Future<Map<String, String>> _loadEnvFromFileSystem() async {
+  final candidates = <String>{
+    '${Directory.current.path}${Platform.pathSeparator}credenciales.env',
+    '${File(Platform.resolvedExecutable).parent.path}${Platform.pathSeparator}credenciales.env',
+  };
+
+  void addParents(Directory start) {
+    var current = start;
+    for (var i = 0; i < 8; i++) {
+      candidates.add(
+        '${current.path}${Platform.pathSeparator}credenciales.env',
+      );
+
+      final parent = current.parent;
+      if (parent.path == current.path) break;
+      current = parent;
+    }
+  }
+
+  addParents(Directory.current);
+  addParents(File(Platform.resolvedExecutable).parent);
+
+  for (final path in candidates) {
+    final file = File(path);
+    if (!await file.exists()) continue;
+
+    final env = <String, String>{};
+    final lines = await file.readAsLines();
+
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
+
+      final separator = trimmed.indexOf('=');
+      if (separator <= 0) continue;
+
+      final key = trimmed.substring(0, separator).trim();
+      var value = trimmed.substring(separator + 1).trim();
+
+      if (value.length >= 2 &&
+          ((value.startsWith('"') && value.endsWith('"')) ||
+              (value.startsWith("'") && value.endsWith("'")))) {
+        value = value.substring(1, value.length - 1);
+      }
+
+      env[key] = value;
+    }
+
+    if (env.isNotEmpty) return env;
+  }
+
+  return const {};
+}
+
 class BootstrapStatusPage extends StatelessWidget {
   final Object? error;
+  final StackTrace? stackTrace;
 
   const BootstrapStatusPage({
     super.key,
     required this.error,
+    required this.stackTrace,
   });
 
   @override
@@ -154,7 +223,10 @@ class BootstrapStatusPage extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: error == null
                   ? const _BootstrapLoading()
-                  : _BootstrapError(error: error!),
+                  : _BootstrapError(
+                      error: error!,
+                      stackTrace: stackTrace,
+                    ),
             ),
           ),
         ),
@@ -184,9 +256,11 @@ class _BootstrapLoading extends StatelessWidget {
 
 class _BootstrapError extends StatelessWidget {
   final Object error;
+  final StackTrace? stackTrace;
 
   const _BootstrapError({
     required this.error,
+    required this.stackTrace,
   });
 
   @override
@@ -207,6 +281,13 @@ class _BootstrapError extends StatelessWidget {
           error.toString(),
           style: const TextStyle(fontSize: 14),
         ),
+        if (stackTrace != null) ...[
+          const SizedBox(height: 12),
+          SelectableText(
+            stackTrace.toString().split('\n').take(8).join('\n'),
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
       ],
     );
   }
