@@ -147,10 +147,10 @@ class CargarHorasPage extends ConsumerWidget {
         await ref.read(cargarHoraControllerProvider.notifier).submit();
 
         if (!context.mounted) return;
-        AppSnackBar.success(context, 'Guardado con éxito');
+        AppSnackBar.success(context, 'Guardado correctamente');
       } catch (e) {
         if (!context.mounted) return;
-        AppSnackBar.error(context, _errorMessage(e));
+        AppSnackBar.error(context, 'No guardado: ${_errorMessage(e)}');
       }
     }
 
