@@ -172,150 +172,152 @@ class FrancosPage extends ConsumerWidget {
           const SizedBox(height: 12),
           Expanded(
             child: ref.watch(francosListadoProvider).when(
-              data: (items) {
-                if (items.isEmpty) {
-                  return const _InfoBox(
-                    text: 'Sin personas disponibles o sin permiso.',
-                  );
-                }
-
-                final resolved = _resolveSelected(selected, items);
-                _syncSelectedAfterBuild(
-                  context: context,
-                  ref: ref,
-                  resolved: resolved,
-                  current: selected,
-                );
-
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final compact = constraints.maxWidth < 840;
-
-                    if (compact) {
-                      return Column(
-                        children: [
-                          SizedBox(
-                            height: 190,
-                            child: _PersonasList(
-                              items: items,
-                              selectedKey: resolved?.key,
-                              onSelected: (persona) {
-                                ref
-                                    .read(
-                                        selectedFrancoPersonaProvider.notifier)
-                                    .state = persona;
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Expanded(
-                            child: _FrancoDetalle(
-                              persona: resolved,
-                              busy: busy,
-                              canAddBank: canManageFrancos,
-                              canUseBank: canUseFrancos,
-                              canManageMovements: canManageFrancos,
-                              onAdd: resolved == null
-                                  ? null
-                                  : () => _openForm(
-                                        context: context,
-                                        ref: ref,
-                                        persona: resolved,
-                                        mode: _FrancoFormMode.add,
-                                      ),
-                              onSubtract: resolved == null
-                                  ? null
-                                  : () => _openForm(
-                                        context: context,
-                                        ref: ref,
-                                        persona: resolved,
-                                        mode: _FrancoFormMode.subtract,
-                                      ),
-                              onEdit: (movimiento) => _openForm(
-                                context: context,
-                                ref: ref,
-                                persona: resolved!,
-                                mode: movimiento.minutos > 0
-                                    ? _FrancoFormMode.add
-                                    : _FrancoFormMode.subtract,
-                                movimiento: movimiento,
-                              ),
-                              onDelete: (movimiento) => _deleteMovimiento(
-                                context: context,
-                                ref: ref,
-                                movimiento: movimiento,
-                              ),
-                            ),
-                          ),
-                        ],
+                  data: (items) {
+                    if (items.isEmpty) {
+                      return const _InfoBox(
+                        text: 'Sin personas disponibles o sin permiso.',
                       );
                     }
 
-                    return Row(
-                      children: [
-                        SizedBox(
-                          width: 360,
-                          child: _PersonasList(
-                            items: items,
-                            selectedKey: resolved?.key,
-                            onSelected: (persona) {
-                              ref
-                                  .read(selectedFrancoPersonaProvider.notifier)
-                                  .state = persona;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _FrancoDetalle(
-                            persona: resolved,
-                            busy: busy,
-                            canAddBank: canManageFrancos,
-                            canUseBank: canUseFrancos,
-                            canManageMovements: canManageFrancos,
-                            onAdd: resolved == null
-                                ? null
-                                : () => _openForm(
-                                      context: context,
-                                      ref: ref,
-                                      persona: resolved,
-                                      mode: _FrancoFormMode.add,
-                                    ),
-                            onSubtract: resolved == null
-                                ? null
-                                : () => _openForm(
-                                      context: context,
-                                      ref: ref,
-                                      persona: resolved,
-                                      mode: _FrancoFormMode.subtract,
-                                    ),
-                            onEdit: (movimiento) => _openForm(
-                              context: context,
-                              ref: ref,
-                              persona: resolved!,
-                              mode: movimiento.minutos > 0
-                                  ? _FrancoFormMode.add
-                                  : _FrancoFormMode.subtract,
-                              movimiento: movimiento,
+                    final resolved = _resolveSelected(selected, items);
+                    _syncSelectedAfterBuild(
+                      context: context,
+                      ref: ref,
+                      resolved: resolved,
+                      current: selected,
+                    );
+
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 840;
+
+                        if (compact) {
+                          return Column(
+                            children: [
+                              SizedBox(
+                                height: 190,
+                                child: _PersonasList(
+                                  items: items,
+                                  selectedKey: resolved?.key,
+                                  onSelected: (persona) {
+                                    ref
+                                        .read(selectedFrancoPersonaProvider
+                                            .notifier)
+                                        .state = persona;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Expanded(
+                                child: _FrancoDetalle(
+                                  persona: resolved,
+                                  busy: busy,
+                                  canAddBank: canManageFrancos,
+                                  canUseBank: canUseFrancos,
+                                  canManageMovements: canManageFrancos,
+                                  onAdd: resolved == null
+                                      ? null
+                                      : () => _openForm(
+                                            context: context,
+                                            ref: ref,
+                                            persona: resolved,
+                                            mode: _FrancoFormMode.add,
+                                          ),
+                                  onSubtract: resolved == null
+                                      ? null
+                                      : () => _openForm(
+                                            context: context,
+                                            ref: ref,
+                                            persona: resolved,
+                                            mode: _FrancoFormMode.subtract,
+                                          ),
+                                  onEdit: (movimiento) => _openForm(
+                                    context: context,
+                                    ref: ref,
+                                    persona: resolved!,
+                                    mode: movimiento.minutos > 0
+                                        ? _FrancoFormMode.add
+                                        : _FrancoFormMode.subtract,
+                                    movimiento: movimiento,
+                                  ),
+                                  onDelete: (movimiento) => _deleteMovimiento(
+                                    context: context,
+                                    ref: ref,
+                                    movimiento: movimiento,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            SizedBox(
+                              width: 360,
+                              child: _PersonasList(
+                                items: items,
+                                selectedKey: resolved?.key,
+                                onSelected: (persona) {
+                                  ref
+                                      .read(selectedFrancoPersonaProvider
+                                          .notifier)
+                                      .state = persona;
+                                },
+                              ),
                             ),
-                            onDelete: (movimiento) => _deleteMovimiento(
-                              context: context,
-                              ref: ref,
-                              movimiento: movimiento,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _FrancoDetalle(
+                                persona: resolved,
+                                busy: busy,
+                                canAddBank: canManageFrancos,
+                                canUseBank: canUseFrancos,
+                                canManageMovements: canManageFrancos,
+                                onAdd: resolved == null
+                                    ? null
+                                    : () => _openForm(
+                                          context: context,
+                                          ref: ref,
+                                          persona: resolved,
+                                          mode: _FrancoFormMode.add,
+                                        ),
+                                onSubtract: resolved == null
+                                    ? null
+                                    : () => _openForm(
+                                          context: context,
+                                          ref: ref,
+                                          persona: resolved,
+                                          mode: _FrancoFormMode.subtract,
+                                        ),
+                                onEdit: (movimiento) => _openForm(
+                                  context: context,
+                                  ref: ref,
+                                  persona: resolved!,
+                                  mode: movimiento.minutos > 0
+                                      ? _FrancoFormMode.add
+                                      : _FrancoFormMode.subtract,
+                                  movimiento: movimiento,
+                                ),
+                                onDelete: (movimiento) => _deleteMovimiento(
+                                  context: context,
+                                  ref: ref,
+                                  movimiento: movimiento,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                          ],
+                        );
+                      },
                     );
                   },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => _InfoBox(
-                text: 'Error francos: ${cleanError(e)}',
-                error: true,
-              ),
-            ),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => _InfoBox(
+                    text: 'Error francos: ${cleanError(e)}',
+                    error: true,
+                  ),
+                ),
           ),
         ],
       ),
@@ -826,7 +828,12 @@ class _DurationPicker extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final canDecrease = value > minMinutes;
     final canIncrease = value < maxMinutes;
-    final quickValues = <int>[30, 60, 90, 120, 180, 240, 300, 360];
+    final quickValues = <int>[
+      for (var minutes = minMinutes;
+          minutes <= maxMinutes;
+          minutes += stepMinutes)
+        minutes,
+    ];
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -851,9 +858,8 @@ class _DurationPicker extends StatelessWidget {
               children: [
                 IconButton.filledTonal(
                   tooltip: 'Restar 15 minutos',
-                  onPressed: canDecrease
-                      ? () => _setValue(value - stepMinutes)
-                      : null,
+                  onPressed:
+                      canDecrease ? () => _setValue(value - stepMinutes) : null,
                   icon: const Icon(Icons.remove),
                 ),
                 Expanded(
@@ -869,9 +875,8 @@ class _DurationPicker extends StatelessWidget {
                 ),
                 IconButton.filledTonal(
                   tooltip: 'Sumar 15 minutos',
-                  onPressed: canIncrease
-                      ? () => _setValue(value + stepMinutes)
-                      : null,
+                  onPressed:
+                      canIncrease ? () => _setValue(value + stepMinutes) : null,
                   icon: const Icon(Icons.add),
                 ),
               ],

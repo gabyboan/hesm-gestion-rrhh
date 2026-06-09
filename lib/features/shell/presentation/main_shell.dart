@@ -10,6 +10,8 @@ import '../../francos/presentation/francos_page.dart';
 import '../../horas/presentation/cargar/cargar_horas_page.dart';
 import '../../horas/presentation/informe/informe_page.dart';
 import '../../horas/presentation/ver/ver_horas_page.dart';
+import '../../imprevistos/application/imprevistos_providers.dart';
+import '../../imprevistos/presentation/imprevistos_page.dart';
 
 enum _AppModule {
   horas,
@@ -87,6 +89,15 @@ class _MainShellState extends ConsumerState<MainShell> {
       ref.read(selectedFrancoPersonaProvider.notifier).state = null;
     }
 
+    if (module == _AppModule.imprevisto) {
+      ref.invalidate(puedeLeerImprevistosProvider);
+      ref.invalidate(puedeCargarImprevistosProvider);
+      ref.invalidate(puedeAdministrarImprevistosProvider);
+      ref.invalidate(imprevistosListadoProvider);
+      ref.invalidate(imprevistosRegistrosProvider);
+      ref.read(selectedImprevistoPersonaProvider.notifier).state = null;
+    }
+
     setState(() => _selectedModule = module);
   }
 
@@ -128,9 +139,9 @@ class _MainShellState extends ConsumerState<MainShell> {
           onBackToModules: _backToModules,
           onSignOut: _signOut,
         ),
-      _AppModule.imprevisto => _PlaceholderModuleShell(
+      _AppModule.imprevisto => _SinglePageModuleShell(
           title: 'Imprevisto',
-          message: 'Módulo de imprevistos en preparación',
+          body: const ImprevistosPage(),
           signingOut: _signingOut,
           onBackToModules: _backToModules,
           onSignOut: _signOut,
