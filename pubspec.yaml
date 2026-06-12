@@ -48,6 +48,8 @@ dependencies:
   # para elegir donde, seria el "guardar como"
   file_selector: ^1.0.3
   shared_preferences: ^2.5.5
+  pdf: ^3.11.3
+  printing: ^5.14.2
   flutter_localizations:
     sdk: flutter
   
