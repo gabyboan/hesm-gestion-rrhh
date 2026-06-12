@@ -12,6 +12,8 @@ import '../../horas/presentation/informe/informe_page.dart';
 import '../../horas/presentation/ver/ver_horas_page.dart';
 import '../../imprevistos/application/imprevistos_providers.dart';
 import '../../imprevistos/presentation/imprevistos_page.dart';
+import '../../medicos/application/medicos_providers.dart';
+import '../../medicos/presentation/medicos_page.dart';
 
 enum _AppModule {
   horas,
@@ -98,6 +100,15 @@ class _MainShellState extends ConsumerState<MainShell> {
       ref.read(selectedImprevistoPersonaProvider.notifier).state = null;
     }
 
+    if (module == _AppModule.medicos) {
+      ref.invalidate(puedeLeerMedicosProvider);
+      ref.invalidate(puedeCrearMedicosProvider);
+      ref.invalidate(puedeAdministrarMedicosProvider);
+      ref.invalidate(medicosPersonasProvider);
+      ref.invalidate(partesMedicosProvider);
+      ref.read(selectedMedicoPersonaProvider.notifier).state = null;
+    }
+
     setState(() => _selectedModule = module);
   }
 
@@ -146,9 +157,9 @@ class _MainShellState extends ConsumerState<MainShell> {
           onBackToModules: _backToModules,
           onSignOut: _signOut,
         ),
-      _AppModule.medicos => _PlaceholderModuleShell(
+      _AppModule.medicos => _SinglePageModuleShell(
           title: 'Médicos',
-          message: 'Módulo de médicos en preparación',
+          body: const MedicosPage(),
           signingOut: _signingOut,
           onBackToModules: _backToModules,
           onSignOut: _signOut,
