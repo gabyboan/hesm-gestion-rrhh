@@ -98,24 +98,25 @@ Future<void> _bootstrap(List<String> args) async {
   const definedSupabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const definedSupabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  final env = definedSupabaseUrl.isEmpty || definedSupabaseAnonKey.isEmpty
+  final loadedEnv = definedSupabaseUrl.isEmpty || definedSupabaseAnonKey.isEmpty
       ? await _loadEnv()
-      : const <String, String>{};
+      : const EnvLoadResult(env: <String, String>{}, searchedPaths: <String>[]);
 
-  final supabaseUrl =
-      definedSupabaseUrl.isNotEmpty ? definedSupabaseUrl : env['SUPABASE_URL'];
+  final supabaseUrl = definedSupabaseUrl.isNotEmpty
+      ? definedSupabaseUrl
+      : loadedEnv.env['SUPABASE_URL'];
   final supabaseAnonKey = definedSupabaseAnonKey.isNotEmpty
       ? definedSupabaseAnonKey
-      : env['SUPABASE_ANON_KEY'];
+      : loadedEnv.env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null || supabaseUrl.isEmpty) {
     throw Exception(
-      'Falta SUPABASE_URL. Usa --dart-define o credenciales.env.',
+      _missingCredentialMessage('SUPABASE_URL', loadedEnv.searchedPaths),
     );
   }
   if (supabaseAnonKey == null || supabaseAnonKey.isEmpty) {
     throw Exception(
-      'Falta SUPABASE_ANON_KEY. Usa --dart-define o credenciales.env.',
+      _missingCredentialMessage('SUPABASE_ANON_KEY', loadedEnv.searchedPaths),
     );
   }
 
@@ -133,16 +134,40 @@ Future<void> _bootstrap(List<String> args) async {
   );
 }
 
-Future<Map<String, String>> _loadEnv() async {
+String _missingCredentialMessage(String key, List<String> searchedPaths) {
+  final buffer = StringBuffer()
+    ..write('Falta $key. Crea un archivo llamado credenciales.env junto a ')
+    ..write('app_horas.exe o inicia la app con --dart-define.');
+
+  if (searchedPaths.isNotEmpty) {
+    buffer
+      ..write('\n\nUbicaciones revisadas:\n')
+      ..write(searchedPaths.map((path) => '- $path').join('\n'));
+  }
+
+  return buffer.toString();
+}
+
+class EnvLoadResult {
+  final Map<String, String> env;
+  final List<String> searchedPaths;
+
+  const EnvLoadResult({
+    required this.env,
+    required this.searchedPaths,
+  });
+}
+
+Future<EnvLoadResult> _loadEnv() async {
   try {
     await dotenv.load(fileName: 'credenciales.env');
-    return dotenv.env;
+    return EnvLoadResult(env: dotenv.env, searchedPaths: const <String>[]);
   } catch (_) {
     return _loadEnvFromFileSystem();
   }
 }
 
-Future<Map<String, String>> _loadEnvFromFileSystem() async {
+Future<EnvLoadResult> _loadEnvFromFileSystem() async {
   final candidates = <String>{
     '${Directory.current.path}${Platform.pathSeparator}credenciales.env',
     '${File(Platform.resolvedExecutable).parent.path}${Platform.pathSeparator}credenciales.env',
@@ -190,10 +215,12 @@ Future<Map<String, String>> _loadEnvFromFileSystem() async {
       env[key] = value;
     }
 
-    if (env.isNotEmpty) return env;
+    if (env.isNotEmpty) {
+      return EnvLoadResult(env: env, searchedPaths: candidates.toList());
+    }
   }
 
-  return const {};
+  return EnvLoadResult(env: const {}, searchedPaths: candidates.toList());
 }
 
 class BootstrapStatusPage extends StatelessWidget {
