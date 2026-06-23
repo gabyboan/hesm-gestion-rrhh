@@ -646,15 +646,17 @@ class _RegistroTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subtitle =
+    final observation =
         registro.observacion.isEmpty ? 'Sin observacion' : registro.observacion;
+    final orderText =
+        registro.numeroOrden != null ? 'Orden ${registro.numeroOrden} - ' : '';
 
     return ListTile(
       leading: const CircleAvatar(
         child: Icon(Icons.event_busy_outlined),
       ),
-      title: Text(DateFmt.ddmmyyyy(registro.fecha)),
-      subtitle: Text(subtitle),
+      title: Text('$orderText${DateFmt.ddmmyyyy(registro.fecha)}'),
+      subtitle: Text(observation),
       trailing: Wrap(
         spacing: 4,
         children: [
@@ -692,6 +694,7 @@ class _ImprevistoFormDialog extends StatefulWidget {
 class _ImprevistoFormDialogState extends State<_ImprevistoFormDialog> {
   late DateTime _fecha;
   late final TextEditingController _observacion;
+  late final TextEditingController _numeroOrden;
 
   @override
   void initState() {
@@ -702,11 +705,15 @@ class _ImprevistoFormDialogState extends State<_ImprevistoFormDialog> {
     _fecha = registro?.fecha ??
         (now.year == widget.anio ? now : DateTime(widget.anio));
     _observacion = TextEditingController(text: registro?.observacion ?? '');
+    _numeroOrden = TextEditingController(
+      text: registro?.numeroOrden?.toString() ?? '',
+    );
   }
 
   @override
   void dispose() {
     _observacion.dispose();
+    _numeroOrden.dispose();
     super.dispose();
   }
 
@@ -724,6 +731,15 @@ class _ImprevistoFormDialogState extends State<_ImprevistoFormDialog> {
   }
 
   void _submit() {
+    final numeroOrdenText = _numeroOrden.text.trim();
+    final numeroOrden =
+        numeroOrdenText.isEmpty ? null : int.tryParse(numeroOrdenText);
+
+    if (numeroOrdenText.isNotEmpty && numeroOrden == null) {
+      AppSnackBar.error(context, 'Numero de orden debe ser un entero.');
+      return;
+    }
+
     Navigator.of(context).pop(
       ImprevistoFormData(
         dni: widget.persona.dni,
@@ -731,6 +747,7 @@ class _ImprevistoFormDialogState extends State<_ImprevistoFormDialog> {
         fecha: _fecha,
         observacion:
             _observacion.text.trim().isEmpty ? null : _observacion.text.trim(),
+        numeroOrden: numeroOrden,
       ),
     );
   }
@@ -764,6 +781,16 @@ class _ImprevistoFormDialogState extends State<_ImprevistoFormDialog> {
                   suffixIcon: Icon(Icons.calendar_month),
                 ),
                 child: Text(DateFmt.ddmmyyyy(_fecha)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _numeroOrden,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Numero de orden',
+                border: OutlineInputBorder(),
+                hintText: 'Opcional',
               ),
             ),
             const SizedBox(height: 12),

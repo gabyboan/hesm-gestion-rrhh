@@ -79,12 +79,14 @@ class ImprevistoFormData {
   final int carreraId;
   final DateTime fecha;
   final String? observacion;
+  final int? numeroOrden;
 
   const ImprevistoFormData({
     required this.dni,
     required this.carreraId,
     required this.fecha,
     required this.observacion,
+    required this.numeroOrden,
   });
 }
 
@@ -101,6 +103,7 @@ class GuardarImprevistoController extends AsyncNotifier<void> {
             carreraId: data.carreraId,
             fecha: data.fecha,
             observacion: data.observacion,
+            numeroOrden: data.numeroOrden,
           );
 
       invalidateImprevistos(ref);
@@ -122,6 +125,7 @@ class GuardarImprevistoController extends AsyncNotifier<void> {
             id: id,
             fecha: data.fecha,
             observacion: data.observacion,
+            numeroOrden: data.numeroOrden,
           );
 
       invalidateImprevistos(ref);

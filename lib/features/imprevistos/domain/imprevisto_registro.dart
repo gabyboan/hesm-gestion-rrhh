@@ -5,6 +5,7 @@ class ImprevistoRegistro {
   final DateTime fecha;
   final int anio;
   final String observacion;
+  final int? numeroOrden;
   final DateTime createdAt;
 
   const ImprevistoRegistro({
@@ -14,6 +15,7 @@ class ImprevistoRegistro {
     required this.fecha,
     required this.anio,
     required this.observacion,
+    required this.numeroOrden,
     required this.createdAt,
   });
 
@@ -25,6 +27,7 @@ class ImprevistoRegistro {
       fecha: _asDate(json['fecha'], field: 'fecha'),
       anio: _asInt(json['anio'], field: 'anio'),
       observacion: _asString(json['observacion']),
+      numeroOrden: _asNullableInt(json['numero_orden']),
       createdAt: _asDateTime(json['created_at'], field: 'created_at'),
     );
   }
@@ -74,5 +77,12 @@ class ImprevistoRegistro {
     }
 
     return parsed;
+  }
+
+  static int? _asNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString().trim());
   }
 }

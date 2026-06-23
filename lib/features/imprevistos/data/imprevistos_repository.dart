@@ -51,6 +51,7 @@ class ImprevistosRepository {
     required int carreraId,
     required DateTime fecha,
     String? observacion,
+    int? numeroOrden,
   }) async {
     await _sb.rpc(
       _rpcCrear,
@@ -59,6 +60,7 @@ class ImprevistosRepository {
         'p_carrera_id': carreraId,
         'p_fecha': _toYmd(fecha),
         'p_observacion': observacion,
+        'p_numero_orden': numeroOrden,
       },
     );
   }
@@ -67,6 +69,7 @@ class ImprevistosRepository {
     required int id,
     required DateTime fecha,
     String? observacion,
+    int? numeroOrden,
   }) async {
     final res = await _sb.rpc(
       _rpcModificar,
@@ -74,6 +77,7 @@ class ImprevistosRepository {
         'p_id': id,
         'p_fecha': _toYmd(fecha),
         'p_observacion': observacion,
+        'p_numero_orden': numeroOrden,
       },
     );
 
