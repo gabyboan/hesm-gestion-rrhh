@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/medico_persona.dart';
+import '../domain/medico_familiar.dart';
 import '../domain/parte_medico.dart';
 
 class MedicosRepository {
@@ -22,6 +23,14 @@ class MedicosRepository {
       params: {'p_buscar': buscar},
     );
     return _asRows(res).map(ParteMedico.fromJson).toList();
+  }
+
+  Future<List<MedicoFamiliar>> familiares(int dni) async {
+    final res = await _sb.rpc(
+      'rpc_medicos_familiares',
+      params: {'p_dni': dni},
+    );
+    return _asRows(res).map(MedicoFamiliar.fromJson).toList();
   }
 
   Future<int> crear({

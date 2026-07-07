@@ -21,6 +21,18 @@ particulares, enfermedad y horas oficiales.
 - Informe mensual con filtros por uso, tipo y excedidos.
 - Exportacion del informe a archivo `.xlsx`.
 - Prevencion de doble instancia en Windows.
+- Modulos independientes de Francos, Imprevistos, Medicos y Suplencias.
+- Acceso a modulos segun los roles asignados en Supabase.
+
+## Mockups de presentacion
+
+### Panel de modulos
+
+![Panel de modulos de Gestion RRHH](docs/mockups/panel-modulos.png)
+
+### Modulo de Suplencias
+
+![Consulta del modulo Suplencias](docs/mockups/modulo-suplencias.png)
 
 ## Stack
 
@@ -67,8 +79,12 @@ lib/
   core/
   features/
     auth/
+    francos/
     horas/
+    imprevistos/
+    medicos/
     shell/
+    suplencias/
 ```
 
 Cada modulo funcional sigue esta convencion:

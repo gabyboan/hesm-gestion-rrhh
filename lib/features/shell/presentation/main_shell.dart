@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/ui/app_snackbar.dart';
 import '../../../core/utils/error_text.dart';
 import '../../auth/application/auth_providers.dart';
+import '../../auth/application/current_roles_provider.dart';
 import '../../francos/application/francos_providers.dart';
 import '../../francos/presentation/francos_page.dart';
 import '../../horas/presentation/cargar/cargar_horas_page.dart';
@@ -14,12 +15,15 @@ import '../../imprevistos/application/imprevistos_providers.dart';
 import '../../imprevistos/presentation/imprevistos_page.dart';
 import '../../medicos/application/medicos_providers.dart';
 import '../../medicos/presentation/medicos_page.dart';
+import '../../suplencias/application/suplencias_providers.dart';
+import '../../suplencias/presentation/suplencias_page.dart';
 
 enum _AppModule {
   horas,
   francos,
   imprevisto,
   medicos,
+  suplencias,
   capacitacion,
 }
 
@@ -109,6 +113,10 @@ class _MainShellState extends ConsumerState<MainShell> {
       ref.read(selectedMedicoPersonaProvider.notifier).state = null;
     }
 
+    if (module == _AppModule.suplencias) {
+      ref.invalidate(puedeLeerSuplenciasProvider);
+    }
+
     setState(() => _selectedModule = module);
   }
 
@@ -164,6 +172,13 @@ class _MainShellState extends ConsumerState<MainShell> {
           onBackToModules: _backToModules,
           onSignOut: _signOut,
         ),
+      _AppModule.suplencias => _SinglePageModuleShell(
+          title: 'Suplencias',
+          body: const SuplenciasPage(),
+          signingOut: _signingOut,
+          onBackToModules: _backToModules,
+          onSignOut: _signOut,
+        ),
       _AppModule.capacitacion => _PlaceholderModuleShell(
           title: 'Capacitación',
           message: 'Módulo de capacitación en preparación',
@@ -175,7 +190,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-class _ModulesDashboard extends StatelessWidget {
+class _ModulesDashboard extends ConsumerWidget {
   final bool signingOut;
   final VoidCallback onSignOut;
   final ValueChanged<_AppModule> onOpenModule;
@@ -187,7 +202,17 @@ class _ModulesDashboard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tieneRolOperativo =
+        ref.watch(currentRolesProvider).valueOrNull?.codes.isNotEmpty ?? false;
+    final puedeLeerFrancos =
+        ref.watch(puedeLeerFrancosProvider).valueOrNull ?? false;
+    final puedeLeerImprevistos =
+        ref.watch(puedeLeerImprevistosProvider).valueOrNull ?? false;
+    final puedeLeerMedicos =
+        ref.watch(puedeLeerMedicosProvider).valueOrNull ?? false;
+    final puedeLeerSuplencias =
+        ref.watch(puedeLeerSuplenciasProvider).valueOrNull ?? false;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Servicios'),
@@ -238,34 +263,38 @@ class _ModulesDashboard extends StatelessWidget {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        _ModuleHeroCard(
-                          icon: Icons.schedule,
-                          title: 'Horas',
-                          detail: 'Cargar, consultar y exportar informes',
-                          color: const Color(0xFF4F46E5),
-                          onTap: () => onOpenModule(_AppModule.horas),
-                        ),
-                        _ModuleHeroCard(
-                          icon: Icons.event_available,
-                          title: 'Francos',
-                          detail: 'Gestión de francos del personal',
-                          color: const Color(0xFF0891B2),
-                          onTap: () => onOpenModule(_AppModule.francos),
-                        ),
-                        _ModuleHeroCard(
-                          icon: Icons.warning_amber_outlined,
-                          title: 'Imprevisto',
-                          detail: 'Registro y seguimiento de imprevistos',
-                          color: const Color(0xFFDC2626),
-                          onTap: () => onOpenModule(_AppModule.imprevisto),
-                        ),
-                        _ModuleHeroCard(
-                          icon: Icons.medical_services_outlined,
-                          title: 'Médicos',
-                          detail: 'Gestión de novedades médicas',
-                          color: const Color(0xFF16A34A),
-                          onTap: () => onOpenModule(_AppModule.medicos),
-                        ),
+                        if (tieneRolOperativo)
+                          _ModuleHeroCard(
+                            icon: Icons.schedule,
+                            title: 'Horas',
+                            detail: 'Cargar, consultar y exportar informes',
+                            color: const Color(0xFF4F46E5),
+                            onTap: () => onOpenModule(_AppModule.horas),
+                          ),
+                        if (puedeLeerFrancos)
+                          _ModuleHeroCard(
+                            icon: Icons.event_available,
+                            title: 'Francos',
+                            detail: 'Gestión de francos del personal',
+                            color: const Color(0xFF0891B2),
+                            onTap: () => onOpenModule(_AppModule.francos),
+                          ),
+                        if (puedeLeerImprevistos)
+                          _ModuleHeroCard(
+                            icon: Icons.warning_amber_outlined,
+                            title: 'Imprevisto',
+                            detail: 'Registro y seguimiento de imprevistos',
+                            color: const Color(0xFFDC2626),
+                            onTap: () => onOpenModule(_AppModule.imprevisto),
+                          ),
+                        if (puedeLeerMedicos)
+                          _ModuleHeroCard(
+                            icon: Icons.medical_services_outlined,
+                            title: 'Médicos',
+                            detail: 'Gestión de novedades médicas',
+                            color: const Color(0xFF16A34A),
+                            onTap: () => onOpenModule(_AppModule.medicos),
+                          ),
                         _ModuleHeroCard(
                           icon: Icons.school_outlined,
                           title: 'Capacitación',
@@ -273,6 +302,14 @@ class _ModulesDashboard extends StatelessWidget {
                           color: const Color(0xFF7C3AED),
                           onTap: () => onOpenModule(_AppModule.capacitacion),
                         ),
+                        if (puedeLeerSuplencias)
+                          _ModuleHeroCard(
+                            icon: Icons.people_alt_outlined,
+                            title: 'Suplencias',
+                            detail: 'Consulta de suplencias y servicios',
+                            color: const Color(0xFFEA580C),
+                            onTap: () => onOpenModule(_AppModule.suplencias),
+                          ),
                       ],
                     ),
                   ],
