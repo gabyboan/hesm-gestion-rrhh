@@ -1,0 +1,17 @@
+HESM Gestion RRHH - v0.1.0-beta.1
+
+Para ejecutar la app:
+
+1. Descomprimir todo el contenido del archivo zip en una carpeta.
+2. Crear un archivo llamado credenciales.env junto a app_horas.exe.
+3. Usar credenciales.env.example como plantilla.
+   En Windows, activar "Extensiones de nombre de archivo" y verificar que no
+   haya quedado como credenciales.env.txt.
+4. Abrir app_horas.exe.
+
+El archivo credenciales.env debe contener:
+
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_ANON_KEY=tu-clave-publica-anon
+
+No compartir credenciales reales en GitHub ni en canales publicos.

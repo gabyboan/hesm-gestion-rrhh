@@ -6,6 +6,7 @@ import '../../../core/utils/date_fmt.dart';
 import '../../../core/utils/error_text.dart';
 import '../application/medicos_providers.dart';
 import '../data/parte_medico_printer.dart';
+import '../domain/medico_familiar.dart';
 import '../domain/medico_persona.dart';
 import '../domain/parte_medico.dart';
 
@@ -370,21 +371,32 @@ class _HistorialPanel extends ConsumerWidget {
   }
 }
 
-class _ParteMedicoDialog extends StatefulWidget {
+class _ParteMedicoDialog extends ConsumerStatefulWidget {
   final MedicoPersona persona;
 
   const _ParteMedicoDialog({required this.persona});
 
   @override
-  State<_ParteMedicoDialog> createState() => _ParteMedicoDialogState();
+  ConsumerState<_ParteMedicoDialog> createState() => _ParteMedicoDialogState();
 }
 
-class _ParteMedicoDialogState extends State<_ParteMedicoDialog> {
+class _ParteMedicoDialogState extends ConsumerState<_ParteMedicoDialog> {
   TipoParteMedico _tipo = TipoParteMedico.domicilio;
+  MedicoFamiliar? _familiarSeleccionado;
   final _familiar = TextEditingController();
   final _edad = TextEditingController();
   final _parentesco = TextEditingController();
   String? _error;
+
+  void _usarFamiliar(MedicoFamiliar? familiar) {
+    setState(() {
+      _familiarSeleccionado = familiar;
+      _familiar.text = familiar?.apellidoNombre ?? '';
+      _edad.text = familiar?.edad?.toString() ?? '';
+      _parentesco.text = familiar?.parentesco ?? '';
+      _error = null;
+    });
+  }
 
   @override
   void dispose() {
@@ -465,12 +477,55 @@ class _ParteMedicoDialogState extends State<_ParteMedicoDialog> {
                   if (value != null) {
                     setState(() {
                       _tipo = value;
+                      if (!value.requiereFamiliar) {
+                        _familiarSeleccionado = null;
+                        _familiar.clear();
+                        _edad.clear();
+                        _parentesco.clear();
+                      }
                       _error = null;
                     });
                   }
                 },
               ),
               if (_tipo.requiereFamiliar) ...[
+                const SizedBox(height: 12),
+                ref.watch(medicosFamiliaresProvider(widget.persona.dni)).when(
+                      data: (familiares) {
+                        if (familiares.isEmpty) {
+                          return const _InfoBox(
+                            text:
+                                'No hay familiares registrados. Podes completar los datos manualmente.',
+                          );
+                        }
+                        return DropdownButtonFormField<MedicoFamiliar>(
+                          key: ValueKey(_familiarSeleccionado?.id),
+                          initialValue: _familiarSeleccionado,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Familiar registrado',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: [
+                            for (final familiar in familiares)
+                              DropdownMenuItem(
+                                value: familiar,
+                                child: Text(
+                                  familiar.label,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                          onChanged: _usarFamiliar,
+                        );
+                      },
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, _) => _InfoBox(
+                        text:
+                            'No se pudieron cargar los familiares: ${cleanError(e)}',
+                        error: true,
+                      ),
+                    ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _familiar,

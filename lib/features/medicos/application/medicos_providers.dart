@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../data/medicos_repository.dart';
+import '../domain/medico_familiar.dart';
 import '../domain/medico_persona.dart';
 import '../domain/parte_medico.dart';
 
@@ -47,6 +48,14 @@ final partesMedicosProvider = FutureProvider<List<ParteMedico>>((ref) {
   return ref.watch(medicosRepoProvider).registros(
         buscar: buscar.isEmpty ? null : buscar,
       );
+});
+
+final medicosFamiliaresProvider =
+    FutureProvider.family<List<MedicoFamiliar>, int>((ref, dni) {
+  if (ref.watch(puedeLeerMedicosProvider).valueOrNull != true) {
+    return Future.value(<MedicoFamiliar>[]);
+  }
+  return ref.watch(medicosRepoProvider).familiares(dni);
 });
 
 class ParteMedicoFormData {
