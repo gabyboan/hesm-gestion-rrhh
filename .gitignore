@@ -33,6 +33,10 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Artefactos de distribucion (publicar mediante Releases, no en el repositorio)
+/dist/
+/.history-backups/
+
 # Symbolication related
 app.*.symbols
 
@@ -49,6 +53,9 @@ app.*.map.json
 .env.*
 *.env
 credenciales.env
+
+# Scripts operativos locales con asignaciones nominales
+/supabase/manual/
 
 # Supabase CLI local state
 supabase/.temp/
