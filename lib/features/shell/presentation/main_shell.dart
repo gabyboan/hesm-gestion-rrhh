@@ -203,16 +203,17 @@ class _ModulesDashboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tieneRolOperativo =
-        ref.watch(currentRolesProvider).valueOrNull?.codes.isNotEmpty ?? false;
-    final puedeLeerFrancos =
-        ref.watch(puedeLeerFrancosProvider).valueOrNull ?? false;
-    final puedeLeerImprevistos =
-        ref.watch(puedeLeerImprevistosProvider).valueOrNull ?? false;
-    final puedeLeerMedicos =
-        ref.watch(puedeLeerMedicosProvider).valueOrNull ?? false;
-    final puedeLeerSuplencias =
-        ref.watch(puedeLeerSuplenciasProvider).valueOrNull ?? false;
+    final rolesAsync = ref.watch(currentRolesProvider);
+    final francosAsync = ref.watch(puedeLeerFrancosProvider);
+    final imprevistosAsync = ref.watch(puedeLeerImprevistosProvider);
+    final medicosAsync = ref.watch(puedeLeerMedicosProvider);
+    final suplenciasAsync = ref.watch(puedeLeerSuplenciasProvider);
+
+    final tieneRolOperativo = rolesAsync.valueOrNull?.codes.isNotEmpty ?? false;
+    final puedeLeerFrancos = francosAsync.valueOrNull ?? false;
+    final puedeLeerImprevistos = imprevistosAsync.valueOrNull ?? false;
+    final puedeLeerMedicos = medicosAsync.valueOrNull ?? false;
+    final puedeLeerSuplencias = suplenciasAsync.valueOrNull ?? false;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Servicios'),
@@ -263,53 +264,59 @@ class _ModulesDashboard extends ConsumerWidget {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        if (tieneRolOperativo)
-                          _ModuleHeroCard(
-                            icon: Icons.schedule,
-                            title: 'Horas',
-                            detail: 'Cargar, consultar y exportar informes',
-                            color: const Color(0xFF4F46E5),
-                            onTap: () => onOpenModule(_AppModule.horas),
-                          ),
-                        if (puedeLeerFrancos)
-                          _ModuleHeroCard(
-                            icon: Icons.event_available,
-                            title: 'Francos',
-                            detail: 'Gestión de francos del personal',
-                            color: const Color(0xFF0891B2),
-                            onTap: () => onOpenModule(_AppModule.francos),
-                          ),
-                        if (puedeLeerImprevistos)
-                          _ModuleHeroCard(
-                            icon: Icons.warning_amber_outlined,
-                            title: 'Imprevisto',
-                            detail: 'Registro y seguimiento de imprevistos',
-                            color: const Color(0xFFDC2626),
-                            onTap: () => onOpenModule(_AppModule.imprevisto),
-                          ),
-                        if (puedeLeerMedicos)
-                          _ModuleHeroCard(
-                            icon: Icons.medical_services_outlined,
-                            title: 'Médicos',
-                            detail: 'Gestión de novedades médicas',
-                            color: const Color(0xFF16A34A),
-                            onTap: () => onOpenModule(_AppModule.medicos),
-                          ),
+                        _ModuleHeroCard(
+                          icon: Icons.schedule,
+                          title: 'Horas',
+                          detail: 'Cargar, consultar y exportar informes',
+                          color: const Color(0xFF4F46E5),
+                          enabled: tieneRolOperativo,
+                          loading: rolesAsync.isLoading,
+                          onTap: () => onOpenModule(_AppModule.horas),
+                        ),
+                        _ModuleHeroCard(
+                          icon: Icons.event_available,
+                          title: 'Francos',
+                          detail: 'Gestión de francos del personal',
+                          color: const Color(0xFF0891B2),
+                          enabled: puedeLeerFrancos,
+                          loading: francosAsync.isLoading,
+                          onTap: () => onOpenModule(_AppModule.francos),
+                        ),
+                        _ModuleHeroCard(
+                          icon: Icons.warning_amber_outlined,
+                          title: 'Imprevisto',
+                          detail: 'Registro y seguimiento de imprevistos',
+                          color: const Color(0xFFDC2626),
+                          enabled: puedeLeerImprevistos,
+                          loading: imprevistosAsync.isLoading,
+                          onTap: () => onOpenModule(_AppModule.imprevisto),
+                        ),
+                        _ModuleHeroCard(
+                          icon: Icons.medical_services_outlined,
+                          title: 'Médicos',
+                          detail: 'Gestión de novedades médicas',
+                          color: const Color(0xFF16A34A),
+                          enabled: puedeLeerMedicos,
+                          loading: medicosAsync.isLoading,
+                          onTap: () => onOpenModule(_AppModule.medicos),
+                        ),
                         _ModuleHeroCard(
                           icon: Icons.school_outlined,
                           title: 'Capacitación',
                           detail: 'Capacitaciones y actividades formativas',
                           color: const Color(0xFF7C3AED),
+                          enabled: true,
                           onTap: () => onOpenModule(_AppModule.capacitacion),
                         ),
-                        if (puedeLeerSuplencias)
-                          _ModuleHeroCard(
-                            icon: Icons.people_alt_outlined,
-                            title: 'Suplencias',
-                            detail: 'Consulta de suplencias y servicios',
-                            color: const Color(0xFFEA580C),
-                            onTap: () => onOpenModule(_AppModule.suplencias),
-                          ),
+                        _ModuleHeroCard(
+                          icon: Icons.people_alt_outlined,
+                          title: 'Suplencias',
+                          detail: 'Consulta de suplencias y servicios',
+                          color: const Color(0xFFEA580C),
+                          enabled: puedeLeerSuplencias,
+                          loading: suplenciasAsync.isLoading,
+                          onTap: () => onOpenModule(_AppModule.suplencias),
+                        ),
                       ],
                     ),
                   ],
@@ -483,6 +490,8 @@ class _ModuleHeroCard extends StatelessWidget {
   final String title;
   final String detail;
   final Color color;
+  final bool enabled;
+  final bool loading;
   final VoidCallback onTap;
 
   const _ModuleHeroCard({
@@ -490,66 +499,99 @@ class _ModuleHeroCard extends StatelessWidget {
     required this.title,
     required this.detail,
     required this.color,
+    required this.enabled,
+    this.loading = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final onColor =
-        color.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    final colorScheme = Theme.of(context).colorScheme;
+    final effectiveColor =
+        enabled ? color : colorScheme.surfaceContainerHighest;
+    final onColor = enabled
+        ? (color.computeLuminance() > 0.5 ? Colors.black : Colors.white)
+        : colorScheme.onSurfaceVariant;
+    final effectiveDetail = enabled
+        ? detail
+        : loading
+            ? 'Verificando permisos...'
+            : 'Sin acceso';
 
-    return Card(
-      elevation: 0,
-      color: color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child: Row(
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  shape: BoxShape.circle,
+    return Tooltip(
+      message: enabled
+          ? title
+          : loading
+              ? 'Verificando permisos'
+              : 'No tenes permiso para acceder a $title',
+      child: Card(
+        elevation: 0,
+        color: effectiveColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: enabled ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: enabled
+                        ? Colors.white.withValues(alpha: 0.92)
+                        : colorScheme.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: enabled ? color : colorScheme.onSurfaceVariant,
+                    size: 32,
+                  ),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 32,
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: onColor,
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        effectiveDetail,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: onColor.withValues(alpha: 0.86),
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: onColor,
-                            fontWeight: FontWeight.w900,
-                          ),
+                if (loading)
+                  SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: onColor,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      detail,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: onColor.withValues(alpha: 0.86),
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: onColor),
-            ],
+                  )
+                else
+                  Icon(
+                    enabled ? Icons.chevron_right : Icons.lock_outline,
+                    color: onColor,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

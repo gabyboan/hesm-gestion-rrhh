@@ -52,6 +52,15 @@ class SessionTimeoutService {
     _timer = null;
   }
 
+  /// Renueva la marca de actividad antes de un ingreso manual.
+  Future<void> prepareForLogin() async {
+    stop();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kLastActivityMs);
+    _lastSaved = null;
+    await touch(force: true);
+  }
+
   /// Guarda última actividad en disco (persistente).
   /// Throttle para no escribir en cada movimiento del mouse.
   Future<void> touch({bool force = false}) async {

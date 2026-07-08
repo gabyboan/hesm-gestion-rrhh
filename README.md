@@ -30,9 +30,29 @@ particulares, enfermedad y horas oficiales.
 
 ![Panel de modulos de Gestion RRHH](docs/mockups/panel-modulos.png)
 
+### Modulo de Horas
+
+![Resumen agregado del modulo Horas](docs/mockups/modulo-horas.png)
+
+### Modulo de Francos
+
+![Vista sin registros personales del modulo Francos](docs/mockups/modulo-francos.png)
+
+### Modulo de Imprevistos
+
+![Resumen anonimo del modulo Imprevistos](docs/mockups/modulo-imprevistos.png)
+
+### Modulo de Medicos
+
+![Vista protegida del modulo Medicos](docs/mockups/modulo-medicos.png)
+
+### Modulo de Capacitacion
+
+![Catalogo del modulo Capacitacion](docs/mockups/modulo-capacitacion.png)
+
 ### Modulo de Suplencias
 
-![Consulta del modulo Suplencias](docs/mockups/modulo-suplencias.png)
+![Vista vacia del modulo Suplencias](docs/mockups/modulo-suplencias.png)
 
 ## Stack
 

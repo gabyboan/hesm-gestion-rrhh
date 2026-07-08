@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/theme/theme_mode_provider.dart';
-//import 'auth_gate.dart';
 import '../application/auth_providers.dart';
+import '../application/session_timeout_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -47,12 +47,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     try {
+      await ref.read(sessionTimeoutProvider).prepareForLogin();
       await ref.read(authRepoProvider).signIn(
             email: _email.text,
             password: _pass.text,
           );
-
-      ref.invalidate(authSessionProvider);
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _error = _authErrorMessage(e));
