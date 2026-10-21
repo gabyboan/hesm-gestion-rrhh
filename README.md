@@ -24,22 +24,12 @@ particulares, enfermedad y horas oficiales.
 - Modulos independientes de Francos, Imprevistos, Medicos y Suplencias.
 - Acceso a modulos segun los roles asignados en Supabase.
 
-## Capturas reales del sistema
+## Vista del sistema
 
-Las siguientes pantallas corresponden al software en funcionamiento. Los datos
-sensibles fueron ocultados en las capturas de origen.
-
-### Panel de modulos
+El panel permite acceder a los modulos segun los permisos del usuario.
+Las capturas de operaciones con personal se incorporaran con datos ficticios.
 
 ![Panel de modulos de Gestion RRHH](docs/mockups/panel-modulos.png)
-
-### Modulo de Francos
-
-![Gestion de francos en funcionamiento](docs/mockups/modulo-francos.png)
-
-### Modulo de Imprevistos
-
-![Gestion de imprevistos en funcionamiento](docs/mockups/modulo-imprevistos.png)
 
 ## Stack
 
