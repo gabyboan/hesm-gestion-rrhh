@@ -57,9 +57,44 @@ credenciales.env
 # Scripts operativos locales con asignaciones nominales
 /supabase/manual/
 
+# Dumps / scripts SQL locales
+*.sql
+!/supabase/migrations/*.sql
+!/supabase/tests/*.sql
+
 # Supabase CLI local state
 supabase/.temp/
 
 # Permitir ejemplos sin datos reales
 !.env.example
 !*.env.example
+
+# Claves privadas, sesiones y configuracion local de herramientas
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+.mcp.json
+.envrc
+/.private/
+
+# Exportaciones y respaldos operativos con posibles datos personales
+/exports/
+/backups/
+*.dump
+*.backup
+*.bundle
+*.sqlite
+*.sqlite3
+
+# Capturas originales pendientes de anonimizar
+/docs/mockups/private/
+
+# Excepciones a la inclusion de migraciones: contienen datos nominales reales.
+# Conservar localmente. Separar cualquier cambio de esquema antes de publicar.
+/supabase/migrations/20260622090000_import_limpieza_imprevistos.sql
+/supabase/migrations/20260716104954_importacion_empleados_excel_vigentes.sql
+/supabase/migrations/20261016130000_normalizar_domicilios_confirmados.sql
+/supabase/migrations/20261016140000_corregir_acentos_domicilios.sql
