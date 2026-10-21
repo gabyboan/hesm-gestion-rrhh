@@ -16,6 +16,12 @@ Archivos: `tool/demo/main.dart`, `test/demo/windows_demo_test.dart`,
 y validación. La integración original del PR #2 conserva su inventario de
 140 archivos, documentado por separado.
 
+Los tres archivos `windows/flutter/generated_plugin_registrant.cc`,
+`generated_plugin_registrant.h` y `generated_plugins.cmake` se normalizan a LF
+mediante `.gitattributes`. Su contenido funcional se conserva; esto evita que
+`flutter pub get` marque cambios de formato en una copia limpia y permite
+registrar correctamente el estado de origen en los manifiestos de Windows.
+
 ## Entrega para revisión · 21 de octubre de 2026
 
 Esta entrega reúne los cambios locales respecto de `d045999`. La fecha indica
