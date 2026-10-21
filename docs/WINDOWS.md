@@ -38,6 +38,9 @@ en el entorno de prueba.
 
 1. Extraé el paquete en una carpeta independiente de los repositorios y de
    cualquier configuración de producción.
+   Cerrá antes cualquier otra instancia de la aplicación normal: su control
+   de instancia única también se aplica entre carpetas y, si ya está abierta,
+   puede activar esa ventana en lugar de iniciar la versión de prueba.
 2. Copiá `credenciales.env.example` como `credenciales.env`, junto al ejecutable.
 3. Completá `SUPABASE_URL` y `SUPABASE_ANON_KEY` con la URL y la clave de cliente
    del proyecto de prueba. Las claves `service_role` no corresponden a esta app.
