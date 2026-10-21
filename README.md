@@ -116,10 +116,13 @@ al actualizar `main` y en cada pull request.
 
 - Aplicación de escritorio en desarrollo activo; no es un servicio público ni
   una demo conectada para visitantes.
-- Se verificaron 83 pruebas y el análisis estático localmente; el workflow está
-  preparado para repetirlos en CI.
-- La instalación de migraciones y la alineación de impresión en una impresora
-  física requieren validación en sus respectivos entornos.
+- Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) y
+  [#3](https://github.com/gabyboan/hesm-gestion-rrhh/pull/3) están integrados en
+  `main`, con análisis estático y 83 pruebas aprobados también en CI.
+- Las pruebas manuales de sesión, permisos e impresora fueron aprobadas,
+  según confirmación del responsable del proyecto del 21 de octubre de 2026.
+- Un despliegue de migraciones requiere revisar el esquema y el historial
+  aplicado del entorno de destino.
 - Las capturas y ejemplos destinados al portfolio deben usar exclusivamente
   información ficticia.
 

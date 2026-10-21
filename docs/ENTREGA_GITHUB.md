@@ -3,6 +3,12 @@
 Preparada el 21 de octubre de 2026 en `release/gestion-rrhh-2026-10-21`.
 Base pública limpia: `ecb7bfd61b0973f680b552b99a3ed909eacd256c`.
 
+Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) (cambios
+funcionales) y [#3](https://github.com/gabyboan/hesm-gestion-rrhh/pull/3)
+(demo y paquetes Windows) están integrados en `main` desde el 21 de octubre
+de 2026. El responsable del proyecto confirmó ese día que las pruebas
+manuales de sesión, permisos e impresora fueron realizadas y aprobadas.
+
 La rama se armó en una copia aislada. Los commits nuevos utilizan el nombre
 público de GitHub y un correo noreply para no exponer un correo personal. Las referencias, los archivos privados
 y los cambios sin commit del repositorio de trabajo original se conservan.
@@ -92,12 +98,14 @@ descartaron para que la revisión muestre los cambios de contenido.
 
 ## Verificación y pendientes
 
-- 80 pruebas Flutter aprobadas en la copia de entrega.
+- 80 pruebas Flutter aprobadas en la entrega funcional y tres adicionales en
+  la etapa de demo: 83 aprobadas en total, también en CI de `main`.
 - Galería completa generada y revisada visualmente; no se usaron credenciales.
 - Análisis estático sin observaciones y Gitleaks sin hallazgos en el árbol revisado.
 - 38 scripts SQL y contratos verificados previamente en PostgreSQL 16.11 aislado.
 - Antes de desplegar: contrastar esquema, historial de migraciones y roles reales.
-- Comprobar la alineación en una impresora física.
+- Pruebas manuales de sesión, permisos e impresora aprobadas según la
+  confirmación del responsable del proyecto del 21 de octubre de 2026.
 - Gestionar con GitHub la referencia antigua del PR #1 y sus vistas almacenadas.
 
 Las cuatro cargas nominales, los archivos de credenciales, los respaldos y

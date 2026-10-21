@@ -57,6 +57,12 @@ completa desde cero. Esta entrega no aplica migraciones a la base real.
 
 ## Recorrido de validación manual
 
+**Estado al 21 de octubre de 2026:** el responsable del proyecto confirmó
+que las pruebas manuales de sesión, permisos e impresora fueron realizadas
+y aprobadas. Se registra su confirmación; no es una nueva ejecución
+automatizada ni afirma que se hayan probado todas las combinaciones de la
+tabla siguiente en ambos paquetes.
+
 Registrá fecha, variante, commit de `build-manifest.json`, resultado y cualquier
 incidencia, usando información ficticia en las evidencias.
 
@@ -68,14 +74,15 @@ incidencia, usando información ficticia en las evidencias.
 | Francos e Imprevistos | Ambas | Saldos, movimientos y cupos coherentes; controles de edición deshabilitados en demo. |
 | PDF médico | Ambas | Revisar consultorio, ART, domicilio y edad en meses; ampliar sin recortes inesperados. |
 | Bandeja | Ambas | Agregar varios; cancelar la impresión conserva los pendientes. |
-| Alineación en papel | Impresora física | Ajustar sobre un formulario de prueba y verificar todos los campos. Pendiente de comprobación física. |
+| Alineación en papel | Impresora física | Ajustar sobre un formulario de prueba y verificar todos los campos. |
 | Configuración de tema | Ambas | Cambiar tema y navegar. En demo se reinicia al salir. |
 | Autenticación y roles | Aplicación normal | Cuenta sin rol, cuenta de lectura y cuenta de carga con los permisos previstos. |
 | Inactividad y desconexión | Aplicación normal | Límite de 1–10 minutos, pausa durante falta de red y retorno controlado. |
 | Cambio de usuario | Aplicación normal | Cerrar sesión y entrar con otra cuenta; no conservar la bandeja ni el perfil anterior. |
 
-Las pruebas automatizadas cubren reglas y contratos concretos; este recorrido
-manual y la impresora física tienen su propia comprobación pendiente.
+Las pruebas automatizadas cubren reglas y contratos concretos. Este recorrido
+sirve como guía para repetir la validación al cambiar de versión, entorno,
+impresora o formulario.
 
 ## Compilar y empaquetar de nuevo
 

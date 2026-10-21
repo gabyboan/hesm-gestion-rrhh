@@ -5,8 +5,11 @@ Actualización de verificaciones: 21 de octubre de 2026.
 
 Estado: documentación por archivo y limpieza de las dos ramas públicas completadas.
 La limpieza se publicó como `ecb7bfd`, desde una copia aislada. Los cambios
-funcionales se entregan en una rama aislada y se documentan en
-[Entrega GitHub](ENTREGA_GITHUB.md). No se crearon commits en el repositorio
+funcionales y las dos variantes de Windows ya se integraron en `main` mediante
+los PR #2 y #3, y se documentan en [Entrega GitHub](ENTREGA_GITHUB.md).
+Las pruebas manuales de sesión, permisos e impresora están aprobadas según la
+confirmación del responsable del proyecto del 21 de octubre de 2026.
+No se crearon commits en el repositorio
 de trabajo original.
 La revisión inicial no constituye una certificación de ausencia de datos sensibles.
 
@@ -106,12 +109,14 @@ completas: buscadores, listados, encabezados, mensajes y documentos generados.
 - [x] Preparar una propuesta aislada de limpieza basada en las referencias reales del servidor, conservando el panel genérico.
 - [x] Aplicar la limpieza autorizada a ambas ramas públicas y verificar el resultado mediante una descarga nueva desde GitHub.
 - [ ] Gestionar con GitHub la referencia del PR #1 y las vistas almacenadas antes de declarar eliminado el material de todas las referencias públicas.
-- [x] Ejecutar `flutter analyze --fatal-infos` y las 80 pruebas Flutter disponibles; registrar resultados y límites.
+- [x] Ejecutar `flutter analyze --fatal-infos` y las 83 pruebas Flutter, incluidas las tres de la demo; registrar resultados y límites. CI de `main` aprobado.
 - [x] Ejecutar 38 scripts públicos y pruebas de permisos/contratos en PostgreSQL 16.11 aislado, con datos ficticios.
-- [ ] Contrastar con el esquema y roles reales antes de desplegar, y verificar impresión física sobre formulario A4.
+- [x] Registrar las pruebas manuales de sesión, permisos e impresora como aprobadas, según la confirmación del responsable del proyecto del 21 de octubre de 2026.
+- [ ] Contrastar el esquema, el historial aplicado y los contratos de roles antes de desplegar migraciones en el entorno de destino.
 - [x] Preparar commits coherentes y revisar exactamente los archivos que contiene cada uno.
 - [x] Revisar el diff preparado para el commit sin copiar datos privados a reportes, issues o PR.
 - [x] Publicar únicamente la rama revisada; no usar una publicación de todas las referencias.
+- [x] Integrar los PR #2 y #3 en `main` y verificar el resultado en GitHub.
 
 Los cambios locales y `.gitignore` no eliminan archivos que ya estaban publicados
 ni sus versiones históricas. Cualquier limpieza de historia debe prepararse en

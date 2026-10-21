@@ -1,5 +1,18 @@
 # Registro de cambios
 
+## Integración y validación manual · 21 de octubre de 2026
+
+Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) y
+[#3](https://github.com/gabyboan/hesm-gestion-rrhh/pull/3) están integrados en
+`main`. El análisis estático y las 83 pruebas finalizaron correctamente en
+[GitHub Actions](https://github.com/gabyboan/hesm-gestion-rrhh/actions/runs/39618769124).
+
+El responsable del proyecto confirmó que las pruebas manuales de sesión,
+permisos e impresora fueron realizadas y aprobadas. Se actualizan README y
+los documentos de Windows, validación, preparación y entrega para registrar
+ese resultado. La confirmación no supone un despliegue de migraciones ni
+completa el trámite pendiente por las capturas históricas del PR #1.
+
 ## Windows: demostración y empaquetado · 21 de octubre de 2026
 
 Se prepara una demo de consulta independiente del acceso normal, con personas,
@@ -140,8 +153,8 @@ Se agrega un ajuste horizontal y vertical de hasta diez milímetros en cada
 dirección, persistido localmente con `SharedPreferences`. El diálogo admite
 coma decimal, pasos de 0,1 mm, restablecimiento y una impresión de prueba sin
 registrar un parte. La vista previa sobre el escaneo no aplica la calibración
-de la impresora. La alineación física queda pendiente de comprobar con la
-impresora y el formulario utilizados.
+de la impresora. La comprobación manual de impresora fue aprobada según la
+confirmación del responsable del proyecto del 21 de octubre de 2026.
 
 ### C09 · Ficha de personal, domicilios e inactividad
 

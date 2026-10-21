@@ -1,12 +1,21 @@
 # Validación de la entrega
 
-El PR #2 se integró en `main` el 21 de octubre de 2026, conservando los siete
-commits revisados. La aplicación normal también compiló en Windows x64.
+Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) y
+[#3](https://github.com/gabyboan/hesm-gestion-rrhh/pull/3) están integrados en
+`main` desde el 21 de octubre de 2026. El PR #2 conserva los siete commits
+funcionales revisados. Ambas variantes compilaron en Windows x64.
 La etapa posterior de demo y empaquetado se describe en [Windows](WINDOWS.md).
 Sus tres pruebas adicionales elevan el conjunto a **83 pruebas aprobadas**:
 recorrido y bloqueo de escrituras, reinicio con limpieza de bandeja y
 preferencias, y bloqueo de clientes HTTP. Los resultados de 80 pruebas que se
 detallan a continuación corresponden a la entrega funcional original.
+
+El [workflow de `main`](https://github.com/gabyboan/hesm-gestion-rrhh/actions/runs/39618769124)
+terminó correctamente con análisis estático y 83 pruebas. El responsable
+del proyecto confirmó el 21 de octubre de 2026 que las pruebas manuales de
+sesión, permisos e impresora fueron realizadas y aprobadas. Se registra ese
+resultado informado; no se atribuye a una ejecución automatizada ni a un
+despliegue de la base de datos.
 
 Actualización: 21 de octubre de 2026. Base de comparación local: `d045999`.
 Resultados del conjunto funcional preparado en la rama de entrega. Esta etapa incorporó correcciones de autoría de Horas, contrato de
@@ -26,7 +35,7 @@ meses e identidad visual encontrados durante la revisión.
 | Gitleaks 8.30.1 | Sin hallazgos en los escaneos realizados | Selección pública de archivos, historia local, ramas remotas, PR #1 y propuesta de historia saneada; salidas con redacción total. No certifica ausencia de datos personales. |
 | Credenciales e importaciones privadas | Exclusiones comprobadas con Git | Los archivos privados locales no forman parte de los archivos nuevos elegibles. |
 | PostgreSQL 16.11 aislado | Aprobado, código de salida 0 | Se ejecutaron 38 scripts públicos, contratos de permisos y datos, y la prueba médica sobre fixtures ficticios. No se consultó ni modificó la base real. |
-| Impresión física | No realizada | La generación de PDF tiene pruebas locales; la alineación de papel requiere comprobación física. |
+| Sesión, permisos e impresión física | Aprobados según confirmación del responsable del proyecto | Pruebas manuales informadas el 21 de octubre de 2026, separadas de las pruebas automatizadas. |
 
 El servidor PostgreSQL exclusivo de pruebas se detuvo al finalizar. Los
 registros de ejecución permanecen en `build/publication-validation/`, una
@@ -73,7 +82,7 @@ simulado no prueba una caída real de red ni todos los estados del temporizador.
 | V06 | Dependencia de nuevas firmas RPC. | Se probaron las definiciones de la secuencia pública, llamadas a los listados y emisión médica con la firma final de nueve parámetros. Los cuatro tests HTTP médicos verifican también clientes frente a la firma anterior. |
 | V07 | Normalización duplicada entre Dart y SQL. | Se ejecutaron casos comunes de acentos, orden de palabras, documentos y tratamiento literal de `%` en PostgreSQL, además de la suite Dart. No es una demostración exhaustiva de equivalencia. |
 | V08 | La reimpresión puede utilizar el domicilio vigente de la ficha. | Confirmar que ese comportamiento sea el esperado; no hay una instantánea histórica del domicilio en el modelo de parte incluido. |
-| V09 | Aviso incorrecto sobre nombres largos. | El aviso ya advierte que pueden quedar recortados. La versión actual del PDF utiliza tamaño uniforme de fuente. Queda la comprobación física del formulario. |
+| V09 | Aviso incorrecto sobre nombres largos. | El aviso ya advierte que pueden quedar recortados. La versión actual del PDF utiliza tamaño uniforme de fuente. La prueba manual de impresora fue aprobada según la confirmación del responsable del proyecto. |
 
 ## Pruebas SQL realizadas y límites de despliegue
 
@@ -96,10 +105,13 @@ médica ejecutó sus cuatro modalidades y conservó la edad familiar en meses.
 Antes de desplegar en un proyecto real, queda:
 
 1. Obtener y revisar un esquema de partida sin datos personales y contrastarlo con el historial de migraciones aplicado.
-2. Repetir las comprobaciones con el modelo real de roles y sus políticas; los helpers de partida de los fixtures son simplificados.
+2. Contrastar los contratos SQL con el modelo de roles y sus políticas del entorno de destino; los helpers de partida de los fixtures son simplificados. Las pruebas manuales de permisos informadas como aprobadas no sustituyen esta revisión previa a aplicar migraciones.
 3. Revisar asesores de seguridad, funciones elevadas y permisos en el entorno real. No se ejecutaron asesores ni consultas en producción.
-4. Completar los escenarios de períodos de inactividad y demás reglas que no cubre este script de contratos.
-5. Verificar alineación de impresión, fuente y recortes sobre el formulario y la impresora físicos.
+4. Completar los escenarios que no cubre este script de contratos ni la confirmación manual recibida, según el alcance del despliegue.
+
+La sesión, los permisos y la impresora ya cuentan con la aprobación manual
+informada por el responsable del proyecto. Al cambiar de impresora, formulario
+o configuración, corresponde repetir el control de impresión.
 
 La prueba médica establece una identidad de solicitud y termina con
 `rollback`; el script de contratos utiliza también `SET LOCAL ROLE
