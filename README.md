@@ -1,108 +1,137 @@
-# HESM - Gestion RRHH
+<div align="center">
+  <img src="docs/branding/hesm-logo.svg" alt="HESM Gestión RRHH" width="190" />
+  <h1>Gestión RRHH</h1>
+  <p><strong>Una herramienta de escritorio para ordenar la gestión diaria de Recursos Humanos.</strong></p>
+  <p>Flutter · Dart · Supabase · Windows</p>
+</div>
 
-Aplicacion interna de escritorio desarrollada con Flutter para registrar,
-consultar y exportar novedades administrativas relacionadas con horas y
-permisos del personal.
+<p align="center">
+  <a href="https://github.com/gabyboan/hesm-gestion-rrhh/actions/workflows/quality.yml">
+    <img src="https://github.com/gabyboan/hesm-gestion-rrhh/actions/workflows/quality.yml/badge.svg?branch=main" alt="Estado de calidad y pruebas" />
+  </a>
+</p>
 
-## Objetivo
+---
 
-Centralizar la gestion operativa de RRHH en una herramienta digital, reduciendo
-registros manuales y mejorando el seguimiento mensual de permisos, horas
-particulares, enfermedad y horas oficiales.
+## El proyecto
 
-## Funcionalidades
+**Gestión RRHH** reúne en una aplicación de escritorio herramientas para
+registrar, consultar y dar seguimiento a novedades del personal. El objetivo es
+reducir tareas manuales y ofrecer información clara para el trabajo cotidiano
+del área.
 
-- Inicio de sesion con Supabase.
-- Control de sesion por inactividad.
-- Carga de registros por persona, fecha y tipo de hora.
-- Seleccion de duracion para horas particulares y oficiales.
-- Consulta mensual de registros por empleado.
-- Calculo de cupos y excedentes.
-- Informe mensual con filtros por uso, tipo y excedidos.
-- Exportacion del informe a archivo `.xlsx`.
-- Prevencion de doble instancia en Windows.
-- Modulos independientes de Francos, Imprevistos, Medicos y Suplencias.
-- Acceso a modulos segun los roles asignados en Supabase.
+Es un proyecto en desarrollo activo, construido con Flutter y Supabase. Esta
+presentación describe sus capacidades sin exponer datos ni credenciales de
+personas.
+El símbolo del README también se usa como icono de la aplicación de Windows y
+emplea el color institucional `#045e63`.
+
+## Módulos
+
+| Área | Qué permite hacer |
+| --- | --- |
+| **Horas** | Cargar y consultar horas por persona; revisar cupos, excedentes e informes mensuales. |
+| **Francos** | Registrar y consultar francos del personal. |
+| **Imprevistos** | Registrar novedades y hacer su seguimiento. |
+| **Médicos** | Emitir partes, completar datos del domicilio y familiares, y previsualizar y ajustar la impresión. |
+| **Suplencias** | Consultar y gestionar registros según los permisos asignados. |
+
+El acceso a cada área depende de los roles configurados en Supabase. También
+incluye preferencias de tema, control de sesión por inactividad y búsquedas por
+múltiples términos.
+
+Médicos incluye edad familiar en meses para menores de un año y una bandeja
+para revisar e imprimir varios partes en un único trabajo. Una cancelación
+conserva los partes pendientes en la sesión.
 
 ## Vista del sistema
 
-El panel permite acceder a los modulos segun los permisos del usuario.
-Las capturas de operaciones con personal se incorporaran con datos ficticios.
+### Panel de módulos
 
-![Panel de modulos de Gestion RRHH](docs/mockups/panel-modulos.png)
+![Panel de módulos de Gestión RRHH con datos ficticios](docs/mockups/demo/panel.png)
 
-## Stack
+Las capturas se generan desde la interfaz real, con datos ficticios y sin
+conectarse a la base de personal. Podés recorrer los cinco módulos en la
+[galería completa](docs/mockups/README.md).
 
-- Flutter
-- Dart
-- Riverpod
-- Supabase
-- Excel export
-- Windows desktop
+## Tecnologías y estructura
 
-## Configuracion
+- **Flutter y Dart** para la aplicación de escritorio.
+- **Riverpod** para el estado y la coordinación entre capas.
+- **Supabase** para autenticación, datos y permisos.
+- **Arquitectura por funcionalidades:** `application`, `data`, `domain` y
+  `presentation`.
+- **Windows** como plataforma de escritorio.
 
-La app necesita las credenciales publicas de Supabase. Se pueden pasar por
-`--dart-define`:
+## Desarrollo local
 
-```bash
-flutter run \
-  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
+### Requisitos
+
+- Flutter 3.38.6 y Dart 3.10.7, las versiones verificadas en esta entrega.
+- Acceso a un proyecto de Supabase de desarrollo con el esquema y los permisos
+  requeridos.
+
+### Ejecutar
+
+Instalá las dependencias:
+
+```powershell
+flutter pub get
+```
+
+Para desarrollo local, copiá la plantilla y completá las credenciales de tu
+entorno de prueba:
+
+```powershell
+Copy-Item credenciales.env.example credenciales.env
+```
+
+Como alternativa, podés pasarlas mediante `--dart-define`:
+
+```powershell
+flutter run `
+  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co `
   --dart-define=SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-Para desarrollo local tambien se puede copiar la plantilla:
+No guardes credenciales reales, claves `service_role`, datos de personal ni
+exportaciones en el repositorio. Las migraciones deben revisarse y validarse en
+una base de prueba antes de aplicarlas a cualquier entorno compartido.
 
-```bash
-cp credenciales.env.example credenciales.env
+### Verificar
+
+```powershell
+flutter analyze
+flutter test
 ```
 
-Para usar el `.exe` en otra computadora, copiar `credenciales.env.example` en la
-misma carpeta que `app_horas.exe`, renombrarlo exactamente a
-`credenciales.env` y completar los valores reales. En Windows conviene activar
-"Extensiones de nombre de archivo" en el Explorador para verificar que no haya
-quedado como `credenciales.env.txt`.
+El workflow de GitHub Actions ejecuta estas comprobaciones con Flutter 3.38.6
+al actualizar `main` y en cada pull request.
 
-No commitear `credenciales.env`, claves `service_role`, connection strings ni
-dumps con datos reales.
+## Alcance y estado
 
-## Estructura
+- Aplicación de escritorio en desarrollo activo; no es un servicio público ni
+  una demo conectada para visitantes.
+- Se verificaron 80 pruebas y el análisis estático localmente; el workflow está
+  preparado para repetirlos en CI.
+- La instalación de migraciones y la alineación de impresión en una impresora
+  física requieren validación en sus respectivos entornos.
+- Las capturas y ejemplos destinados al portfolio deben usar exclusivamente
+  información ficticia.
 
-El proyecto esta organizado por features:
+## Documentación de la entrega
 
-```txt
-lib/
-  app/
-  core/
-  features/
-    auth/
-    francos/
-    horas/
-    imprevistos/
-    medicos/
-    shell/
-    suplencias/
-```
+| Documento | Contenido |
+| --- | --- |
+| [Registro de cambios](CHANGELOG.md) | Mejoras y comportamiento por módulo. |
+| [Entrega GitHub](docs/ENTREGA_GITHUB.md) | Commits realizados, inventario de publicación y migraciones recuperadas. |
+| [Cambios por archivo](docs/CAMBIOS_POR_ARCHIVO.md) | Inventario individual, dependencias y propuesta de commits. |
+| [Validación](docs/VALIDACION.md) | Pruebas Flutter, contratos SQL y límites de despliegue. |
+| [Preparación para GitHub](docs/PREPARACION_GITHUB.md) | Privacidad y estado de publicación. |
+| [Revisión de privacidad](docs/REVISION_PRIVACIDAD.md) | Historial público, capturas, escaneos y propuesta de limpieza. |
 
-Cada modulo funcional sigue esta convencion:
+---
 
-```txt
-features/<modulo>/
-  application/
-  data/
-  domain/
-  presentation/
-```
-
-## Decisiones tecnicas
-
-- La UI consume providers y no llama directamente a Supabase.
-- El acceso a datos esta encapsulado en repositorios.
-- Los modelos y reglas propias del modulo viven en `domain`.
-- Los helpers compartidos viven en `core`.
-- Los widgets grandes se separan en archivos dentro de `presentation/widgets`.
-
-## Estado
-
-Proyecto en desarrollo activo. Actualmente el modulo de horas permite cargar,
-consultar, filtrar y exportar informacion mensual de RRHH.
+<div align="center">
+  <sub>Proyecto de portfolio · Aplicación de escritorio para gestión de RRHH</sub>
+</div>
