@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/network/internet_connection_gate.dart';
+import '../features/auth/application/session_timeout_provider.dart';
 import '../features/auth/presentation/auth_gate.dart';
 import 'theme/theme_mode_provider.dart';
 
@@ -38,7 +43,18 @@ class App extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const AuthGate(),
+      home: InternetConnectionGate(
+        applicationEndpoint: Uri.parse(Supabase.instance.client.rest.url),
+        onConnectionChanged: (hasInternet) {
+          final sessionTimeout = ref.read(sessionTimeoutProvider);
+          if (hasInternet) {
+            unawaited(sessionTimeout.resume());
+          } else {
+            sessionTimeout.pause();
+          }
+        },
+        child: const AuthGate(),
+      ),
     );
   }
 }

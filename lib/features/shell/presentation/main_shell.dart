@@ -15,6 +15,8 @@ import '../../imprevistos/application/imprevistos_providers.dart';
 import '../../imprevistos/presentation/imprevistos_page.dart';
 import '../../medicos/application/medicos_providers.dart';
 import '../../medicos/presentation/medicos_page.dart';
+import '../../preferences/application/user_preferences_providers.dart';
+import '../../preferences/presentation/user_preferences_dialog.dart';
 import '../../suplencias/application/suplencias_providers.dart';
 import '../../suplencias/presentation/suplencias_page.dart';
 
@@ -208,6 +210,7 @@ class _ModulesDashboard extends ConsumerWidget {
     final imprevistosAsync = ref.watch(puedeLeerImprevistosProvider);
     final medicosAsync = ref.watch(puedeLeerMedicosProvider);
     final suplenciasAsync = ref.watch(puedeLeerSuplenciasProvider);
+    final profileAsync = ref.watch(currentUserProfileProvider);
 
     final tieneRolOperativo = rolesAsync.valueOrNull?.codes.isNotEmpty ?? false;
     final puedeLeerFrancos = francosAsync.valueOrNull ?? false;
@@ -218,6 +221,11 @@ class _ModulesDashboard extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Servicios'),
         actions: [
+          IconButton(
+            tooltip: 'Configuración',
+            onPressed: () => showUserPreferencesDialog(context),
+            icon: const Icon(Icons.settings_outlined),
+          ),
           IconButton(
             tooltip: 'Salir',
             onPressed: signingOut ? null : onSignOut,
@@ -243,6 +251,11 @@ class _ModulesDashboard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      profileAsync.valueOrNull?.saludo ?? 'Bienvenido',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 20),
                     Text(
                       'Módulos',
                       style: Theme.of(context).textTheme.headlineSmall,

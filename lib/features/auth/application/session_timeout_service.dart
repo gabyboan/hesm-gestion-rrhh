@@ -7,18 +7,35 @@ class SessionTimeoutService {
 
   final SupabaseClient _sb;
 
-  // Ajustá a tu gusto (y que coincida con lo que vos "prometés" al usuario)
-  static const idleTimeout = Duration(minutes: 5);
+  static const defaultIdleTimeout = Duration(minutes: 5);
+  static const _minIdleMinutes = 1;
+  static const _maxIdleMinutes = 10;
 
   static const _kLastActivityMs = 'last_activity_at_ms';
 
   Timer? _timer;
   DateTime? _lastSaved; // throttle
+  Duration _idleTimeout = defaultIdleTimeout;
+  bool _isPaused = false;
+
+  Duration get idleTimeout => _idleTimeout;
+
+  /// Actualiza el límite elegido por el usuario y reinicia el conteo activo.
+  void configure(Duration timeout) {
+    final minutes =
+        timeout.inMinutes.clamp(_minIdleMinutes, _maxIdleMinutes).toInt();
+    _idleTimeout = Duration(minutes: minutes);
+
+    if (_timer != null) {
+      _timer!.cancel();
+      _timer = Timer(_idleTimeout, _logout);
+    }
+  }
 
   /// Llamalo SOLO cuando hay sesión válida (logueado)
   Future<void> start() async {
     // ✅ No reiniciar si ya está corriendo
-    if (_timer != null) return;
+    if (_timer != null || _isPaused) return;
 
     // Si ya arrancó la app y está vencido, cerramos YA
     final expired = await isExpired();
@@ -30,11 +47,15 @@ class SessionTimeoutService {
     // Marca actividad inicial al empezar (importante al reabrir)
     await touch(force: true);
 
-    _timer = Timer(idleTimeout, _logout);
+    _timer = Timer(_idleTimeout, _logout);
   }
 
   /// Reset por actividad (touch + reiniciar timer)
   Future<void> reset() async {
+    // La pantalla de falta de internet bloquea la interacción. No contamos
+    // ese tiempo como inactividad ni aceptamos actividad accidental.
+    if (_isPaused) return;
+
     // Si no está corriendo, arrancalo (pero sin loops)
     if (_timer == null) {
       await start();
@@ -44,12 +65,36 @@ class SessionTimeoutService {
     await touch(); // persistente + throttle
 
     _timer!.cancel();
-    _timer = Timer(idleTimeout, _logout);
+    _timer = Timer(_idleTimeout, _logout);
   }
 
   void stop() {
     _timer?.cancel();
     _timer = null;
+    _isPaused = false;
+  }
+
+  /// Suspende el cierre automático mientras la app no puede usarse por falta
+  /// de conexión. Al restablecer la red [resume] reinicia el conteo.
+  void pause() {
+    if (_isPaused) return;
+
+    _isPaused = true;
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  /// Retoma el conteo desde cero al recuperar la conexión para que una caída
+  /// prolongada de internet no cierre la sesión de quien estaba trabajando.
+  Future<void> resume() async {
+    if (!_isPaused) return;
+
+    _isPaused = false;
+    if (_sb.auth.currentSession == null) return;
+
+    await touch(force: true);
+    _timer?.cancel();
+    _timer = Timer(_idleTimeout, _logout);
   }
 
   /// Renueva la marca de actividad antes de un ingreso manual.
@@ -89,7 +134,7 @@ class SessionTimeoutService {
       await touch(force: true);
       return false;
     }
-    return DateTime.now().difference(last) > idleTimeout;
+    return DateTime.now().difference(last) > _idleTimeout;
   }
 
   Future<void> forceLogout() async {

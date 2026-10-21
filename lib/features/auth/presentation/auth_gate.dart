@@ -2,6 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme/theme_mode_provider.dart';
+import '../../medicos/application/cola_impresion_provider.dart';
+import '../../preferences/application/user_preferences_providers.dart';
+import '../../preferences/domain/user_preferences.dart';
 import '../../shell/presentation/main_shell.dart';
 import '../application/auth_providers.dart';
 import '../application/session_timeout_provider.dart';
@@ -73,7 +77,25 @@ class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
   @override
   void initState() {
     super.initState();
-    _startTimeoutFuture = ref.read(sessionTimeoutProvider).start();
+    ref.invalidate(userPreferencesProvider);
+    ref.invalidate(currentUserProfileProvider);
+    _startTimeoutFuture = _startAuthenticatedSession();
+  }
+
+  Future<void> _startAuthenticatedSession() async {
+    var preferences = UserPreferences.defaults;
+
+    try {
+      preferences = await ref.read(userPreferencesProvider.future);
+    } catch (_) {
+      // La app sigue funcionando con valores seguros si la migración todavía
+      // no fue aplicada o hay una falla temporal al cargar preferencias.
+    }
+
+    ref.read(themeModeProvider.notifier).state = preferences.themeMode;
+    final timeoutService = ref.read(sessionTimeoutProvider)
+      ..configure(preferences.idleTimeout);
+    await timeoutService.start();
   }
 
   @override
@@ -89,8 +111,12 @@ class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
           return _AuthError(error: snapshot.error!);
         }
 
-        return const AuthActivityListener(
-          child: MainShell(),
+        return ProviderScope(
+          overrides: [
+            colaImpresionProvider
+                .overrideWith((ref) => ColaImpresionController()),
+          ],
+          child: const AuthActivityListener(child: MainShell()),
         );
       },
     );
