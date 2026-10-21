@@ -52,7 +52,7 @@ class AppSnackBar {
               curve: Curves.easeOutBack,
               builder: (context, value, child) {
                 return Opacity(
-                  opacity: value,
+                  opacity: value.clamp(0.0, 1.0),
                   child: Transform.scale(
                     scale: 0.92 + (value * 0.08),
                     child: child,

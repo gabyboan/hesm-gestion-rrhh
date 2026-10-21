@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:windows_single_instance/windows_single_instance.dart';
 
 import 'app/app.dart';
+import 'core/widgets/startup_splash.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,8 +44,12 @@ class _BootstrapAppState extends State<BootstrapApp> {
   }
 
   Future<void> _start() async {
+    final startupTimer = Stopwatch()..start();
     try {
       await _bootstrap(widget.args);
+      const minimumSplashDuration = Duration(seconds: 5);
+      final remaining = minimumSplashDuration - startupTimer.elapsed;
+      if (remaining > Duration.zero) await Future<void>.delayed(remaining);
       if (!mounted) return;
       setState(() => _ready = true);
     } catch (error, stackTrace) {
@@ -237,46 +242,27 @@ class BootstrapStatusPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = ThemeData(
       useMaterial3: true,
-      colorSchemeSeed: const Color(0xFF4F46E5),
+      colorSchemeSeed: const Color(0xFF045E63),
     );
 
     return Theme(
       data: theme,
       child: Scaffold(
         body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: error == null
-                  ? const _BootstrapLoading()
-                  : _BootstrapError(
+          child: error == null
+              ? const StartupSplash()
+              : ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: _BootstrapError(
                       error: error!,
                       stackTrace: stackTrace,
                     ),
-            ),
-          ),
+                  ),
+                ),
         ),
       ),
-    );
-  }
-}
-
-class _BootstrapLoading extends StatelessWidget {
-  const _BootstrapLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CircularProgressIndicator(),
-        SizedBox(height: 16),
-        Text(
-          'Iniciando HESM - Gestion RRHH...',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-      ],
     );
   }
 }

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="176" viewBox="0 0 640 176" role="img" aria-labelledby="title description">
+  <title id="title">HESM Gestión RRHH</title>
+  <desc id="description">Identidad visual de Gestión RRHH: un perfil profesional dentro de un engranaje sobre fondo institucional.</desc>
+  <g transform="translate(8 0) scale(.3125)">
+    <circle cx="256" cy="256" r="250" fill="#045e63"/>
+    <g fill="#263c4d">
+      <circle cx="256" cy="256" r="151"/>
+      <rect x="226" y="74" width="60" height="112" rx="5"/>
+      <rect x="226" y="74" width="60" height="112" rx="5" transform="rotate(45 256 256)"/>
+      <rect x="226" y="74" width="60" height="112" rx="5" transform="rotate(90 256 256)"/>
+      <rect x="226" y="74" width="60" height="112" rx="5" transform="rotate(135 256 256)"/>
+      <rect x="226" y="74" width="60" height="112" rx="5" transform="rotate(180 256 256)"/>
+      <rect x="226" y="74" width="60" height="112" rx="5" transform="rotate(225 256 256)"/>
+      <rect x="226" y="74" width="60" height="112" rx="5" transform="rotate(270 256 256)"/>
+      <rect x="226" y="74" width="60" height="112" rx="5" transform="rotate(315 256 256)"/>
+    </g>
+    <circle cx="256" cy="256" r="99" fill="#a8e8e9"/>
+    <circle cx="256" cy="256" r="86" fill="#f7fbfb"/>
+    <path d="M211 292v-12c0-19 15-34 34-34h22c19 0 34 15 34 34v12z" fill="#30495d"/>
+    <path d="M241 246h30v24l-15 17-15-17z" fill="#f5f7f6"/>
+    <path d="M253 260h6l7 32h-20z" fill="#e4a92f"/>
+    <rect x="249" y="234" width="14" height="18" rx="5" fill="#edbd92"/>
+    <ellipse cx="256" cy="216" rx="22" ry="27" fill="#f3c9a3"/>
+    <path d="M234 215c-2-19 8-34 25-34 17 0 25 13 23 31-5-3-9-9-11-15-10 8-22 11-37 11z" fill="#303238"/>
+    <path d="M235 210c-1 11 2 19 7 25l-2-25zM277 210c1 11-2 19-7 25l2-25z" fill="#303238"/>
+  </g>
+  <text x="198" y="91" fill="#17324a" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="750" letter-spacing="2">HESM</text>
+  <text x="201" y="128" fill="#527087" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="650" letter-spacing="4">GESTIÓN RRHH</text>
+</svg>
