@@ -1,28 +1,65 @@
+import '../../../core/widgets/app_search_field.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
 
 import '../../../core/ui/app_snackbar.dart';
 import '../../../core/utils/date_fmt.dart';
 import '../../../core/utils/error_text.dart';
 import '../application/medicos_providers.dart';
+import '../application/cola_impresion_provider.dart';
 import '../data/parte_medico_printer.dart';
+import '../domain/medico_domicilio.dart';
 import '../domain/medico_familiar.dart';
 import '../domain/medico_persona.dart';
 import '../domain/parte_medico.dart';
+import 'ajuste_impresion_medica_dialog.dart';
+import 'parte_medico_vista_panel.dart';
+import 'parte_medico_vista_ampliada.dart';
+import 'cola_impresion_dialog.dart';
 
-class MedicosPage extends ConsumerWidget {
+class MedicosPage extends ConsumerStatefulWidget {
   const MedicosPage({super.key});
+
+  @override
+  ConsumerState<MedicosPage> createState() => _MedicosPageState();
+}
+
+class _MedicosPageState extends ConsumerState<MedicosPage>
+    with SingleTickerProviderStateMixin {
+  int? _parteSeleccionadoId;
+  late final TabController _tabs;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(_cambiarPestana);
+  }
+
+  void _cambiarPestana() => setState(() {});
+
+  @override
+  void dispose() {
+    _tabs.removeListener(_cambiarPestana);
+    _tabs.dispose();
+    super.dispose();
+  }
 
   Future<void> _emitir({
     required BuildContext context,
     required WidgetRef ref,
     required MedicoPersona persona,
   }) async {
-    final data = await showDialog<ParteMedicoFormData>(
+    final resultado = await showDialog<_ParteMedicoSubmission>(
       context: context,
       builder: (_) => _ParteMedicoDialog(persona: persona),
     );
-    if (data == null) return;
+    if (resultado == null) return;
+    final data = resultado.data;
 
     try {
       final id = await ref
@@ -31,19 +68,50 @@ class MedicosPage extends ConsumerWidget {
       final parte = ParteMedico(
         id: id,
         dni: persona.dni,
-        fecha: DateTime.now(),
+        fecha: data.fecha,
         tipo: data.tipo,
         empleadoApellido: persona.apellido,
         empleadoNombre: persona.nombre,
         empleadoLegajo: persona.legajo,
         familiarApellidoNombre: data.familiarApellidoNombre,
+        familiarDni: data.familiarDni,
         familiarEdad: data.familiarEdad,
+        familiarEdadMeses: data.familiarEdadMeses,
         familiarParentesco: data.familiarParentesco,
+        esArt: data.esArt,
+        domicilio: data.domicilio,
+        aclaracionFechaTurno: data.aclaracionFechaTurno,
       );
 
       if (!context.mounted) return;
-      AppSnackBar.success(context, 'Parte medico registrado');
-      await ParteMedicoPrinter.imprimir(parte);
+      setState(() {
+        _parteSeleccionadoId = id;
+      });
+      ref.read(partesMedicosSearchProvider.notifier).state = '';
+      if (resultado.imprimirAhora) {
+        _tabs.animateTo(1);
+        AppSnackBar.success(context, 'Parte médico registrado');
+        try {
+          final impreso = await ParteMedicoPrinter.imprimir(parte);
+          if (!impreso) {
+            ref.read(colaImpresionProvider.notifier).agregar(parte);
+            if (context.mounted) {
+              AppSnackBar.success(context,
+                  'Impresión cancelada. Parte guardado en la bandeja.');
+            }
+          }
+        } catch (e) {
+          ref.read(colaImpresionProvider.notifier).agregar(parte);
+          if (context.mounted) {
+            AppSnackBar.error(context,
+                'Parte registrado y agregado a la bandeja. No se pudo imprimir: ${cleanError(e)}');
+          }
+        }
+      } else {
+        ref.read(colaImpresionProvider.notifier).agregar(parte);
+        AppSnackBar.success(
+            context, 'Parte registrado y agregado a la bandeja de impresión');
+      }
     } catch (e) {
       if (!context.mounted) return;
       AppSnackBar.error(context, cleanError(e));
@@ -80,6 +148,7 @@ class MedicosPage extends ConsumerWidget {
           .anular(parte.id);
       if (!context.mounted) return;
       if (ok) {
+        ref.read(colaImpresionProvider.notifier).quitar(parte.id);
         AppSnackBar.success(context, 'Parte medico anulado');
       } else {
         AppSnackBar.error(context, 'El parte medico no fue encontrado');
@@ -91,7 +160,7 @@ class MedicosPage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final puedeLeerAsync = ref.watch(puedeLeerMedicosProvider);
     final puedeCrear =
         ref.watch(puedeCrearMedicosProvider).valueOrNull ?? false;
@@ -111,18 +180,74 @@ class MedicosPage extends ConsumerWidget {
       );
     }
 
+    final verRegistros = _tabs.index == 1;
+    final partes = verRegistros
+        ? ref.watch(partesMedicosPorDiaProvider).valueOrNull ?? []
+        : <ParteMedico>[];
+    final personasDisponibles = verRegistros
+        ? <MedicoPersona>[]
+        : ref.watch(medicosPersonasProvider).valueOrNull ?? [];
+    ParteMedico? parteVisible;
+    if (verRegistros) {
+      for (final parte in partes) {
+        if (parte.id == _parteSeleccionadoId) parteVisible = parte;
+      }
+      if (parteVisible == null && partes.isNotEmpty) {
+        parteVisible = partes.first;
+      }
+    }
+    final personaVisible = !verRegistros
+        ? selected ??
+            (personasDisponibles.isEmpty ? null : personasDisponibles.first)
+        : null;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          const _Toolbar(),
+          TabBar(
+            controller: _tabs,
+            tabs: const [
+              Tab(icon: Icon(Icons.note_add_outlined), text: 'Emitir parte'),
+              Tab(icon: Icon(Icons.history), text: 'Partes registrados'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(builder: (context, constraints) {
+            final search =
+                _Toolbar(key: ValueKey(verRegistros), registros: verRegistros);
+            final cantidad = ref.watch(colaImpresionProvider).length;
+            final bandeja = OutlinedButton.icon(
+              onPressed: busy
+                  ? null
+                  : () => showDialog<void>(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => UncontrolledProviderScope(
+                          container: ProviderScope.containerOf(context),
+                          child: const ColaImpresionDialog(),
+                        ),
+                      ),
+              icon: const Icon(Icons.print_outlined),
+              label: Text('Bandeja de impresión ($cantidad)'),
+            );
+            if (constraints.maxWidth < 700) {
+              return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [search, const SizedBox(height: 8), bandeja]);
+            }
+            return Row(children: [
+              Expanded(child: search),
+              const SizedBox(width: 16),
+              bandeja
+            ]);
+          }),
           const SizedBox(height: 12),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final compact = constraints.maxWidth < 900;
                 final personas = _PersonasPanel(
-                  selected: selected,
+                  selected: personaVisible,
                   canCreate: puedeCrear,
                   busy: busy,
                   onSelected: (persona) {
@@ -136,6 +261,12 @@ class MedicosPage extends ConsumerWidget {
                   ),
                 );
                 final historial = _HistorialPanel(
+                  selectedId: parteVisible?.id,
+                  onSelected: (parte) {
+                    setState(() {
+                      _parteSeleccionadoId = parte.id;
+                    });
+                  },
                   canAdmin: puedeAdmin,
                   busy: busy,
                   onAnular: (parte) => _anular(
@@ -144,21 +275,29 @@ class MedicosPage extends ConsumerWidget {
                     parte: parte,
                   ),
                 );
+                final vista = ParteMedicoVistaPanel(
+                  parte: parteVisible,
+                  persona: personaVisible,
+                );
+                final lista = verRegistros ? historial : personas;
 
-                if (compact) {
+                if (constraints.maxWidth < 800) {
                   return Column(
                     children: [
-                      SizedBox(height: 280, child: personas),
+                      Expanded(flex: 2, child: lista),
                       const SizedBox(height: 12),
-                      Expanded(child: historial),
+                      Expanded(flex: 3, child: vista),
                     ],
                   );
                 }
                 return Row(
                   children: [
-                    SizedBox(width: 390, child: personas),
-                    const SizedBox(width: 16),
-                    Expanded(child: historial),
+                    SizedBox(
+                      width: (constraints.maxWidth * 0.38).clamp(300.0, 460.0),
+                      child: lista,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: vista),
                   ],
                 );
               },
@@ -170,46 +309,26 @@ class MedicosPage extends ConsumerWidget {
   }
 }
 
-class _Toolbar extends ConsumerStatefulWidget {
-  const _Toolbar();
+class _Toolbar extends ConsumerWidget {
+  const _Toolbar({super.key, required this.registros});
+
+  final bool registros;
 
   @override
-  ConsumerState<_Toolbar> createState() => _ToolbarState();
-}
-
-class _ToolbarState extends ConsumerState<_Toolbar> {
-  final _search = TextEditingController();
-
-  @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: _search,
-      decoration: InputDecoration(
-        labelText: 'Buscar por apellido, nombre, DNI o legajo',
-        border: const OutlineInputBorder(),
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: _search.text.isEmpty
-            ? null
-            : IconButton(
-                tooltip: 'Limpiar',
-                onPressed: () {
-                  _search.clear();
-                  ref.read(medicosSearchProvider.notifier).state = '';
-                  setState(() {});
-                },
-                icon: const Icon(Icons.close),
-              ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider =
+        registros ? partesMedicosSearchProvider : medicosSearchProvider;
+    return AppSearchField(
+      key: ValueKey(registros),
+      initialValue: ref.read(provider),
+      labelText: registros
+          ? 'Buscar parte por agente, DNI, legajo, familiar o aclaración'
+          : 'Buscar persona por apellido, nombre, DNI o legajo',
       onChanged: (value) {
-        ref.read(medicosSearchProvider.notifier).state = value;
-        ref.read(selectedMedicoPersonaProvider.notifier).state = null;
-        setState(() {});
+        ref.read(provider.notifier).state = value;
+        if (!registros) {
+          ref.read(selectedMedicoPersonaProvider.notifier).state = null;
+        }
       },
     );
   }
@@ -240,7 +359,7 @@ class _PersonasPanel extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Text(
-              'Personal con legajo',
+              'Todo el personal',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
             ),
           ),
@@ -260,7 +379,7 @@ class _PersonasPanel extends ConsumerWidget {
                               ),
                               title: Text(persona.nombreCompleto),
                               subtitle: Text(
-                                'Legajo ${persona.legajo} - DNI ${persona.dni}',
+                                '${persona.legajoLabel} - DNI ${persona.dni}',
                               ),
                               trailing: IconButton(
                                 tooltip: 'Emitir parte',
@@ -288,15 +407,37 @@ class _PersonasPanel extends ConsumerWidget {
 }
 
 class _HistorialPanel extends ConsumerWidget {
+  final int? selectedId;
+  final ValueChanged<ParteMedico> onSelected;
   final bool canAdmin;
   final bool busy;
   final ValueChanged<ParteMedico> onAnular;
 
   const _HistorialPanel({
+    required this.selectedId,
+    required this.onSelected,
     required this.canAdmin,
     required this.busy,
     required this.onAnular,
   });
+
+  Future<void> _reimprimir(
+      BuildContext context, WidgetRef ref, ParteMedico parte) async {
+    try {
+      final domicilio = parte.domicilio ??
+          (parte.tipo == TipoParteMedico.consultorio
+              ? null
+              : await ref.read(medicosDomicilioProvider(parte.dni).future));
+      if (!context.mounted) return;
+      final impreso =
+          await ParteMedicoPrinter.imprimir(parte.conDomicilio(domicilio));
+      if (impreso && context.mounted) {
+        ref.read(colaImpresionProvider.notifier).quitar(parte.id);
+      }
+    } catch (e) {
+      if (context.mounted) AppSnackBar.error(context, cleanError(e));
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -313,7 +454,7 @@ class _HistorialPanel extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: ref.watch(partesMedicosProvider).when(
+            child: ref.watch(partesMedicosPorDiaProvider).when(
                   data: (items) => items.isEmpty
                       ? const Center(child: Text('Sin partes registrados'))
                       : ListView.separated(
@@ -321,39 +462,98 @@ class _HistorialPanel extends ConsumerWidget {
                           separatorBuilder: (_, __) => const Divider(height: 1),
                           itemBuilder: (context, index) {
                             final parte = items[index];
-                            final familiar = parte.tipo.requiereFamiliar
-                                ? ' - ${parte.familiarApellidoNombre}'
-                                : '';
-                            return ListTile(
-                              leading: CircleAvatar(
-                                child: Text(parte.fecha.day.toString()),
-                              ),
-                              title: Text(parte.empleadoCompleto),
-                              subtitle: Text(
-                                '${DateFmt.ddmmyyyy(parte.fecha)} - '
-                                '${parte.tipo.label}$familiar',
-                              ),
-                              trailing: Wrap(
-                                spacing: 2,
-                                children: [
-                                  IconButton(
-                                    tooltip: 'Reimprimir',
-                                    onPressed: busy
-                                        ? null
-                                        : () => ParteMedicoPrinter.imprimir(
-                                              parte,
-                                            ),
-                                    icon: const Icon(Icons.print_outlined),
+                            final empiezaDia = index == 0 ||
+                                !DateUtils.isSameDay(
+                                    items[index - 1].fecha, parte.fecha);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (empiezaDia)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 10),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest,
+                                    child: Text(
+                                      DateFmt.ddmmyyyy(parte.fecha),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w700),
+                                    ),
                                   ),
-                                  IconButton(
-                                    tooltip: 'Anular',
-                                    onPressed: canAdmin && !busy
-                                        ? () => onAnular(parte)
-                                        : null,
-                                    icon: const Icon(Icons.delete_outline),
+                                ListTile(
+                                  selected: selectedId == parte.id,
+                                  onTap: () => onSelected(parte),
+                                  leading: Tooltip(
+                                    message: parte.tipo.label,
+                                    child: CircleAvatar(
+                                      child: Text(parte.tipo.codigo),
+                                    ),
                                   ),
-                                ],
-                              ),
+                                  title: Text(parte.descripcionRegistro),
+                                  subtitle: Text(
+                                    '${DateFmt.ddmmyyyy(parte.fecha)} - '
+                                    '${parte.tipo.label}'
+                                    '${parte.esArt ? ' - ART' : ''}',
+                                  ),
+                                  trailing: Wrap(
+                                    spacing: 2,
+                                    children: [
+                                      IconButton(
+                                        tooltip:
+                                            'Agregar a la bandeja de impresión',
+                                        onPressed: busy
+                                            ? null
+                                            : () async {
+                                                try {
+                                                  final domicilio = parte
+                                                          .domicilio ??
+                                                      (parte.tipo ==
+                                                              TipoParteMedico
+                                                                  .consultorio
+                                                          ? null
+                                                          : await ref.read(
+                                                              medicosDomicilioProvider(
+                                                                      parte.dni)
+                                                                  .future));
+                                                  if (!context.mounted) return;
+                                                  ref
+                                                      .read(
+                                                          colaImpresionProvider
+                                                              .notifier)
+                                                      .agregar(
+                                                          parte.conDomicilio(
+                                                              domicilio));
+                                                  AppSnackBar.success(context,
+                                                      'Parte agregado a la bandeja');
+                                                } catch (e) {
+                                                  if (context.mounted) {
+                                                    AppSnackBar.error(
+                                                        context, cleanError(e));
+                                                  }
+                                                }
+                                              },
+                                        icon: const Icon(Icons.playlist_add),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Reimprimir',
+                                        onPressed: busy
+                                            ? null
+                                            : () => _reimprimir(
+                                                context, ref, parte),
+                                        icon: const Icon(Icons.print_outlined),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Anular',
+                                        onPressed: canAdmin && !busy
+                                            ? () => onAnular(parte)
+                                            : null,
+                                        icon: const Icon(Icons.delete_outline),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             );
                           },
                         ),
@@ -371,6 +571,13 @@ class _HistorialPanel extends ConsumerWidget {
   }
 }
 
+class _ParteMedicoSubmission {
+  final ParteMedicoFormData data;
+  final bool imprimirAhora;
+
+  const _ParteMedicoSubmission(this.data, {required this.imprimirAhora});
+}
+
 class _ParteMedicoDialog extends ConsumerStatefulWidget {
   final MedicoPersona persona;
 
@@ -382,17 +589,27 @@ class _ParteMedicoDialog extends ConsumerStatefulWidget {
 
 class _ParteMedicoDialogState extends ConsumerState<_ParteMedicoDialog> {
   TipoParteMedico _tipo = TipoParteMedico.domicilio;
+  bool _esArt = false;
   MedicoFamiliar? _familiarSeleccionado;
+  bool _edadEnMeses = false;
+  final _fecha = DateTime.now();
   final _familiar = TextEditingController();
+  final _familiarDni = TextEditingController();
   final _edad = TextEditingController();
   final _parentesco = TextEditingController();
+  final _aclaracionFechaTurno = TextEditingController();
   String? _error;
 
   void _usarFamiliar(MedicoFamiliar? familiar) {
     setState(() {
       _familiarSeleccionado = familiar;
       _familiar.text = familiar?.apellidoNombre ?? '';
-      _edad.text = familiar?.edad?.toString() ?? '';
+      _familiarDni.text = familiar?.dni?.toString() ?? '';
+      final edadMeses = _mesesCumplidos(familiar?.fechaNacimiento, _fecha);
+      _edadEnMeses = edadMeses != null && edadMeses < 12;
+      _edad.text = _edadEnMeses
+          ? edadMeses.toString()
+          : familiar?.edad?.toString() ?? '';
       _parentesco.text = familiar?.parentesco ?? '';
       _error = null;
     });
@@ -401,177 +618,415 @@ class _ParteMedicoDialogState extends ConsumerState<_ParteMedicoDialog> {
   @override
   void dispose() {
     _familiar.dispose();
+    _familiarDni.dispose();
     _edad.dispose();
     _parentesco.dispose();
+    _aclaracionFechaTurno.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    final edad = int.tryParse(_edad.text.trim());
+  Future<void> _submit({bool imprimirAhora = true}) async {
+    final domicilioAsync =
+        ref.read(medicosDomicilioProvider(widget.persona.dni));
+    if (domicilioAsync.isLoading) return;
+    if (domicilioAsync.hasError) {
+      setState(() {
+        _error =
+            'No se pudo cargar el domicilio de la persona: ${cleanError(domicilioAsync.error!)}';
+      });
+      return;
+    }
+    final edadIngresada = int.tryParse(_edad.text.trim());
+    final edadValida = edadIngresada != null &&
+        (_edadEnMeses
+            ? edadIngresada >= 0 && edadIngresada < 12
+            : edadIngresada >= 0 && edadIngresada <= 120);
+    final familiarDniTexto = _familiarDni.text.trim();
+    final familiarDni = int.tryParse(familiarDniTexto);
     if (_tipo.requiereFamiliar &&
         (_familiar.text.trim().isEmpty ||
-            edad == null ||
-            edad < 0 ||
-            edad > 120 ||
-            _parentesco.text.trim().isEmpty)) {
+            !edadValida ||
+            _parentesco.text.trim().isEmpty ||
+            (familiarDniTexto.isNotEmpty &&
+                (familiarDni == null || familiarDni <= 0)))) {
       setState(() {
-        _error = 'Completa nombre, edad y parentesco del familiar.';
+        _error =
+            'Revisa los datos del familiar, incluido su DNI si lo ingresaste.';
       });
       return;
     }
 
+    final data = ParteMedicoFormData(
+      dni: widget.persona.dni,
+      fecha: _fecha,
+      tipo: _tipo,
+      familiarApellidoNombre:
+          _tipo.requiereFamiliar ? _familiar.text.trim() : null,
+      familiarDni: _tipo.requiereFamiliar ? familiarDni : null,
+      familiarEdad: !_tipo.requiereFamiliar
+          ? null
+          : _edadEnMeses
+              ? 0
+              : edadIngresada,
+      familiarEdadMeses:
+          _tipo.requiereFamiliar && _edadEnMeses ? edadIngresada : null,
+      familiarParentesco:
+          _tipo.requiereFamiliar ? _parentesco.text.trim() : null,
+      esArt: !_tipo.requiereFamiliar && _esArt,
+      domicilio: domicilioAsync.valueOrNull,
+      aclaracionFechaTurno: _aclaracionFechaTurno.text.trim().isEmpty
+          ? null
+          : _aclaracionFechaTurno.text.trim(),
+    );
+    if (!mounted) return;
     Navigator.pop(
-      context,
-      ParteMedicoFormData(
+        context, _ParteMedicoSubmission(data, imprimirAhora: imprimirAhora));
+  }
+
+  ParteMedico _crearParteVistaPrevia(MedicoDomicilio? domicilio) => ParteMedico(
+        id: 0,
         dni: widget.persona.dni,
+        fecha: _fecha,
         tipo: _tipo,
+        empleadoApellido: widget.persona.apellido,
+        empleadoNombre: widget.persona.nombre,
+        empleadoLegajo: widget.persona.legajo,
         familiarApellidoNombre:
             _tipo.requiereFamiliar ? _familiar.text.trim() : null,
-        familiarEdad: _tipo.requiereFamiliar ? edad : null,
+        familiarDni: _tipo.requiereFamiliar
+            ? int.tryParse(_familiarDni.text.trim())
+            : null,
+        familiarEdad: _tipo.requiereFamiliar && !_edadEnMeses
+            ? int.tryParse(_edad.text.trim())
+            : _tipo.requiereFamiliar
+                ? 0
+                : null,
+        familiarEdadMeses: _tipo.requiereFamiliar && _edadEnMeses
+            ? int.tryParse(_edad.text.trim())
+            : null,
         familiarParentesco:
             _tipo.requiereFamiliar ? _parentesco.text.trim() : null,
-      ),
-    );
-  }
+        esArt: !_tipo.requiereFamiliar && _esArt,
+        domicilio: domicilio,
+        aclaracionFechaTurno: _aclaracionFechaTurno.text.trim().isEmpty
+            ? null
+            : _aclaracionFechaTurno.text.trim(),
+      );
 
   @override
   Widget build(BuildContext context) {
+    final screen = MediaQuery.sizeOf(context);
+    final colors = Theme.of(context).colorScheme;
+    final domicilioAsync =
+        ref.watch(medicosDomicilioProvider(widget.persona.dni));
     return AlertDialog(
       title: const Text('Emitir parte medico'),
       content: SizedBox(
-        width: 500,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                widget.persona.label,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              if (widget.persona.nombreCompleto.length > 65)
-                const _InfoBox(
-                  text:
-                      'El apellido y nombre no entran en la linea del formulario y se dejaran en blanco para completar a mano.',
-                ),
-              const SizedBox(height: 12),
-              InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Fecha de emision',
-                  border: OutlineInputBorder(),
-                ),
-                child: Text(DateFmt.ddmmyyyy(DateTime.now())),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<TipoParteMedico>(
-                initialValue: _tipo,
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de solicitud',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  for (final tipo in TipoParteMedico.values)
-                    DropdownMenuItem(value: tipo, child: Text(tipo.label)),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _tipo = value;
-                      if (!value.requiereFamiliar) {
-                        _familiarSeleccionado = null;
-                        _familiar.clear();
-                        _edad.clear();
-                        _parentesco.clear();
-                      }
-                      _error = null;
-                    });
-                  }
-                },
-              ),
-              if (_tipo.requiereFamiliar) ...[
-                const SizedBox(height: 12),
-                ref.watch(medicosFamiliaresProvider(widget.persona.dni)).when(
-                      data: (familiares) {
-                        if (familiares.isEmpty) {
-                          return const _InfoBox(
-                            text:
-                                'No hay familiares registrados. Podes completar los datos manualmente.',
-                          );
-                        }
-                        return DropdownButtonFormField<MedicoFamiliar>(
-                          key: ValueKey(_familiarSeleccionado?.id),
-                          initialValue: _familiarSeleccionado,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Familiar registrado',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: [
-                            for (final familiar in familiares)
-                              DropdownMenuItem(
-                                value: familiar,
-                                child: Text(
-                                  familiar.label,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                          ],
-                          onChanged: _usarFamiliar,
-                        );
-                      },
-                      loading: () => const LinearProgressIndicator(),
-                      error: (e, _) => _InfoBox(
+        width: math.min(screen.width - 64, 1200),
+        height: math.min(screen.height - 180, 720),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 4,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Tooltip(
+                      message: 'DNI: ${widget.persona.dni}',
+                      child: Text(
+                        widget.persona.label,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    if (widget.persona.nombreCompleto.length > 65)
+                      const _InfoBox(
                         text:
-                            'No se pudieron cargar los familiares: ${cleanError(e)}',
+                            'El nombre se ajusta al espacio del formulario y puede recortarse. Revisa la vista previa antes de imprimir.',
+                      ),
+                    const SizedBox(height: 12),
+                    domicilioAsync.when(
+                      data: (domicilio) => _InfoBox(
+                        text: domicilio == null || domicilio.estaVacio
+                            ? 'Esta persona no tiene un domicilio vigente cargado.'
+                            : 'Se incluirá el domicilio vigente en el parte, excepto para consultorio.',
+                      ),
+                      loading: () => const LinearProgressIndicator(),
+                      error: (error, _) => _InfoBox(
+                        text:
+                            'No se pudo cargar el domicilio: ${cleanError(error)}',
                         error: true,
                       ),
                     ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _familiar,
-                  decoration: const InputDecoration(
-                    labelText: 'Apellido y nombre del familiar',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 130,
-                      child: TextField(
-                        controller: _edad,
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _aclaracionFechaTurno,
+                      maxLength: 90,
+                      minLines: 1,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Aclaración de fecha o turno (opcional)',
+                        hintText: 'Ej.: 7/10 t.t, t.n o t.m',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 12),
+                    InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Fecha de emision',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(DateFmt.ddmmyyyy(_fecha)),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<TipoParteMedico>(
+                      initialValue: _tipo,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de solicitud',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        for (final tipo in TipoParteMedico.values)
+                          DropdownMenuItem(
+                              value: tipo, child: Text(tipo.label)),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _tipo = value;
+                            if (!value.requiereFamiliar) {
+                              _familiarSeleccionado = null;
+                              _familiar.clear();
+                              _familiarDni.clear();
+                              _edad.clear();
+                              _parentesco.clear();
+                            } else {
+                              _esArt = false;
+                            }
+                            _error = null;
+                          });
+                        }
+                      },
+                    ),
+                    if (!_tipo.requiereFamiliar)
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _esArt,
+                        title: const Text('Es por ART'),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (value) {
+                          setState(() {
+                            _esArt = value ?? false;
+                          });
+                        },
+                      ),
+                    if (_tipo.requiereFamiliar) ...[
+                      const SizedBox(height: 12),
+                      ref
+                          .watch(medicosFamiliaresProvider(widget.persona.dni))
+                          .when(
+                            data: (familiares) {
+                              if (familiares.isEmpty) {
+                                return const _InfoBox(
+                                  text:
+                                      'No hay familiares registrados. Podes completar los datos manualmente.',
+                                );
+                              }
+                              return DropdownButtonFormField<MedicoFamiliar>(
+                                key: ValueKey(_familiarSeleccionado?.id),
+                                initialValue: _familiarSeleccionado,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Familiar registrado',
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: [
+                                  for (final familiar in familiares)
+                                    DropdownMenuItem(
+                                      value: familiar,
+                                      child: Text(
+                                        familiar.label,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                ],
+                                onChanged: _usarFamiliar,
+                              );
+                            },
+                            loading: () => const LinearProgressIndicator(),
+                            error: (e, _) => _InfoBox(
+                              text:
+                                  'No se pudieron cargar los familiares: ${cleanError(e)}',
+                              error: true,
+                            ),
+                          ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _familiar,
+                        decoration: const InputDecoration(
+                          labelText: 'Apellido y nombre del familiar',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _familiarDni,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Edad',
+                          labelText: 'DNI del familiar (opcional)',
                           border: OutlineInputBorder(),
                         ),
+                        onChanged: (_) => setState(() {}),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _parentesco,
-                        decoration: const InputDecoration(
-                          labelText: 'Parentesco, ej. hijo o hija',
-                          border: OutlineInputBorder(),
-                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _edad,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Edad',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 100,
+                            child: DropdownButtonFormField<bool>(
+                              initialValue: _edadEnMeses,
+                              decoration: const InputDecoration(
+                                labelText: 'Unidad',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: false,
+                                  child: Text('Años'),
+                                ),
+                                DropdownMenuItem(
+                                  value: true,
+                                  child: Text('Meses'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setState(() {
+                                  _edadEnMeses = value;
+                                  _edad.clear();
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _parentesco,
+                              decoration: const InputDecoration(
+                                labelText: 'Parentesco, ej. hijo o hija',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                        ],
                       ),
+                    ],
+                    const SizedBox(height: 12),
+                    const _InfoBox(
+                      text:
+                          'La impresion contiene solo los datos a superponer. Coloca el formulario preimpreso en la impresora.',
                     ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.tune),
+                      label: const Text('Ajustar impresión'),
+                      onPressed: domicilioAsync.isLoading
+                          ? null
+                          : () async {
+                              final saved = await showDialog<bool>(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => AjusteImpresionMedicaDialog(
+                                  parte: _crearParteVistaPrevia(
+                                      domicilioAsync.valueOrNull),
+                                ),
+                              );
+                              if (!context.mounted || saved != true) return;
+                              AppSnackBar.success(
+                                  context, 'Ajuste de impresión guardado');
+                            },
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      _InfoBox(text: _error!, error: true),
+                    ],
                   ],
                 ),
-              ],
-              const SizedBox(height: 12),
-              const _InfoBox(
-                text:
-                    'La impresion contiene solo los datos a superponer. Coloca el formulario preimpreso en la impresora.',
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 8),
-                _InfoBox(text: _error!, error: true),
-              ],
-            ],
-          ),
+            ),
+            const VerticalDivider(width: 24),
+            Expanded(
+              flex: 6,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [
+                    Expanded(
+                        child: Text(
+                      'Vista previa · ${_tipo.label}${_esArt ? ' · ART' : ''}',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    )),
+                    IconButton(
+                      tooltip: 'Ampliar vista preliminar',
+                      icon: const Icon(Icons.zoom_in),
+                      onPressed:
+                          domicilioAsync.isLoading || domicilioAsync.hasError
+                              ? null
+                              : () => mostrarVistaPreliminarAmpliada(
+                                  context,
+                                  _crearParteVistaPrevia(
+                                      domicilioAsync.valueOrNull)),
+                    ),
+                  ]),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: PdfPreview(
+                      // Conservar el estado mantiene la hoja visible mientras
+                      // el nuevo callback actualiza el PDF al editar los datos.
+                      build: (_) => ParteMedicoPrinter.generarVistaPrevia(
+                        _crearParteVistaPrevia(domicilioAsync.valueOrNull),
+                      ),
+                      initialPageFormat: PdfPageFormat.a4,
+                      pageFormats: const {'A4': PdfPageFormat.a4},
+                      canChangePageFormat: false,
+                      canChangeOrientation: false,
+                      canDebug: false,
+                      useActions: false,
+                      allowPrinting: false,
+                      allowSharing: false,
+                      maxPageWidth: 680,
+                      padding: const EdgeInsets.all(8),
+                      onError: (_, error) => Center(
+                        child: Text(
+                          'No se pudo generar la vista previa: $error',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: colors.error),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
       actions: [
@@ -579,14 +1034,30 @@ class _ParteMedicoDialogState extends ConsumerState<_ParteMedicoDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
+        OutlinedButton.icon(
+          onPressed: domicilioAsync.isLoading
+              ? null
+              : () => _submit(imprimirAhora: false),
+          icon: const Icon(Icons.playlist_add),
+          label: const Text('Cargar para imprimir después'),
+        ),
         FilledButton.icon(
-          onPressed: _submit,
-          icon: const Icon(Icons.save),
+          onPressed: domicilioAsync.isLoading ? null : _submit,
+          icon: const Icon(Icons.print),
           label: const Text('Registrar e imprimir'),
         ),
       ],
     );
   }
+}
+
+int? _mesesCumplidos(DateTime? fechaNacimiento, DateTime fechaReferencia) {
+  if (fechaNacimiento == null) return null;
+  var meses = (fechaReferencia.year - fechaNacimiento.year) * 12 +
+      fechaReferencia.month -
+      fechaNacimiento.month;
+  if (fechaReferencia.day < fechaNacimiento.day) meses--;
+  return meses;
 }
 
 class _InfoBox extends StatelessWidget {

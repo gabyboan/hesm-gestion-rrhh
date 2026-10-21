@@ -2,7 +2,7 @@ class MedicoPersona {
   final int dni;
   final String apellido;
   final String nombre;
-  final int legajo;
+  final int? legajo;
 
   const MedicoPersona({
     required this.dni,
@@ -15,14 +15,16 @@ class MedicoPersona {
       .where((part) => part.isNotEmpty)
       .join(', ');
 
-  String get label => '$nombreCompleto - Legajo $legajo';
+  String get legajoLabel => legajo == null ? 'Sin legajo' : 'Legajo $legajo';
+
+  String get label => '$nombreCompleto - $legajoLabel';
 
   factory MedicoPersona.fromJson(Map<String, dynamic> json) {
     return MedicoPersona(
       dni: _asInt(json['dni'], 'dni'),
       apellido: (json['apellido'] ?? '').toString().trim(),
       nombre: (json['nombre'] ?? '').toString().trim(),
-      legajo: _asInt(json['legajo'], 'legajo'),
+      legajo: json['legajo'] == null ? null : _asInt(json['legajo'], 'legajo'),
     );
   }
 
