@@ -1,5 +1,21 @@
 # Registro de cambios
 
+## Windows: demostración y empaquetado · 21 de octubre de 2026
+
+Se prepara una demo de consulta independiente del acceso normal, con personas,
+registros y partes ficticios. Funciona sin Supabase, bloquea HTTP y las
+escrituras, permite revisar PDF y reinicia su bandeja al salir. La calibración
+usa un prefijo propio en las preferencias locales.
+
+El script de empaquetado genera las dos variantes de Windows en carpetas
+nuevas, conserva los archivos nativos y produce manifiestos y hashes SHA-256.
+Incluye una guía para el entorno de prueba y el recorrido manual.
+
+Archivos: `tool/demo/main.dart`, `test/demo/windows_demo_test.dart`,
+`tool/build_windows_preview.ps1`, `docs/WINDOWS.md` y las referencias de README
+y validación. La integración original del PR #2 conserva su inventario de
+140 archivos, documentado por separado.
+
 ## Entrega para revisión · 21 de octubre de 2026
 
 Esta entrega reúne los cambios locales respecto de `d045999`. La fecha indica

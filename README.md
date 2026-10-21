@@ -65,6 +65,10 @@ conectarse a la base de personal. Podés recorrer los cinco módulos en la
 
 ## Desarrollo local
 
+Para probar la aplicación normal o una demo de consulta sin conexión, consultá
+la [entrega de Windows](docs/WINDOWS.md). Incluye instrucciones de compilación,
+empaquetado y un recorrido de validación manual con datos ficticios.
+
 ### Requisitos
 
 - Flutter 3.38.6 y Dart 3.10.7, las versiones verificadas en esta entrega.
@@ -112,7 +116,7 @@ al actualizar `main` y en cada pull request.
 
 - Aplicación de escritorio en desarrollo activo; no es un servicio público ni
   una demo conectada para visitantes.
-- Se verificaron 80 pruebas y el análisis estático localmente; el workflow está
+- Se verificaron 83 pruebas y el análisis estático localmente; el workflow está
   preparado para repetirlos en CI.
 - La instalación de migraciones y la alineación de impresión en una impresora
   física requieren validación en sus respectivos entornos.
@@ -125,6 +129,7 @@ al actualizar `main` y en cada pull request.
 | --- | --- |
 | [Registro de cambios](CHANGELOG.md) | Mejoras y comportamiento por módulo. |
 | [Entrega GitHub](docs/ENTREGA_GITHUB.md) | Commits realizados, inventario de publicación y migraciones recuperadas. |
+| [Windows](docs/WINDOWS.md) | Aplicación normal, demo de consulta y validación manual. |
 | [Cambios por archivo](docs/CAMBIOS_POR_ARCHIVO.md) | Inventario individual, dependencias y propuesta de commits. |
 | [Validación](docs/VALIDACION.md) | Pruebas Flutter, contratos SQL y límites de despliegue. |
 | [Preparación para GitHub](docs/PREPARACION_GITHUB.md) | Privacidad y estado de publicación. |

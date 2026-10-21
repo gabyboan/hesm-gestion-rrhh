@@ -1,5 +1,13 @@
 # Validación de la entrega
 
+El PR #2 se integró en `main` el 21 de octubre de 2026, conservando los siete
+commits revisados. La aplicación normal también compiló en Windows x64.
+La etapa posterior de demo y empaquetado se describe en [Windows](WINDOWS.md).
+Sus tres pruebas adicionales elevan el conjunto a **83 pruebas aprobadas**:
+recorrido y bloqueo de escrituras, reinicio con limpieza de bandeja y
+preferencias, y bloqueo de clientes HTTP. Los resultados de 80 pruebas que se
+detallan a continuación corresponden a la entrega funcional original.
+
 Actualización: 21 de octubre de 2026. Base de comparación local: `d045999`.
 Resultados del conjunto funcional preparado en la rama de entrega. Esta etapa incorporó correcciones de autoría de Horas, contrato de
 domicilio con torre, aviso de nombres largos y pruebas de integración locales.
