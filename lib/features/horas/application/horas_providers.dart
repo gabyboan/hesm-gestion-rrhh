@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
+import '../../../core/utils/search_query.dart';
 import '../../../core/utils/date_fmt.dart';
 import '../data/horas_repository.dart';
 import '../domain/hora_registro.dart';
@@ -144,10 +145,6 @@ final ordenAscProvider = StateProvider<bool>((ref) => true);
 
 String _personaKeyFromRegistro(HoraRegistro r) => '${r.dni}|${r.carreraId}';
 
-bool _containsCI(String source, String query) {
-  return source.toLowerCase().contains(query.toLowerCase());
-}
-
 int _cmpInt(int a, int b) => a.compareTo(b);
 
 int _cmpStr(String a, String b) {
@@ -169,7 +166,7 @@ final registrosFiltradosProvider =
   final registrosAsync = ref.watch(registrosPeriodoProvider);
   final byKey = ref.watch(personasByKeyProvider);
 
-  final q = ref.watch(searchProvider).trim().toLowerCase();
+  final query = SearchQuery(ref.watch(searchProvider));
   final orden = ref.watch(ordenProvider);
   final asc = ref.watch(ordenAscProvider);
 
@@ -207,13 +204,14 @@ final registrosFiltradosProvider =
       final apellido = p?.apellido ?? '';
       final nombre = p?.nombre ?? '';
 
-      if (q.isNotEmpty) {
-        final matches = r.dni.toString().contains(q) ||
-            _containsCI(apellido, q) ||
-            _containsCI(nombre, q) ||
-            r.carreraId.toString().contains(q);
-
-        if (!matches) continue;
+      if (!query.matches([
+        r.dni,
+        apellido,
+        nombre,
+        r.carreraId,
+        p?.carrera,
+      ])) {
+        continue;
       }
 
       out.add(r);

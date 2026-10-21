@@ -1,3 +1,4 @@
+import '../../../core/widgets/app_search_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -325,46 +326,16 @@ class FrancosPage extends ConsumerWidget {
   }
 }
 
-class _FrancosSearchBar extends ConsumerStatefulWidget {
+class _FrancosSearchBar extends ConsumerWidget {
   const _FrancosSearchBar();
 
   @override
-  ConsumerState<_FrancosSearchBar> createState() => _FrancosSearchBarState();
-}
-
-class _FrancosSearchBarState extends ConsumerState<_FrancosSearchBar> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      textInputAction: TextInputAction.search,
-      decoration: InputDecoration(
-        labelText: 'Buscar por DNI, apellido, nombre o carrera',
-        border: const OutlineInputBorder(),
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: _controller.text.isEmpty
-            ? null
-            : IconButton(
-                tooltip: 'Limpiar',
-                onPressed: () {
-                  _controller.clear();
-                  ref.read(francosSearchProvider.notifier).state = '';
-                  setState(() {});
-                },
-                icon: const Icon(Icons.close),
-              ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AppSearchField(
+      labelText: 'Buscar por DNI, apellido, nombre o carrera',
+      initialValue: ref.read(francosSearchProvider),
       onChanged: (value) {
         ref.read(francosSearchProvider.notifier).state = value;
-        setState(() {});
       },
     );
   }

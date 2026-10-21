@@ -15,6 +15,9 @@
 /// - minutos_aplicados
 /// - minutos_excedidos
 /// - excedido
+/// - usuario_carga
+/// - usuario_carga_nombre
+/// - usuario_carga_apellido
 class HoraRegistro {
   final int id;
   final int dni;
@@ -26,6 +29,10 @@ class HoraRegistro {
   final int minutosAplicados;
   final int minutosExcedidos;
   final bool excedido;
+  final DateTime? createdAt;
+  final String usuarioCarga;
+  final String usuarioCargaNombre;
+  final String usuarioCargaApellido;
 
   const HoraRegistro({
     required this.id,
@@ -38,7 +45,19 @@ class HoraRegistro {
     required this.minutosAplicados,
     required this.minutosExcedidos,
     required this.excedido,
+    this.createdAt,
+    this.usuarioCarga = '',
+    this.usuarioCargaNombre = '',
+    this.usuarioCargaApellido = '',
   });
+
+  String get usuarioCargaLabel {
+    final nombre = [usuarioCargaNombre, usuarioCargaApellido]
+        .where((part) => part.trim().isNotEmpty)
+        .join(' ');
+
+    return nombre.isEmpty ? usuarioCarga : nombre;
+  }
 
   /// Clave compuesta usada para asociar el registro con una persona.
   ///
@@ -68,6 +87,12 @@ class HoraRegistro {
       minutosAplicados: _asInt(json['minutos_aplicados'], fallback: 0),
       minutosExcedidos: _asInt(json['minutos_excedidos'], fallback: 0),
       excedido: _asBool(json['excedido']),
+      createdAt: json.containsKey('created_at') && json['created_at'] != null
+          ? _asDateTime(json['created_at'], field: 'created_at')
+          : null,
+      usuarioCarga: _asString(json['usuario_carga']),
+      usuarioCargaNombre: _asString(json['usuario_carga_nombre']),
+      usuarioCargaApellido: _asString(json['usuario_carga_apellido']),
     );
   }
 
@@ -83,6 +108,10 @@ class HoraRegistro {
       'minutos_aplicados': minutosAplicados,
       'minutos_excedidos': minutosExcedidos,
       'excedido': excedido,
+      'created_at': createdAt?.toIso8601String(),
+      'usuario_carga': usuarioCarga,
+      'usuario_carga_nombre': usuarioCargaNombre,
+      'usuario_carga_apellido': usuarioCargaApellido,
     };
   }
 
@@ -98,6 +127,10 @@ class HoraRegistro {
     int? minutosAplicados,
     int? minutosExcedidos,
     bool? excedido,
+    DateTime? createdAt,
+    String? usuarioCarga,
+    String? usuarioCargaNombre,
+    String? usuarioCargaApellido,
   }) {
     return HoraRegistro(
       id: id ?? this.id,
@@ -110,6 +143,10 @@ class HoraRegistro {
       minutosAplicados: minutosAplicados ?? this.minutosAplicados,
       minutosExcedidos: minutosExcedidos ?? this.minutosExcedidos,
       excedido: excedido ?? this.excedido,
+      createdAt: createdAt ?? this.createdAt,
+      usuarioCarga: usuarioCarga ?? this.usuarioCarga,
+      usuarioCargaNombre: usuarioCargaNombre ?? this.usuarioCargaNombre,
+      usuarioCargaApellido: usuarioCargaApellido ?? this.usuarioCargaApellido,
     );
   }
 
@@ -127,6 +164,10 @@ class HoraRegistro {
         'minutosExcedidos: $minutosExcedidos, '
         'excedido: $excedido'
         ')';
+  }
+
+  static String _asString(dynamic value) {
+    return (value ?? '').toString().trim();
   }
 
   static int _asInt(
@@ -180,12 +221,20 @@ class HoraRegistro {
     dynamic value, {
     required String field,
   }) {
+    final parsed = _asDateTime(value, field: field);
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  static DateTime _asDateTime(
+    dynamic value, {
+    required String field,
+  }) {
     if (value == null) {
       throw FormatException('Campo fecha requerido ausente: $field');
     }
 
     if (value is DateTime) {
-      return DateTime(value.year, value.month, value.day);
+      return value;
     }
 
     final parsed = DateTime.tryParse(value.toString());
@@ -193,7 +242,7 @@ class HoraRegistro {
       throw FormatException('No se pudo convertir a DateTime el campo $field');
     }
 
-    return DateTime(parsed.year, parsed.month, parsed.day);
+    return parsed;
   }
 
   static String _toYmd(DateTime d) {

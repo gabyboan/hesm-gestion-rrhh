@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/utils/date_fmt.dart';
+import '../../../../../core/utils/search_query.dart';
+import '../../../../../core/widgets/app_search_field.dart';
 import '../../../domain/hora_registro.dart';
 import '../../../domain/persona.dart';
 
@@ -90,6 +93,7 @@ class PersonaSelectorField extends StatelessWidget {
 
 class ResumenHorasCard extends StatelessWidget {
   final Persona? persona;
+  final bool esElegibleHorasOficiales;
   final List<HoraRegistro> rows;
   final ({
     int aplicados,
@@ -101,6 +105,7 @@ class ResumenHorasCard extends StatelessWidget {
   const ResumenHorasCard({
     super.key,
     required this.persona,
+    required this.esElegibleHorasOficiales,
     required this.rows,
     required this.calcParticular,
     required this.hhmmFromMinutes,
@@ -112,9 +117,7 @@ class ResumenHorasCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final esCarreraOficial = persona?.carreraId == 2;
-
-    if (esCarreraOficial) {
+    if (esElegibleHorasOficiales) {
       return _SummaryContainer(
         children: [
           Text(
@@ -420,11 +423,23 @@ class _RegistroTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tipo = registro.tipoNormalizado;
+    final cargadoPor = registro.usuarioCargaLabel;
+    final subtitleParts = <String>['Duración: $duracion$extra'];
+    if (cargadoPor.isNotEmpty) {
+      final fechaCarga = registro.createdAt != null
+          ? DateFormat('dd/MM/yyyy HH:mm').format(registro.createdAt!)
+          : null;
+      subtitleParts.add(
+        fechaCarga == null
+            ? 'Cargado por $cargadoPor'
+            : 'Cargado por $cargadoPor el $fechaCarga',
+      );
+    }
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       title: Text('${DateFmt.ddmmyyyy(registro.fecha)} - $tipo'),
-      subtitle: Text('Duración: $duracion$extra'),
+      subtitle: Text(subtitleParts.join(' • ')),
       trailing: IconButton(
         tooltip: 'Borrar',
         onPressed: borrarLoading ? null : onDelete,
@@ -435,36 +450,20 @@ class _RegistroTile extends StatelessWidget {
 }
 
 class _PersonaPickerSheetState extends State<PersonaPickerSheet> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  bool _matches(Persona persona, String query) {
-    final q = query.trim().toLowerCase();
-    if (q.isEmpty) return true;
-
-    final values = [
-      persona.dni.toString(),
-      persona.apellido,
-      persona.nombre,
-      persona.carrera,
-      persona.carreraId.toString(),
-      persona.label,
-      persona.key,
-    ];
-
-    return values.any((value) => value.toLowerCase().contains(q));
-  }
+  String _search = '';
 
   @override
   Widget build(BuildContext context) {
-    final filtered = widget.items.where((p) {
-      return _matches(p, _controller.text);
-    }).toList();
+    final query = SearchQuery(_search);
+    final filtered = widget.items
+        .where((p) => query.matches([
+              p.dni,
+              p.apellido,
+              p.nombre,
+              p.carrera,
+              p.carreraId,
+            ]))
+        .toList();
 
     return DraggableScrollableSheet(
       expand: false,
@@ -481,26 +480,11 @@ class _PersonaPickerSheetState extends State<PersonaPickerSheet> {
           ),
           child: Column(
             children: [
-              TextField(
-                controller: _controller,
+              AppSearchField(
+                labelText: 'Buscar por DNI, apellido, nombre o carrera',
                 autofocus: true,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  labelText: 'Buscar por DNI, apellido, nombre o carrera',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _controller.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Limpiar',
-                          onPressed: () {
-                            _controller.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.close),
-                        ),
-                ),
-                onChanged: (_) => setState(() {}),
+                debounce: Duration.zero,
+                onChanged: (value) => setState(() => _search = value),
               ),
               const SizedBox(height: 12),
               Expanded(

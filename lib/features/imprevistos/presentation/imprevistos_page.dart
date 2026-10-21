@@ -1,3 +1,4 @@
+import '../../../core/widgets/app_search_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -319,14 +320,6 @@ class _ImprevistosToolbar extends ConsumerStatefulWidget {
 }
 
 class _ImprevistosToolbarState extends ConsumerState<_ImprevistosToolbar> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final anio = ref.watch(imprevistosAnioProvider);
@@ -363,28 +356,11 @@ class _ImprevistosToolbarState extends ConsumerState<_ImprevistosToolbar> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: TextField(
-            controller: _controller,
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              labelText: 'Buscar por DNI, apellido, nombre o carrera',
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _controller.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Limpiar',
-                      onPressed: () {
-                        _controller.clear();
-                        ref.read(imprevistosSearchProvider.notifier).state = '';
-                        setState(() {});
-                      },
-                      icon: const Icon(Icons.close),
-                    ),
-            ),
+          child: AppSearchField(
+            labelText: 'Buscar por DNI, apellido, nombre o carrera',
+            initialValue: ref.read(imprevistosSearchProvider),
             onChanged: (value) {
               ref.read(imprevistosSearchProvider.notifier).state = value;
-              setState(() {});
             },
           ),
         ),

@@ -19,7 +19,8 @@ class HorasRepository {
   HorasRepository(this._sb);
 
   static const _rpcListadoHorasMes = 'rpc_listado_horas_mes';
-  static const _rpcListadoHorasOficiales = 'rpc_listado_horas_oficiales';
+  static const _rpcListadoHorasOficiales =
+      'rpc_listado_horas_oficiales_activas';
   static const _rpcHorasRegistrosMes = 'rpc_horas_registros_mes';
   static const _rpcHorasRegistrosPeriodo = 'rpc_horas_registros_periodo';
   static const _rpcCargarHora = 'rpc_cargar_hora';
@@ -38,8 +39,9 @@ class HorasRepository {
 
   /// Listado de personas disponibles para horas oficiales.
   ///
-  /// La selección exacta de personas depende de lo que resuelva la RPC
-  /// `rpc_listado_horas_oficiales` en Postgres.
+  /// Incluye a toda persona activa con una carrera asignada. La exclusión de
+  /// bajas (jubilación, renuncia, fallecimiento, etc.) se resuelve en la RPC
+  /// `rpc_listado_horas_oficiales_activas` en Postgres.
   Future<List<Persona>> listadoHorasOficiales() async {
     final res = await _sb.rpc(_rpcListadoHorasOficiales);
     final rows = _asRows(res);
@@ -65,7 +67,7 @@ class HorasRepository {
       },
     );
 
-    final rows = _asRows(res);
+    final rows = await _completarUsuarioCarga(_asRows(res));
 
     return rows.map(HoraRegistro.fromJson).toList();
   }
@@ -101,7 +103,7 @@ class HorasRepository {
       },
     );
 
-    final rows = _asRows(res);
+    final rows = await _completarUsuarioCarga(_asRows(res));
 
     return rows.map(HoraRegistro.fromJson).toList();
   }
@@ -161,6 +163,90 @@ class HorasRepository {
     );
 
     return res == true;
+  }
+
+  Future<List<Map<String, dynamic>>> _completarUsuarioCarga(
+    List<Map<String, dynamic>> rows,
+  ) async {
+    final ids = <String>{};
+    for (final row in rows) {
+      if ((row['usuario_carga_nombre'] ?? '').toString().trim().isNotEmpty &&
+          (row['usuario_carga_apellido'] ?? '').toString().trim().isNotEmpty) {
+        continue;
+      }
+      final key = _normalizarClave(row['usuario_carga']);
+      if (key.isNotEmpty) ids.add(key);
+    }
+
+    if (ids.isEmpty) return rows;
+
+    final lookup = <String, ({String nombre, String apellido})>{};
+    final List<Map<String, dynamic>> profileRows;
+    try {
+      final values = ids.join(',');
+      profileRows = _asRows(
+        await _sb
+            .from('usuarios')
+            .select('id, auth_user_id, nombre, apellido')
+            .or('id.in.($values),auth_user_id.in.($values)'),
+      );
+    } on PostgrestException catch (error) {
+      // La autoria es complementaria: un rol sin acceso a perfiles debe
+      // conservar los registros que la RPC ya le permitio consultar.
+      if (error.code != '42501') rethrow;
+      return rows;
+    }
+
+    for (final profile in profileRows) {
+      final nombre = (profile['nombre'] ?? '').toString().trim();
+      final apellido = (profile['apellido'] ?? '').toString().trim();
+      final identityKeys = <String>{
+        _normalizarClave(profile['auth_user_id']),
+        _normalizarClave(profile['id']),
+      }..removeWhere((key) => key.isEmpty);
+
+      for (final key in identityKeys) {
+        lookup[key] = (nombre: nombre, apellido: apellido);
+      }
+    }
+
+    for (final row in rows) {
+      final raw = row['usuario_carga'];
+      final key = _normalizarClave(raw);
+      if (key.isEmpty) continue;
+
+      final user = lookup[key];
+      if (user == null) continue;
+
+      if ((row['usuario_carga_nombre'] ?? '').toString().trim().isEmpty) {
+        row['usuario_carga_nombre'] = user.nombre;
+      }
+      if ((row['usuario_carga_apellido'] ?? '').toString().trim().isEmpty) {
+        row['usuario_carga_apellido'] = user.apellido;
+      }
+    }
+
+    return rows;
+  }
+
+  static String _normalizarClave(dynamic value) {
+    var text = (value ?? '').toString().trim().toLowerCase();
+    if (text.isEmpty) return '';
+
+    text = text
+        .replaceAll('{', '')
+        .replaceAll('}', '')
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .replaceFirst(RegExp(r'^uuid\s*'), '')
+        .replaceAll('-', '')
+        .trim();
+
+    // Solo UUID canonicos en el filtro PostgREST; no interpolar texto arbitrario.
+    if (!RegExp(r'^[0-9a-f]{32}$').hasMatch(text)) return '';
+    return '${text.substring(0, 8)}-${text.substring(8, 12)}-'
+        '${text.substring(12, 16)}-${text.substring(16, 20)}-'
+        '${text.substring(20)}';
   }
 
   /// Convierte una respuesta RPC de Supabase en una lista de mapas tipados.

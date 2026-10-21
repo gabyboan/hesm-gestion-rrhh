@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/utils/date_fmt.dart';
+import '../../../../../core/utils/search_query.dart';
+import '../../../../../core/widgets/app_search_field.dart';
 import '../../../domain/persona.dart';
 import '../../../domain/tipo_hora.dart';
 import 'pick_duracion_30.dart';
@@ -247,35 +249,20 @@ class CargarInfoBox extends StatelessWidget {
 }
 
 class _CargarPersonaPickerSheetState extends State<CargarPersonaPickerSheet> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  bool _matches(Persona p, String query) {
-    final q = query.trim().toLowerCase();
-    if (q.isEmpty) return true;
-
-    final values = [
-      p.dni.toString(),
-      p.apellido,
-      p.nombre,
-      p.carrera,
-      p.label,
-      p.key,
-    ];
-
-    return values.any((value) => value.toLowerCase().contains(q));
-  }
+  String _search = '';
 
   @override
   Widget build(BuildContext context) {
-    final filtered = widget.items.where((p) {
-      return _matches(p, _controller.text);
-    }).toList();
+    final query = SearchQuery(_search);
+    final filtered = widget.items
+        .where((p) => query.matches([
+              p.dni,
+              p.apellido,
+              p.nombre,
+              p.carrera,
+              p.carreraId,
+            ]))
+        .toList();
 
     return DraggableScrollableSheet(
       expand: false,
@@ -292,26 +279,11 @@ class _CargarPersonaPickerSheetState extends State<CargarPersonaPickerSheet> {
           ),
           child: Column(
             children: [
-              TextField(
-                controller: _controller,
+              AppSearchField(
+                labelText: 'Buscar por DNI, apellido, nombre o carrera',
                 autofocus: true,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  labelText: 'Buscar por DNI, apellido, nombre o carrera',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _controller.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Limpiar',
-                          onPressed: () {
-                            _controller.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.close),
-                        ),
-                ),
-                onChanged: (_) => setState(() {}),
+                debounce: Duration.zero,
+                onChanged: (value) => setState(() => _search = value),
               ),
               const SizedBox(height: 12),
               Expanded(

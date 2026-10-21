@@ -284,6 +284,10 @@ class VerHorasPage extends ConsumerWidget {
     );
 
     final persona = ref.watch(selectedPersonaProvider);
+    final personasOficiales =
+        listadoOficiales.valueOrNull ?? const <Persona>[];
+    final esElegibleHorasOficiales = persona != null &&
+        personasOficiales.any((oficial) => oficial.key == persona.key);
     final registrosAsync = ref.watch(registrosProvider);
     final borrarState = ref.watch(borrarHoraControllerProvider);
 
@@ -352,6 +356,7 @@ class VerHorasPage extends ConsumerWidget {
                   children: [
                     ResumenHorasCard(
                       persona: persona,
+                      esElegibleHorasOficiales: esElegibleHorasOficiales,
                       rows: rows,
                       calcParticular: calcParticular,
                       hhmmFromMinutes: _hhmmFromMinutes,

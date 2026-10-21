@@ -1,5 +1,4 @@
-import 'dart:async';
-
+import '../../../core/widgets/app_search_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,7 +29,7 @@ class _SuplenciasPageState extends ConsumerState<SuplenciasPage> {
 
   final horizontal = ScrollController();
   final vertical = ScrollController();
-  Timer? debounce;
+  int _requestId = 0;
   List<Map<String, dynamic>> filas = const [];
   String buscar = '';
   String orden = 'id';
@@ -41,14 +40,14 @@ class _SuplenciasPageState extends ConsumerState<SuplenciasPage> {
 
   @override
   void dispose() {
-    debounce?.cancel();
     horizontal.dispose();
     vertical.dispose();
     super.dispose();
   }
 
   Future<void> cargar() async {
-    if (cargando) return;
+    if (!mounted) return;
+    final requestId = ++_requestId;
     setState(() {
       cargando = true;
       error = null;
@@ -59,20 +58,12 @@ class _SuplenciasPageState extends ConsumerState<SuplenciasPage> {
             ordenarPor: orden,
             ascendente: ascendente,
           );
-      if (mounted) setState(() => filas = resultado);
+      if (mounted && requestId == _requestId) setState(() => filas = resultado);
     } catch (e) {
-      if (mounted) setState(() => error = e);
+      if (mounted && requestId == _requestId) setState(() => error = e);
     } finally {
-      if (mounted) setState(() => cargando = false);
+      if (mounted && requestId == _requestId) setState(() => cargando = false);
     }
-  }
-
-  void buscarLuego(String value) {
-    debounce?.cancel();
-    debounce = Timer(const Duration(milliseconds: 350), () {
-      buscar = value.trim();
-      cargar();
-    });
   }
 
   @override
@@ -95,13 +86,13 @@ class _SuplenciasPageState extends ConsumerState<SuplenciasPage> {
                 padding: const EdgeInsets.all(12),
                 child: Row(children: [
                   Expanded(
-                      child: TextField(
-                    onChanged: buscarLuego,
-                    decoration: const InputDecoration(
-                      labelText: 'Buscar por DNI, apellido, servicio o motivo',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
+                      child: AppSearchField(
+                    labelText:
+                        'Buscar por DNI, apellido, nombre, servicio o motivo',
+                    onChanged: (value) {
+                      buscar = value;
+                      cargar();
+                    },
                   )),
                   const SizedBox(width: 12),
                   DropdownButton<String>(
