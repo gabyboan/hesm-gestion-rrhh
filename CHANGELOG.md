@@ -1,5 +1,13 @@
 # Registro de cambios
 
+## Cierre de privacidad histórica · 22 de octubre de 2026
+
+El responsable del proyecto confirmó que el tratamiento de la referencia del
+PR #1 y las vistas almacenadas ya está resuelto. Se actualizan README y los
+documentos de privacidad, preparación, validación, entrega, Windows e inventario
+para retirar ese pendiente. Se conservan las comprobaciones históricas y se
+registra por separado la confirmación de cierre.
+
 ## Integración y validación manual · 21 de octubre de 2026
 
 Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) y
@@ -10,8 +18,9 @@ Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) y
 El responsable del proyecto confirmó que las pruebas manuales de sesión,
 permisos e impresora fueron realizadas y aprobadas. Se actualizan README y
 los documentos de Windows, validación, preparación y entrega para registrar
-ese resultado. La confirmación no supone un despliegue de migraciones ni
-completa el trámite pendiente por las capturas históricas del PR #1.
+ese resultado. Esa confirmación no supuso un despliegue de migraciones ni
+incluyó el tratamiento de las capturas históricas del PR #1, cuyo cierre se
+confirmó el 22 de octubre de 2026.
 
 ## Windows: demostración y empaquetado · 21 de octubre de 2026
 
@@ -195,7 +204,8 @@ Cuatro scripts con datos nominales quedan locales. Dos capturas con
 identificadores se retiran de la galería y se conservan en una carpeta ignorada.
 Se revisaron las imágenes de las ramas públicas y del PR #1. La limpieza de
 ambas ramas se publicó por separado como `ecb7bfd` y se verificó mediante una
-descarga nueva. El PR y las vistas almacenadas requieren tratamiento adicional.
+descarga nueva. El tratamiento adicional del PR y las vistas almacenadas quedó
+resuelto según confirmación del responsable del 22 de octubre de 2026.
 El detalle está en la
 [revisión de privacidad](docs/REVISION_PRIVACIDAD.md).
 

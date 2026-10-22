@@ -108,7 +108,7 @@ completas: buscadores, listados, encabezados, mensajes y documentos generados.
 - [x] Revisar imágenes y SQL de las ramas públicas y la referencia del PR #1.
 - [x] Preparar una propuesta aislada de limpieza basada en las referencias reales del servidor, conservando el panel genérico.
 - [x] Aplicar la limpieza autorizada a ambas ramas públicas y verificar el resultado mediante una descarga nueva desde GitHub.
-- [ ] Gestionar con GitHub la referencia del PR #1 y las vistas almacenadas antes de declarar eliminado el material de todas las referencias públicas.
+- [x] Registrar como resuelto el tratamiento de la referencia del PR #1 y las vistas almacenadas, según confirmación del responsable del 22 de octubre de 2026.
 - [x] Ejecutar `flutter analyze --fatal-infos` y las 83 pruebas Flutter, incluidas las tres de la demo; registrar resultados y límites. CI de `main` aprobado.
 - [x] Ejecutar 38 scripts públicos y pruebas de permisos/contratos en PostgreSQL 16.11 aislado, con datos ficticios.
 - [x] Registrar las pruebas manuales de sesión, permisos e impresora como aprobadas, según la confirmación del responsable del proyecto del 21 de octubre de 2026.

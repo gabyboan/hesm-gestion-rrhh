@@ -121,6 +121,9 @@ al actualizar `main` y en cada pull request.
   `main`, con análisis estático y 83 pruebas aprobados también en CI.
 - Las pruebas manuales de sesión, permisos e impresora fueron aprobadas,
   según confirmación del responsable del proyecto del 21 de octubre de 2026.
+- La revisión de privacidad histórica está cerrada, según confirmación del
+  responsable del 22 de octubre de 2026. El registro está en la
+  [revisión de privacidad](docs/REVISION_PRIVACIDAD.md).
 - Un despliegue de migraciones requiere revisar el esquema y el historial
   aplicado del entorno de destino.
 - Las capturas y ejemplos destinados al portfolio deben usar exclusivamente
@@ -136,7 +139,7 @@ al actualizar `main` y en cada pull request.
 | [Cambios por archivo](docs/CAMBIOS_POR_ARCHIVO.md) | Inventario individual, dependencias y propuesta de commits. |
 | [Validación](docs/VALIDACION.md) | Pruebas Flutter, contratos SQL y límites de despliegue. |
 | [Preparación para GitHub](docs/PREPARACION_GITHUB.md) | Privacidad y estado de publicación. |
-| [Revisión de privacidad](docs/REVISION_PRIVACIDAD.md) | Historial público, capturas, escaneos y propuesta de limpieza. |
+| [Revisión de privacidad](docs/REVISION_PRIVACIDAD.md) | Historial público, escaneos, limpieza y cierre confirmado. |
 
 ---
 

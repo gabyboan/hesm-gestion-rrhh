@@ -162,8 +162,9 @@ pruebas ejecutadas y están detallados en el informe de validación.
 
 ## Orden propuesto inicialmente para los commits
 
-Estos son grupos concretos para preparar después de resolver los pendientes
-de privacidad y de esquema. Los commits funcionales se prepararon en una copia aislada. El orden usado
+Estos grupos se propusieron antes de la entrega, sujetos a la revisión de
+privacidad y de esquema. El cierre de privacidad quedó confirmado el 22 de
+octubre de 2026. Los commits funcionales se prepararon en una copia aislada. El orden usado
 y el inventario contra `ecb7bfd` están en [Entrega GitHub](ENTREGA_GITHUB.md). No hay que mezclar
 cargas nominales con los SQL públicos ni publicar checkpoints locales.
 
@@ -192,7 +193,7 @@ funcional; no se debe fusionar sobre ella la historia local anterior.
 | Archivo | Estado | Cambio y verificación |
 | --- | --- | --- |
 | [.github/workflows/quality.yml](../.github/workflows/quality.yml) | Nuevo | Configura análisis con infos fatales y pruebas en push/PR a main, permisos de lectura y uso del lockfile. Usa Flutter 3.38.6, la versión validada localmente. |
-| [docs/REVISION_PRIVACIDAD.md](REVISION_PRIVACIDAD.md) | Nuevo | Documenta escaneos, limpieza publicada de ambas ramas, verificación independiente y tratamiento pendiente del PR #1. |
+| [docs/REVISION_PRIVACIDAD.md](REVISION_PRIVACIDAD.md) | Nuevo | Documenta escaneos, limpieza publicada de ambas ramas, verificación independiente y cierre del tratamiento del PR #1 confirmado el 22 de octubre de 2026. |
 | [docs/branding/hesm-logo.svg](branding/hesm-logo.svg) | Nuevo | Recurso vectorial de identidad HESM; no contiene registros de personal. |
 | [lib/main.dart](../lib/main.dart) | Modificado | Muestra el splash de identidad durante la inicialización, con duración mínima de cinco segundos cuando el inicio es correcto. |
 | [lib/core/ui/app_snackbar.dart](../lib/core/ui/app_snackbar.dart) | Modificado | Limita la opacidad animada a 0–1 para evitar valores fuera de rango durante la curva elástica. |

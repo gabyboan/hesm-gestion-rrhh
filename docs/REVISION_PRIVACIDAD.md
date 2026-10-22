@@ -1,10 +1,14 @@
 # Revisión de privacidad y limpieza del historial
 
-Revisión actualizada: 21 de octubre de 2026. Estado: **limpieza de ambas ramas
-publicada y verificada**. La referencia del PR #1 y las vistas almacenadas
-siguen pendientes de tratamiento con GitHub.
+Revisión actualizada: 22 de octubre de 2026. Estado: **resuelto**.
+La limpieza de ambas ramas está publicada y verificada. El responsable del
+proyecto confirmó el 22 de octubre de 2026 que el tratamiento de la referencia
+del PR #1 y las vistas almacenadas también quedó resuelto.
 
 ## Qué se comprobó
+
+Las comprobaciones siguientes corresponden a la revisión del 21 de octubre de
+2026. El cierre posterior se registra en «PR, cachés y copias».
 
 | Ámbito | Resultado | Límite |
 | --- | --- | --- |
@@ -13,8 +17,8 @@ siguen pendientes de tratamiento con GitHub.
 | Ramas públicas de GitHub | `main` y `agent/suplencias-permisos-mockups` se actualizaron de la historia revisada en `b65bb9a` a `ecb7bfd`. Una descarga nueva confirmó ambos destinos, 24 commits y Gitleaks sin hallazgos. | El HEAD local `d045999` conserva la historia anterior; no debe fusionarse sobre las ramas saneadas. |
 | SQL en esas ramas remotas | No se encontraron archivos SQL en los objetos alcanzables desde esas dos ramas revisadas. | El PR conserva su propia historia, que se inspeccionó aparte. La entrega incorpora 62 migraciones públicas revisadas para publicación; las cuatro cargas nominales siguen excluidas. |
 | Imágenes históricas | Se detectaron diez versiones en la historia anterior. Tras publicar la limpieza, la descarga nueva conserva únicamente la versión del panel genérico revisado. | La comprobación se refiere a la historia alcanzable desde las dos ramas; PR, cachés, forks y clones pueden conservar objetos anteriores. |
-| PR #1 | Está fusionado y conserva una referencia propia: 21 commits, dos versiones de capturas y una con patrones de documentos; Gitleaks sin hallazgos. | Actualizar las ramas no elimina esa referencia administrada por GitHub. |
-| Historia saneada publicada | Nueve versiones históricas de imágenes dejaron de ser alcanzables desde las dos ramas públicas actualizadas. El panel genérico se conserva. | La referencia del PR #1 sigue presente; la publicación no elimina por sí sola vistas almacenadas ni copias ajenas. |
+| PR #1 | En la revisión inicial estaba fusionado y conservaba una referencia propia: 21 commits, dos versiones de capturas y una con patrones de documentos; Gitleaks sin hallazgos. | El tratamiento adicional identificado entonces quedó resuelto según confirmación del responsable del 22 de octubre de 2026. |
+| Historia saneada publicada | Nueve versiones históricas de imágenes dejaron de ser alcanzables desde las dos ramas públicas actualizadas. El panel genérico se conserva. | Esa comprobación abarcó las ramas revisadas. El cierre del tratamiento del PR y las vistas almacenadas se registra por separado. |
 
 Gitleaks se descargó de su distribución oficial y se verificó el SHA-256 contra
 los checksums publicados. Todos los escaneos se ejecutaron con redacción total
@@ -62,19 +66,22 @@ reescribió su historia ni se agregaron archivos al staging.
 
 ## PR, cachés y copias
 
-La referencia del PR #1 sigue conservando una captura con identificadores.
-Tras actualizar las ramas, se comprobó que la referencia aún existe. Corresponde
-solicitar a GitHub la eliminación
-de las referencias y vistas almacenadas que mantengan los datos. Se dejó un
-borrador local para esa solicitud en
-`build/publication-validation/github-support-draft.md`; no se envió ningún
-mensaje ni solicitud externa.
+**Cierre confirmado el 22 de octubre de 2026:** el responsable del proyecto
+informó que el tratamiento de la referencia del PR #1 y las vistas almacenadas
+ya está resuelto. Este punto deja de figurar como pendiente de publicación.
+
+La revisión inicial había identificado una captura con identificadores en esa
+referencia y había preparado un borrador local en
+`build/publication-validation/github-support-draft.md`. Ese registro describe
+la situación anterior al cierre, no el estado actual.
 
 Los forks y clones ajenos pueden conservar la historia anterior. La guía de
 [eliminación de información sensible de GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository)
 explica estas limitaciones y la intervención de soporte para referencias de
-PR y cachés. Por eso esta revisión no declara eliminado el material de todas
-las copias públicas.
+PR y cachés. El cierre informado se refiere al tratamiento en GitHub; no
+certifica la eliminación de copias ajenas. Esta actualización registra la
+confirmación del responsable y no representa una nueva ejecución de los
+escaneos históricos.
 
 ## Continuación de la entrega funcional
 
