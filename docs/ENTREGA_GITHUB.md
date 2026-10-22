@@ -106,7 +106,7 @@ descartaron para que la revisión muestre los cambios de contenido.
 - Antes de desplegar: contrastar esquema, historial de migraciones y roles reales.
 - Pruebas manuales de sesión, permisos e impresora aprobadas según la
   confirmación del responsable del proyecto del 21 de octubre de 2026.
-- Gestionar con GitHub la referencia antigua del PR #1 y sus vistas almacenadas.
+- Tratamiento de la referencia antigua del PR #1 y sus vistas almacenadas resuelto, según confirmación del responsable del 22 de octubre de 2026.
 
 Las cuatro cargas nominales, los archivos de credenciales, los respaldos y
 las capturas privadas permanecen excluidos. Los SQL sueltos antiguos fuera de

@@ -122,7 +122,7 @@ Ninguno se ejecutó sobre datos reales de personal.
 
 - Mantener ignorados `credenciales.env`, las cuatro cargas nominales, capturas originales y respaldos.
 - Mantener el escaneo especializado sobre la selección final, sin imprimir valores detectados.
-- La limpieza autorizada de ambas ramas ya se publicó y verificó con una descarga nueva: solo queda el panel revisado y Gitleaks no informó hallazgos. Sigue pendiente gestionar con GitHub la referencia del PR #1 y sus vistas almacenadas.
+- La limpieza autorizada de ambas ramas ya se publicó y verificó con una descarga nueva: solo queda el panel revisado y Gitleaks no informó hallazgos. El tratamiento de la referencia del PR #1 y sus vistas almacenadas quedó resuelto según confirmación del responsable del 22 de octubre de 2026.
 - Incorporar archivos por grupos explícitos y revisar el contenido preparado para cada commit.
 - No publicar checkpoints, bundles, todas las referencias ni credenciales de un entorno de demostración.
 

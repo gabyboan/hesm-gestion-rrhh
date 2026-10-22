@@ -113,5 +113,6 @@ La arquitectura del runtime debe corresponder a la de la aplicación.
 La [guía de distribución Windows de Flutter](https://docs.flutter.dev/platform-integration/windows/building)
 explica por qué deben conservarse las DLL y los archivos de datos junto al ejecutable.
 
-La solicitud a soporte para las capturas antiguas del PR #1 continúa pendiente
-y es independiente de estos paquetes con datos ficticios.
+El tratamiento de las capturas antiguas del PR #1 y las vistas almacenadas
+quedó resuelto según confirmación del responsable del 22 de octubre de 2026.
+El cierre se registra en la [revisión de privacidad](REVISION_PRIVACIDAD.md).
