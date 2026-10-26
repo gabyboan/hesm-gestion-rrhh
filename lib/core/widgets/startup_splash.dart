@@ -19,19 +19,54 @@ class HesmMark extends StatelessWidget {
       );
 }
 
-class StartupSplash extends StatefulWidget {
-  const StartupSplash({super.key});
+class HesmAnimatedMark extends StatefulWidget {
+  const HesmAnimatedMark({super.key, this.size = 64});
+  final double size;
 
   @override
-  State<StartupSplash> createState() => _StartupSplashState();
+  State<HesmAnimatedMark> createState() => _HesmAnimatedMarkState();
 }
 
-class _StartupSplashState extends State<StartupSplash>
+class _HesmAnimatedMarkState extends State<HesmAnimatedMark>
     with SingleTickerProviderStateMixin {
   late final AnimationController _rotation = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1800),
-  )..repeat();
+    duration: const Duration(milliseconds: 8000),
+  );
+  late final Animation<double> _turns = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(begin: 0.0, end: 0.125)
+          .chain(CurveTween(curve: Curves.easeInCubic)),
+      weight: 15,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 0.125, end: 0.75)
+          .chain(CurveTween(curve: Curves.easeInQuad)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 0.75, end: 1.0)
+          .chain(CurveTween(curve: Curves.easeOutCubic)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.0, end: 0.875)
+          .chain(CurveTween(curve: Curves.easeInOutCubic)),
+      weight: 10,
+    ),
+    TweenSequenceItem(tween: ConstantTween(0.875), weight: 5),
+  ]).animate(_rotation);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _rotation.stop();
+      _rotation.value = 0;
+    } else if (!_rotation.isAnimating) {
+      _rotation.repeat();
+    }
+  }
 
   @override
   void dispose() {
@@ -41,8 +76,20 @@ class _StartupSplashState extends State<StartupSplash>
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    // Ocho dientes: al retroceder 1/8 de vuelta el ciclo encaja sin saltos.
+    return AnimatedBuilder(
+      animation: _turns,
+      builder: (_, __) =>
+          HesmMark(size: widget.size, rotation: _turns.value * 2 * math.pi),
+    );
+  }
+}
 
+class StartupSplash extends StatelessWidget {
+  const StartupSplash({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF102C3D),
       body: DecoratedBox(
@@ -59,18 +106,7 @@ class _StartupSplashState extends State<StartupSplash>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 184,
-                  height: 184,
-                  child: AnimatedBuilder(
-                    animation: _rotation,
-                    builder: (context, _) => HesmMark(
-                      size: 184,
-                      rotation:
-                          reduceMotion ? 0 : _rotation.value * 2 * math.pi,
-                    ),
-                  ),
-                ),
+                const HesmAnimatedMark(size: 184),
                 const SizedBox(height: 24),
                 const Text(
                   'HESM',
@@ -90,12 +126,6 @@ class _StartupSplashState extends State<StartupSplash>
                     fontWeight: FontWeight.w700,
                     letterSpacing: 3,
                   ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Personas. Información. Gestión.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFFD7E7EB), fontSize: 16),
                 ),
                 const SizedBox(height: 28),
                 const SizedBox(

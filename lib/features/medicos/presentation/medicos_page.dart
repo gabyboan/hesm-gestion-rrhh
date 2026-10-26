@@ -2,6 +2,7 @@ import '../../../core/widgets/app_search_field.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
@@ -16,10 +17,12 @@ import '../domain/medico_domicilio.dart';
 import '../domain/medico_familiar.dart';
 import '../domain/medico_persona.dart';
 import '../domain/parte_medico.dart';
+import '../domain/listado_enfermeria.dart';
 import 'ajuste_impresion_medica_dialog.dart';
 import 'parte_medico_vista_panel.dart';
 import 'parte_medico_vista_ampliada.dart';
 import 'cola_impresion_dialog.dart';
+import 'control_parte_medico_dialog.dart';
 
 class MedicosPage extends ConsumerStatefulWidget {
   const MedicosPage({super.key});
@@ -60,34 +63,29 @@ class _MedicosPageState extends ConsumerState<MedicosPage>
     );
     if (resultado == null) return;
     final data = resultado.data;
+    int? parteGuardadoId;
 
     try {
       final id = await ref
           .read(guardarParteMedicoControllerProvider.notifier)
           .crear(data);
-      final parte = ParteMedico(
-        id: id,
-        dni: persona.dni,
-        fecha: data.fecha,
-        tipo: data.tipo,
-        empleadoApellido: persona.apellido,
-        empleadoNombre: persona.nombre,
-        empleadoLegajo: persona.legajo,
-        familiarApellidoNombre: data.familiarApellidoNombre,
-        familiarDni: data.familiarDni,
-        familiarEdad: data.familiarEdad,
-        familiarEdadMeses: data.familiarEdadMeses,
-        familiarParentesco: data.familiarParentesco,
-        esArt: data.esArt,
-        domicilio: data.domicilio,
-        aclaracionFechaTurno: data.aclaracionFechaTurno,
-      );
+      parteGuardadoId = id;
+      // Recuperar la fecha, identidad y código definitivos desde el servidor.
+      final documento = await ref.read(medicosRepoProvider).documento(id: id);
+      final parte = documento.parte.conDomicilio(data.domicilio);
+      if (documento.anulado || parte.qr == null) {
+        throw StateError('El parte no está disponible para imprimir con QR.');
+      }
 
       if (!context.mounted) return;
       setState(() {
         _parteSeleccionadoId = id;
       });
       ref.read(partesMedicosSearchProvider.notifier).state = '';
+      ref.read(partesMedicosFechaElegidaProvider.notifier).state =
+          DateUtils.isSameDay(parte.fecha, ref.read(medicosHoyProvider))
+              ? null
+              : DateUtils.dateOnly(parte.fecha);
       if (resultado.imprimirAhora) {
         _tabs.animateTo(1);
         AppSnackBar.success(context, 'Parte médico registrado');
@@ -114,7 +112,20 @@ class _MedicosPageState extends ConsumerState<MedicosPage>
       }
     } catch (e) {
       if (!context.mounted) return;
-      AppSnackBar.error(context, cleanError(e));
+      if (parteGuardadoId != null) {
+        setState(() => _parteSeleccionadoId = parteGuardadoId);
+        ref.read(partesMedicosSearchProvider.notifier).state = '';
+        ref.read(partesMedicosFechaElegidaProvider.notifier).state = null;
+        _tabs.animateTo(1);
+        ref.invalidate(partesMedicosProvider);
+        AppSnackBar.error(
+            context,
+            'El parte N.º $parteGuardadoId quedó registrado. '
+            'Reintentá la impresión desde Partes registrados para evitar duplicarlo. '
+            '${cleanError(e)}');
+      } else {
+        AppSnackBar.error(context, cleanError(e));
+      }
     }
   }
 
@@ -181,6 +192,8 @@ class _MedicosPageState extends ConsumerState<MedicosPage>
     }
 
     final verRegistros = _tabs.index == 1;
+    final fechaPartes = ref.watch(partesMedicosFechaProvider);
+    final hoy = ref.watch(medicosHoyProvider);
     final partes = verRegistros
         ? ref.watch(partesMedicosPorDiaProvider).valueOrNull ?? []
         : <ParteMedico>[];
@@ -231,17 +244,50 @@ class _MedicosPageState extends ConsumerState<MedicosPage>
               icon: const Icon(Icons.print_outlined),
               label: Text('Bandeja de impresión ($cantidad)'),
             );
+            final control = OutlinedButton.icon(
+              onPressed: busy
+                  ? null
+                  : () => showDialog<void>(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => const ControlParteMedicoDialog(),
+                      ),
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Control por código'),
+            );
             if (constraints.maxWidth < 700) {
               return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [search, const SizedBox(height: 8), bandeja]);
+                  children: [
+                    search,
+                    const SizedBox(height: 8),
+                    Wrap(
+                        spacing: 8, runSpacing: 8, children: [control, bandeja])
+                  ]);
             }
             return Row(children: [
               Expanded(child: search),
               const SizedBox(width: 16),
+              control,
+              const SizedBox(width: 8),
               bandeja
             ]);
           }),
+          if (verRegistros) ...[
+            const SizedBox(height: 8),
+            _SelectorFechaPartes(
+              fecha: fechaPartes,
+              hoy: hoy,
+              busy: busy,
+              onChanged: (fecha) {
+                ref.read(partesMedicosFechaElegidaProvider.notifier).state =
+                    DateUtils.isSameDay(fecha, hoy) ? null : fecha;
+                setState(() {
+                  _parteSeleccionadoId = null;
+                });
+              },
+            ),
+          ],
           const SizedBox(height: 12),
           Expanded(
             child: LayoutBuilder(
@@ -302,6 +348,79 @@ class _MedicosPageState extends ConsumerState<MedicosPage>
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectorFechaPartes extends StatelessWidget {
+  const _SelectorFechaPartes(
+      {required this.fecha,
+      required this.hoy,
+      required this.busy,
+      required this.onChanged});
+
+  final DateTime fecha;
+  final DateTime hoy;
+  final bool busy;
+  final ValueChanged<DateTime> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          const Text('Fecha de emisión'),
+          IconButton(
+            tooltip: 'Día anterior',
+            onPressed: busy || !fecha.isAfter(DateTime(2000))
+                ? null
+                : () =>
+                    onChanged(DateTime(fecha.year, fecha.month, fecha.day - 1)),
+            icon: const Icon(Icons.chevron_left),
+          ),
+          Tooltip(
+            message: 'Elegir fecha de emisión',
+            child: OutlinedButton.icon(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      final elegida = await showDatePicker(
+                        context: context,
+                        initialDate: fecha.isAfter(hoy) ? hoy : fecha,
+                        firstDate: DateTime(2000),
+                        lastDate: hoy,
+                        helpText: 'Fecha de emisión de los partes',
+                        cancelText: 'Cancelar',
+                        confirmText: 'Ver partes',
+                      );
+                      if (elegida != null && context.mounted) {
+                        onChanged(elegida);
+                      }
+                    },
+              icon: const Icon(Icons.calendar_month_outlined),
+              label: Text(DateFmt.ddmmyyyy(fecha)),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Día siguiente',
+            onPressed: busy || !fecha.isBefore(hoy)
+                ? null
+                : () =>
+                    onChanged(DateTime(fecha.year, fecha.month, fecha.day + 1)),
+            icon: const Icon(Icons.chevron_right),
+          ),
+          TextButton(
+            onPressed: busy || DateUtils.isSameDay(fecha, hoy)
+                ? null
+                : () => onChanged(hoy),
+            child: const Text('Hoy'),
           ),
         ],
       ),
@@ -439,8 +558,64 @@ class _HistorialPanel extends ConsumerWidget {
     }
   }
 
+  Future<void> _listado(BuildContext context,
+      Future<List<ParteMedico>> consulta, DateTime fecha) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => FutureBuilder<List<ParteMedico>>(
+        future: consulta,
+        builder: (_, snapshot) {
+          final partes =
+              snapshot.data?.where((parte) => parte.esEnfermeria).toList() ??
+                  <ParteMedico>[];
+          final texto = listadoParaEnfermeria(partes, fecha);
+          return AlertDialog(
+            title: const Text('Listado para Enfermería'),
+            content: SizedBox(
+                width: 620,
+                child: snapshot.hasError
+                    ? Text(
+                        'No se pudo consultar la carrera del personal: ${cleanError(snapshot.error!)}')
+                    : snapshot.connectionState != ConnectionState.done
+                        ? const SizedBox(
+                            height: 80,
+                            child: Center(child: CircularProgressIndicator()))
+                        : partes.isEmpty
+                            ? const Text(
+                                'No hay partes de la carrera Enfermería para esta fecha.')
+                            : SingleChildScrollView(
+                                child: SelectableText(texto))),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cerrar')),
+              FilledButton.icon(
+                onPressed: snapshot.connectionState != ConnectionState.done ||
+                        snapshot.hasError ||
+                        partes.isEmpty
+                    ? null
+                    : () async {
+                        await Clipboard.setData(ClipboardData(text: texto));
+                        if (!dialogContext.mounted) return;
+                        Navigator.pop(dialogContext);
+                        if (context.mounted) {
+                          AppSnackBar.success(context,
+                              'Listado copiado para pegar en el correo.');
+                        }
+                      },
+                icon: const Icon(Icons.copy),
+                label: const Text('Copiar listado'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final fecha = ref.watch(partesMedicosFechaProvider);
     return Card(
       margin: EdgeInsets.zero,
       child: Column(
@@ -452,6 +627,26 @@ class _HistorialPanel extends ConsumerWidget {
               'Partes registrados',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text(
+                  'El listado incluye automáticamente a la carrera Enfermería.',
+                  style: TextStyle(fontSize: 12)),
+              const SizedBox(height: 4),
+              OutlinedButton.icon(
+                onPressed: busy
+                    ? null
+                    : () => _listado(
+                        context,
+                        ref.read(medicosRepoProvider).registros(fecha: fecha),
+                        fecha),
+                icon: const Icon(Icons.mail_outline),
+                label: const Text('Listado de Enfermería'),
+              ),
+            ]),
           ),
           Expanded(
             child: ref.watch(partesMedicosPorDiaProvider).when(
@@ -485,8 +680,14 @@ class _HistorialPanel extends ConsumerWidget {
                                   selected: selectedId == parte.id,
                                   onTap: () => onSelected(parte),
                                   leading: Tooltip(
-                                    message: parte.tipo.label,
+                                    message:
+                                        '${parte.tipo.label}${parte.esEnfermeria ? ' · Carrera Enfermería' : ''}',
                                     child: CircleAvatar(
+                                      backgroundColor: parte.esEnfermeria
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .tertiaryContainer
+                                          : null,
                                       child: Text(parte.tipo.codigo),
                                     ),
                                   ),
@@ -494,11 +695,26 @@ class _HistorialPanel extends ConsumerWidget {
                                   subtitle: Text(
                                     '${DateFmt.ddmmyyyy(parte.fecha)} - '
                                     '${parte.tipo.label}'
-                                    '${parte.esArt ? ' - ART' : ''}',
+                                    '${parte.esArt ? ' - ART' : ''}'
+                                    '${parte.esEnfermeria ? ' · Enfermería' : ''}',
                                   ),
                                   trailing: Wrap(
                                     spacing: 2,
                                     children: [
+                                      IconButton(
+                                        tooltip: 'Controlar devolución',
+                                        onPressed: busy
+                                            ? null
+                                            : () => showDialog<void>(
+                                                  context: context,
+                                                  barrierDismissible: false,
+                                                  builder: (_) =>
+                                                      ControlParteMedicoDialog(
+                                                          parteId: parte.id),
+                                                ),
+                                        icon: const Icon(
+                                            Icons.fact_check_outlined),
+                                      ),
                                       IconButton(
                                         tooltip:
                                             'Agregar a la bandeja de impresión',

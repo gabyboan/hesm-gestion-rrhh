@@ -22,7 +22,7 @@ import 'horas_providers.dart';
 ///
 /// Providers:
 /// - [informeRowsProvider]: usado por pantalla, respeta filtros.
-/// - [informeRowsExportProvider]: usado por exportación, ignora filtros visuales.
+/// - [informeRowsExportProvider]: usado por exportación, respeta filtros visuales.
 enum InformeFiltro {
   soloConUso,
   particulares,
@@ -275,12 +275,12 @@ final informeRowsProvider = FutureProvider<List<InformeRow>>((ref) async {
 
 /// Provider para EXPORTACIÓN.
 ///
-/// Ignora los filtros visuales activos y devuelve todas las personas
-/// correspondientes al período seleccionado.
+/// Mantiene los filtros activos para que el archivo refleje la vista elegida.
 final informeRowsExportProvider = FutureProvider<List<InformeRow>>((ref) async {
   final registrosFuture = ref.watch(registrosPeriodoProvider.future);
   final normalesFuture = ref.watch(listadoProvider.future);
   final oficialesFuture = ref.watch(listadoOficialesProvider.future);
+  final filtros = ref.watch(informeFiltrosProvider);
 
   final registros = await registrosFuture;
   final normales = await normalesFuture;
@@ -294,7 +294,7 @@ final informeRowsExportProvider = FutureProvider<List<InformeRow>>((ref) async {
   return _buildInforme(
     registros: registros,
     byKey: byKey,
-    filtros: const <InformeFiltro>{},
-    aplicarFiltros: false,
+    filtros: filtros,
+    aplicarFiltros: true,
   );
 });

@@ -163,7 +163,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   padding: EdgeInsets.all(wide ? 40 : 20),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1180),
+                      constraints: const BoxConstraints(maxWidth: 520),
                       child: Card(
                         margin: EdgeInsets.zero,
                         elevation: 0,
@@ -173,24 +173,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           side: BorderSide(
                               color: loginTheme.colorScheme.outlineVariant),
                         ),
-                        child: wide
-                            ? IntrinsicHeight(
-                                child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const Expanded(
-                                      flex: 6, child: _InstitutionalPanel()),
-                                  Expanded(
-                                      flex: 5,
-                                      child: _buildForm(context, mode, wide)),
-                                ],
-                              ))
-                            : Column(
-                                children: [
-                                  const _InstitutionalPanel(compact: true),
-                                  _buildForm(context, mode, wide),
-                                ],
-                              ),
+                        child: _buildForm(context, mode, wide),
                       ),
                     ),
                   ),
@@ -216,13 +199,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             children: [
               Row(
                 children: [
+                  const HesmAnimatedMark(size: 60),
+                  const SizedBox(width: 14),
                   Expanded(
-                    child: Text('ACCESO AL SISTEMA',
-                        style: TextStyle(
-                            fontSize: 11,
-                            letterSpacing: 2,
-                            color: cs.primary,
-                            fontWeight: FontWeight.w700)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('HESM',
+                            style: TextStyle(
+                                fontSize: 24,
+                                letterSpacing: 3,
+                                color: cs.primary,
+                                fontWeight: FontWeight.w800)),
+                        Text('GESTIÓN RRHH',
+                            style: TextStyle(
+                                fontSize: 11,
+                                letterSpacing: 1.5,
+                                color: cs.onSurfaceVariant,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
                   ),
                   IconButton(
                     tooltip:
@@ -317,6 +313,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ),
               const SizedBox(height: 28),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.fact_check_outlined, color: cs.primary, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Seguimiento operativo',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text('Horas, novedades y partes médicos integrados.',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                              height: 1.5)),
+                    ],
+                  )),
+                ],
+              ),
+              const SizedBox(height: 20),
               const Divider(),
               const SizedBox(height: 16),
               Row(
@@ -339,112 +357,4 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
   }
-}
-
-class _InstitutionalPanel extends StatelessWidget {
-  final bool compact;
-  const _InstitutionalPanel({this.compact = false});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        constraints: BoxConstraints(minHeight: compact ? 0 : 660),
-        padding: EdgeInsets.all(compact ? 28 : 48),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF102C3D), Color(0xFF045E63)],
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              HesmMark(size: compact ? 48 : 64),
-              const SizedBox(width: 16),
-              const Expanded(
-                  child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('HESM',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 3)),
-                  Text('GESTIÓN RRHH',
-                      style: TextStyle(
-                          color: Color(0xFFB6D8D9),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 2)),
-                ],
-              )),
-            ]),
-            SizedBox(height: compact ? 24 : 68),
-            Text('Una gestión más clara.\nUn equipo mejor conectado.',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: compact ? 25 : 36,
-                    fontWeight: FontWeight.w600,
-                    height: 1.2,
-                    letterSpacing: -0.8)),
-            if (!compact) ...[
-              const SizedBox(height: 24),
-              const Text(
-                  'La información y las herramientas que Recursos Humanos necesita, en un mismo lugar.',
-                  style: TextStyle(
-                      color: Color(0xFFD0E4E7), height: 1.7, fontSize: 16)),
-              const SizedBox(height: 44),
-              const _InstitutionalFeature(
-                  Icons.people_outline,
-                  'Gestión del personal',
-                  'Información organizada para el trabajo diario.'),
-              const SizedBox(height: 22),
-              const _InstitutionalFeature(
-                  Icons.fact_check_outlined,
-                  'Seguimiento operativo',
-                  'Horas, novedades y partes médicos integrados.'),
-              const SizedBox(height: 42),
-              const Divider(color: Color(0xFF3D7179)),
-              const SizedBox(height: 16),
-              const Text('SISTEMA DE GESTIÓN DE RECURSOS HUMANOS',
-                  style: TextStyle(
-                      color: Color(0xFFB6D8D9),
-                      fontSize: 10,
-                      letterSpacing: 1.3)),
-            ],
-          ],
-        ),
-      );
-}
-
-class _InstitutionalFeature extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-  const _InstitutionalFeature(this.icon, this.title, this.description);
-
-  @override
-  Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: const Color(0xFF85D8CE), size: 24),
-          const SizedBox(width: 16),
-          Expanded(
-              child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 5),
-              Text(description,
-                  style: const TextStyle(
-                      color: Color(0xFFB6D8D9), fontSize: 12, height: 1.5)),
-            ],
-          )),
-        ],
-      );
 }

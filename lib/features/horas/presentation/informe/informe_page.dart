@@ -73,9 +73,9 @@ class InformePage extends ConsumerWidget {
       ref.read(periodoProvider.notifier).state = periodo;
 
       ref.invalidate(registrosPeriodoProvider);
-      ref.invalidate(informeRowsExportProvider);
+      ref.invalidate(informeRowsProvider);
 
-      final rows = await ref.read(informeRowsExportProvider.future);
+      final rows = await ref.read(informeRowsProvider.future);
       if (!rows.any((row) => row.tieneUso)) {
         if (!context.mounted) return;
 
@@ -86,6 +86,7 @@ class InformePage extends ConsumerWidget {
       final exported = await exportInformeXlsx(
         periodo: periodo,
         rows: rows,
+        filtros: ref.read(informeFiltrosProvider),
       );
 
       if (!context.mounted) return;

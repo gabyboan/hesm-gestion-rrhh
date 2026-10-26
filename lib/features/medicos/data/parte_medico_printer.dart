@@ -7,6 +7,7 @@ import '../../../core/utils/date_fmt.dart';
 import '../domain/ajuste_impresion_medica.dart';
 import '../domain/medico_domicilio.dart';
 import '../domain/parte_medico.dart';
+import '../domain/parte_medico_qr.dart';
 import 'ajuste_impresion_medica_repository.dart';
 
 class ParteMedicoPrinter {
@@ -112,6 +113,22 @@ class ParteMedicoPrinter {
                   pw.Positioned.fill(
                     child: pw.Image(formulario, fit: pw.BoxFit.fill),
                   ),
+                if (parte.id > 0 && parte.qr != null) _qr(parte.qr!),
+                if (formulario != null && parte.id == 0)
+                  pw.Positioned(
+                      left: 30,
+                      top: 391,
+                      child: pw.Container(
+                        width: 84,
+                        height: 84,
+                        decoration: pw.BoxDecoration(
+                            border: pw.Border.all(color: PdfColors.grey)),
+                        alignment: pw.Alignment.center,
+                        child: pw.Text('QR\nal registrar',
+                            textAlign: pw.TextAlign.center,
+                            style: const pw.TextStyle(
+                                fontSize: 9.5, color: PdfColors.grey700)),
+                      )),
                 _text(
                   'DNI: ${parte.dni}',
                   left: 290,
@@ -248,6 +265,39 @@ class ParteMedicoPrinter {
       );
     }
     return doc.save();
+  }
+
+  static pw.Widget _qr(ParteMedicoQr qr) {
+    // Recuadro libre a la izquierda de «Corto tratamiento», antes del troquel.
+    // Cuatro módulos blancos alrededor del símbolo facilitan la lectura.
+    return pw.Positioned(
+      left: 30,
+      top: 391,
+      child: pw.SizedBox(
+        width: 84,
+        child: pw.Column(children: [
+          pw.Container(
+            width: 84,
+            height: 84,
+            color: PdfColors.white,
+            padding: const pw.EdgeInsets.all(10.5),
+            child: pw.BarcodeWidget(
+              barcode: pw.Barcode.qrCode(
+                errorCorrectLevel: pw.BarcodeQRCorrectionLevel.high,
+              ),
+              data: qr.contenido,
+              drawText: false,
+            ),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Text(
+            qr.codigoManual,
+            textAlign: pw.TextAlign.center,
+            style: const pw.TextStyle(fontSize: 9.5),
+          ),
+        ]),
+      ),
+    );
   }
 
   static pw.Widget _aclaracion(String value) {
