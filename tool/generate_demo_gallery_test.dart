@@ -19,6 +19,7 @@ import 'package:app_horas/features/medicos/application/medicos_providers.dart';
 import 'package:app_horas/features/medicos/data/parte_medico_printer.dart';
 import 'package:app_horas/features/medicos/domain/medico_persona.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico.dart';
+import 'package:app_horas/features/medicos/domain/parte_medico_qr.dart';
 import 'package:app_horas/features/preferences/application/user_preferences_providers.dart';
 import 'package:app_horas/features/preferences/domain/current_user_profile.dart';
 import 'package:app_horas/features/shell/presentation/main_shell.dart';
@@ -38,6 +39,9 @@ final _date = DateTime(2026, 10, 21);
 final _period = DateTime(2026, 10);
 final _part = ParteMedico(
   id: 1,
+  qr: ParteMedicoQr.parse('00000018'),
+  carreraNombre: 'Enfermería',
+  esEnfermeria: true,
   dni: 1001,
   fecha: _date,
   tipo: TipoParteMedico.consultorio,
@@ -265,6 +269,7 @@ void main() {
               ]),
           medicosDomicilioProvider.overrideWith((ref, dni) async => null),
           partesMedicosProvider.overrideWith((ref) async => [_part]),
+          medicosHoyProvider.overrideWith((ref) => _date),
           colaImpresionProvider
               .overrideWith((ref) => ColaImpresionController()),
           puedeLeerSuplenciasProvider.overrideWith((ref) async => true),

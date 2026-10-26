@@ -1,4 +1,5 @@
 import 'medico_domicilio.dart';
+import 'parte_medico_qr.dart';
 
 enum TipoParteMedico {
   domicilio('DOMICILIO', 'Medico a domicilio'),
@@ -49,6 +50,9 @@ class ParteMedico {
   final bool esArt;
   final MedicoDomicilio? domicilio;
   final String? aclaracionFechaTurno;
+  final ParteMedicoQr? qr;
+  final String? carreraNombre;
+  final bool esEnfermeria;
 
   const ParteMedico({
     required this.id,
@@ -66,6 +70,9 @@ class ParteMedico {
     this.esArt = false,
     this.domicilio,
     this.aclaracionFechaTurno,
+    this.qr,
+    this.carreraNombre,
+    this.esEnfermeria = false,
   });
 
   String get empleadoCompleto => [
@@ -98,6 +105,31 @@ class ParteMedico {
         esArt: esArt,
         domicilio: value,
         aclaracionFechaTurno: aclaracionFechaTurno,
+        qr: qr,
+        carreraNombre: carreraNombre,
+        esEnfermeria: esEnfermeria,
+      );
+
+  ParteMedico conCarrera({String? nombre, required bool esEnfermeria}) =>
+      ParteMedico(
+        id: id,
+        dni: dni,
+        fecha: fecha,
+        tipo: tipo,
+        empleadoApellido: empleadoApellido,
+        empleadoNombre: empleadoNombre,
+        empleadoLegajo: empleadoLegajo,
+        familiarApellidoNombre: familiarApellidoNombre,
+        familiarDni: familiarDni,
+        familiarEdad: familiarEdad,
+        familiarEdadMeses: familiarEdadMeses,
+        familiarParentesco: familiarParentesco,
+        esArt: esArt,
+        domicilio: domicilio,
+        aclaracionFechaTurno: aclaracionFechaTurno,
+        qr: qr,
+        carreraNombre: nombre,
+        esEnfermeria: esEnfermeria,
       );
 
   String? get familiarNombreParaImprimir {
@@ -151,7 +183,12 @@ class ParteMedico {
           : _asInt(json['familiar_edad_meses'], 'familiar_edad_meses'),
       familiarParentesco: _asNullableString(json['familiar_parentesco']),
       esArt: json['es_art'] == true,
+      carreraNombre: _asNullableString(json['carrera_nombre']),
+      esEnfermeria: json['es_enfermeria'] == true,
       aclaracionFechaTurno: _asNullableString(json['aclaracion_fecha_turno']),
+      qr: json['codigo_qr'] == null
+          ? null
+          : ParteMedicoQr.parse(json['codigo_qr'].toString()),
     );
   }
 

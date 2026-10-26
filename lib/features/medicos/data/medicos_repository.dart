@@ -4,6 +4,9 @@ import '../domain/medico_domicilio.dart';
 import '../domain/medico_persona.dart';
 import '../domain/medico_familiar.dart';
 import '../domain/parte_medico.dart';
+import '../domain/parte_medico_qr.dart';
+import '../domain/control_parte_medico.dart';
+import '../../../core/utils/date_fmt.dart';
 
 class MedicosRepository {
   final SupabaseClient _sb;
@@ -18,12 +21,29 @@ class MedicosRepository {
     return _asRows(res).map(MedicoPersona.fromJson).toList();
   }
 
-  Future<List<ParteMedico>> registros({String? buscar}) async {
+  Future<List<ParteMedico>> registros({String? buscar, DateTime? fecha}) async {
     final res = await _sb.rpc(
-      'rpc_medicos_registros',
-      params: {'p_buscar': buscar},
+      fecha == null ? 'rpc_medicos_registros' : 'rpc_medicos_registros_dia',
+      params: {
+        'p_buscar': buscar,
+        if (fecha != null) 'p_fecha': DateFmt.yyyymmdd(fecha),
+      },
     );
-    return _asRows(res).map(ParteMedico.fromJson).toList();
+    final partes = _asRows(res).map(ParteMedico.fromJson).toList();
+    if (partes.isEmpty) return partes;
+    // La pertenencia se consulta en la ficha; nunca se deduce del tipo AD/AC/PC.
+    final carreras = await _sb.rpc('rpc_medicos_carreras', params: {
+      'p_dnis': partes.map((p) => p.dni).toSet().toList(),
+    });
+    final porDni = {
+      for (final row in _asRows(carreras)) row['dni'].toString(): row
+    };
+    return partes.map((parte) {
+      final carrera = porDni[parte.dni.toString()];
+      return parte.conCarrera(
+          nombre: carrera?['carrera_nombre']?.toString(),
+          esEnfermeria: carrera?['es_enfermeria'] == true);
+    }).toList();
   }
 
   Future<List<MedicoFamiliar>> familiares(int dni) async {
@@ -83,6 +103,38 @@ class MedicosRepository {
   Future<bool> anular(int id) async {
     final res = await _sb.rpc('rpc_medicos_anular', params: {'p_id': id});
     return res == true;
+  }
+
+  Future<DocumentoParteMedico> documento({int? id, String? codigo}) async {
+    if ((id == null) == (codigo == null)) {
+      throw ArgumentError('Indicá el número de parte o su código.');
+    }
+    final res = await _sb.rpc('rpc_medicos_documento', params: {
+      if (id != null) 'p_id': id,
+      if (codigo != null) 'p_codigo': ParteMedicoQr.parse(codigo).codigo,
+    });
+    return DocumentoParteMedico.fromJson(Map<String, dynamic>.from(res as Map));
+  }
+
+  Future<ControlParteMedico> guardarControl({
+    required ParteMedicoQr qr,
+    required DateTime fechaDesde,
+    required int diasAprobados,
+    required String medicoNombre,
+    required String medicoMatricula,
+    required int versionEsperada,
+    String? motivoRectificacion,
+  }) async {
+    final res = await _sb.rpc('rpc_medicos_control_guardar', params: {
+      'p_codigo': qr.codigo,
+      'p_fecha_desde': DateFmt.yyyymmdd(fechaDesde),
+      'p_dias_aprobados': diasAprobados,
+      'p_medico_nombre': medicoNombre.trim(),
+      'p_medico_matricula': medicoMatricula.trim(),
+      'p_version_esperada': versionEsperada,
+      'p_motivo_rectificacion': motivoRectificacion?.trim(),
+    });
+    return ControlParteMedico.fromJson(Map<String, dynamic>.from(res as Map));
   }
 
   List<Map<String, dynamic>> _asRows(dynamic res) {

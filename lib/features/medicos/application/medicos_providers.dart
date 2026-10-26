@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
@@ -13,6 +15,23 @@ final medicosRepoProvider = Provider<MedicosRepository>((ref) {
 
 final medicosSearchProvider = StateProvider<String>((ref) => '');
 final partesMedicosSearchProvider = StateProvider<String>((ref) => '');
+// Coincide con la fecha de emisión del servidor en Buenos Aires (UTC-3).
+final medicosHoyProvider = Provider.autoDispose<DateTime>((ref) {
+  final ahoraUtc = DateTime.now().toUtc();
+  final ahora = ahoraUtc.subtract(const Duration(hours: 3));
+  final siguienteDia = DateTime.utc(ahora.year, ahora.month, ahora.day + 1, 3);
+  final timer = Timer(siguienteDia.difference(ahoraUtc), ref.invalidateSelf);
+  ref.onDispose(timer.cancel);
+  return DateTime(ahora.year, ahora.month, ahora.day);
+});
+
+// null sigue el día de hoy, incluso si la pantalla queda abierta a medianoche.
+final partesMedicosFechaElegidaProvider =
+    StateProvider.autoDispose<DateTime?>((ref) => null);
+final partesMedicosFechaProvider = Provider.autoDispose<DateTime>((ref) {
+  return ref.watch(partesMedicosFechaElegidaProvider) ??
+      ref.watch(medicosHoyProvider);
+});
 final selectedMedicoPersonaProvider = StateProvider<MedicoPersona?>(
   (ref) => null,
 );
@@ -24,6 +43,11 @@ final puedeLeerMedicosProvider = FutureProvider<bool>((ref) async {
 
 final puedeCrearMedicosProvider = FutureProvider<bool>((ref) async {
   return await ref.watch(supabaseClientProvider).rpc('can_medicos_create') ==
+      true;
+});
+
+final puedeControlarMedicosProvider = FutureProvider<bool>((ref) async {
+  return await ref.watch(supabaseClientProvider).rpc('can_medicos_control') ==
       true;
 });
 
@@ -42,24 +66,30 @@ final medicosPersonasProvider = FutureProvider<List<MedicoPersona>>((ref) {
       );
 });
 
-final partesMedicosProvider = FutureProvider<List<ParteMedico>>((ref) {
+final partesMedicosProvider =
+    FutureProvider.autoDispose<List<ParteMedico>>((ref) {
   if (ref.watch(puedeLeerMedicosProvider).valueOrNull != true) {
     return Future.value(<ParteMedico>[]);
   }
   final buscar = ref.watch(partesMedicosSearchProvider).trim();
   return ref.watch(medicosRepoProvider).registros(
         buscar: buscar.isEmpty ? null : buscar,
+        fecha: ref.watch(partesMedicosFechaProvider),
       );
 });
 
 final partesMedicosPorDiaProvider =
-    Provider<AsyncValue<List<ParteMedico>>>((ref) {
+    Provider.autoDispose<AsyncValue<List<ParteMedico>>>((ref) {
+  final fecha = ref.watch(partesMedicosFechaProvider);
   return ref.watch(partesMedicosProvider).whenData((partes) {
-    // Los identificadores siguen el orden de carga dentro de cada fecha.
-    return [...partes]..sort((a, b) {
-        final porFecha = a.fecha.compareTo(b.fecha);
-        return porFecha != 0 ? porFecha : a.id.compareTo(b.id);
-      });
+    // Evita mostrar datos del día anterior mientras se actualiza la consulta.
+    return partes
+        .where((parte) =>
+            parte.fecha.year == fecha.year &&
+            parte.fecha.month == fecha.month &&
+            parte.fecha.day == fecha.day)
+        .toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
   });
 });
 

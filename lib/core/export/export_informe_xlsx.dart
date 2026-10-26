@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
@@ -22,15 +23,82 @@ const _carrerasParticularesEnfermedad = {1, 3};
 Future<bool> exportInformeXlsx({
   required DateTime periodo,
   required List<InformeRow> rows,
+  required Set<InformeFiltro> filtros,
 }) async {
+  final excel = buildInformeExcel(
+    periodo: periodo,
+    rows: rows,
+    filtros: filtros,
+  );
+
+  final outBytes = excel.encode();
+  if (outBytes == null) {
+    throw Exception('No se pudo generar XLSX');
+  }
+
+  final suggestedName =
+      "${DateFormat('MM', 'es').format(periodo)}-${DateFormat('MMMM yyyy', 'es').format(periodo)}.xlsx";
+
+  final saveLocation = await _chooseSaveLocation(suggestedName);
+
+  if (saveLocation == null) {
+    return false;
+  }
+
+  final file = XFile.fromData(
+    Uint8List.fromList(outBytes),
+    name: suggestedName,
+    mimeType: _xlsxMimeType,
+  );
+
+  final path = ensureFileExtension(saveLocation.path, 'xlsx');
+  try {
+    await file.saveTo(path);
+  } on FileSystemException catch (error) {
+    if (!Platform.isWindows || !{32, 33}.contains(error.osError?.errorCode)) {
+      rethrow;
+    }
+
+    final alternateName = _suggestCopyName(suggestedName);
+    final alternateLocation = await _chooseSaveLocation(alternateName);
+    if (alternateLocation == null) {
+      return false;
+    }
+
+    await file.saveTo(ensureFileExtension(alternateLocation.path, 'xlsx'));
+  }
+
+  return true;
+}
+
+Future<FileSaveLocation?> _chooseSaveLocation(String suggestedName) {
+  return getSaveLocation(
+    suggestedName: suggestedName,
+    acceptedTypeGroups: const [
+      XTypeGroup(label: 'Excel', extensions: ['xlsx']),
+    ],
+  );
+}
+
+String _suggestCopyName(String fileName) {
+  final baseName = fileName.toLowerCase().endsWith('.xlsx')
+      ? fileName.substring(0, fileName.length - '.xlsx'.length)
+      : fileName;
+  final time = DateFormat('HHmmss').format(DateTime.now());
+  return '$baseName - copia $time.xlsx';
+}
+
+Excel buildInformeExcel({
+  required DateTime periodo,
+  required List<InformeRow> rows,
+  required Set<InformeFiltro> filtros,
+}) {
   final excel = Excel.createExcel();
-
-  // Borrar la hoja default.
-  final defaultName = excel.sheets.keys.first;
-  excel.delete(defaultName);
-
   const sheetName = 'Titulares y Sup Ext';
   final sheet = excel[sheetName];
+  final defaultName = excel.sheets.keys.firstWhere((name) => name != sheetName);
+  excel.delete(defaultName);
+  excel.setDefaultSheet(sheetName);
 
   // ===== Título
   final titulo = DateFormat('MMMM yyyy', 'es').format(periodo).toLowerCase();
@@ -63,11 +131,14 @@ Future<bool> exportInformeXlsx({
   // ===== Datos particulares / enfermedad
   var rExcel = 4;
 
-  final rowsParticularesEnfermedad = rows.where((row) {
-    return _carrerasParticularesEnfermedad.contains(row.persona.carreraId);
+  final filasParticularesEnfermedad = rows.where((row) {
+    final carreraIncluida =
+        _carrerasParticularesEnfermedad.contains(row.persona.carreraId);
+    final tieneDetalle = row.tieneParticulares || row.tieneEnfermedad;
+    return carreraIncluida && (filtros.isEmpty || tieneDetalle);
   });
 
-  for (final r in rowsParticularesEnfermedad) {
+  for (final r in filasParticularesEnfermedad) {
     final p = r.persona;
 
     sheet.cell(CellIndex.indexByString('A$rExcel')).value =
@@ -132,35 +203,5 @@ Future<bool> exportInformeXlsx({
     rExcel++;
   }
 
-  // ===== Generar bytes
-  final outBytes = excel.encode();
-
-  if (outBytes == null) {
-    throw Exception('No se pudo generar XLSX');
-  }
-
-  final suggestedName =
-      "${DateFormat('MM', 'es').format(periodo)}-${DateFormat('MMMM yyyy', 'es').format(periodo)}.xlsx";
-
-  final saveLocation = await getSaveLocation(
-    suggestedName: suggestedName,
-    acceptedTypeGroups: const [
-      XTypeGroup(label: 'Excel', extensions: ['xlsx']),
-    ],
-  );
-
-  // Usuario canceló.
-  if (saveLocation == null) {
-    return false;
-  }
-
-  final file = XFile.fromData(
-    Uint8List.fromList(outBytes),
-    name: suggestedName,
-    mimeType: _xlsxMimeType,
-  );
-
-  await file.saveTo(ensureFileExtension(saveLocation.path, 'xlsx'));
-
-  return true;
+  return excel;
 }

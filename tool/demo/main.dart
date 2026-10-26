@@ -20,6 +20,8 @@ import 'package:app_horas/features/medicos/application/medicos_providers.dart';
 import 'package:app_horas/features/medicos/domain/medico_domicilio.dart';
 import 'package:app_horas/features/medicos/domain/medico_persona.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico.dart';
+import 'package:app_horas/features/medicos/domain/parte_medico_qr.dart';
+import 'package:app_horas/features/medicos/data/medicos_repository.dart';
 import 'package:app_horas/features/preferences/application/user_preferences_providers.dart';
 import 'package:app_horas/features/preferences/data/user_preferences_repository.dart';
 import 'package:app_horas/features/preferences/domain/current_user_profile.dart';
@@ -89,6 +91,9 @@ final _parts = [
   for (var i = 1; i <= 3; i++)
     ParteMedico(
         id: i,
+        qr: ParteMedicoQr.parse(['00000018', '00000026', '00000034'][i - 1]),
+        carreraNombre: i == 2 ? 'Escalafón General' : 'Enfermería',
+        esEnfermeria: i != 2,
         dni: 1000 + i,
         fecha: demoDate,
         tipo: i == 1
@@ -131,6 +136,23 @@ class _DemoAuth implements AuthRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnsupportedError('La demo no inicia sesiones de usuario.');
+}
+
+class _DemoMedicos implements MedicosRepository {
+  const _DemoMedicos();
+  @override
+  Future<List<ParteMedico>> registros({String? buscar, DateTime? fecha}) async {
+    final query = SearchQuery(buscar);
+    return _parts
+        .where((p) =>
+            (fecha == null || DateUtils.isSameDay(p.fecha, fecha)) &&
+            query.matches([p.dni, p.empleadoCompleto, p.aclaracionFechaTurno]))
+        .toList();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnsupportedError('La demo utiliza datos ficticios.');
 }
 
 class _ReadOnlyCargar extends CargarHoraController {
@@ -315,6 +337,7 @@ class _DemoAppState extends State<DemoApp> {
             ];
           }),
           puedeLeerMedicosProvider.overrideWith((ref) async => true),
+          medicosRepoProvider.overrideWithValue(const _DemoMedicos()),
           puedeCrearMedicosProvider.overrideWith((ref) async => false),
           puedeAdministrarMedicosProvider.overrideWith((ref) async => false),
           medicosPersonasProvider.overrideWith((ref) async {
@@ -334,6 +357,7 @@ class _DemoAppState extends State<DemoApp> {
           medicosDomicilioProvider
               .overrideWith((ref, dni) async => _demoAddress),
           medicosFamiliaresProvider.overrideWith((ref, dni) async => []),
+          medicosHoyProvider.overrideWith((ref) => demoDate),
           partesMedicosProvider.overrideWith((ref) async {
             final query = SearchQuery(ref.watch(partesMedicosSearchProvider));
             return _parts

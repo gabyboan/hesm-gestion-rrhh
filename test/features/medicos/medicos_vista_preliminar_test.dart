@@ -1,15 +1,20 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:app_horas/features/medicos/application/medicos_providers.dart';
 import 'package:app_horas/features/medicos/application/cola_impresion_provider.dart';
 import 'package:app_horas/features/medicos/domain/medico_domicilio.dart';
 import 'package:app_horas/features/medicos/domain/medico_persona.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico.dart';
+import 'package:app_horas/features/medicos/domain/control_parte_medico.dart';
+import 'package:app_horas/features/medicos/data/medicos_repository.dart';
 import 'package:app_horas/features/medicos/presentation/medicos_page.dart';
 import 'package:app_horas/features/medicos/presentation/parte_medico_vista_panel.dart';
 import 'package:app_horas/features/medicos/presentation/parte_medico_vista_ampliada.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:app_horas/features/medicos/domain/parte_medico_qr.dart';
+import 'package:app_horas/features/medicos/presentation/parte_medico_qr_widget.dart';
+import 'package:app_horas/core/utils/search_query.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:printing/printing.dart';
@@ -20,6 +25,34 @@ class _GuardarPrueba extends GuardarParteMedicoController {
   int siguienteId = 100;
   @override
   Future<int> crear(ParteMedicoFormData data) async => siguienteId++;
+}
+
+class _RepositorioPrueba implements MedicosRepository {
+  _RepositorioPrueba(this.partes);
+  final List<ParteMedico> partes;
+
+  @override
+  Future<List<ParteMedico>> registros(
+          {String? buscar, DateTime? fecha}) async =>
+      partes;
+  @override
+  Future<DocumentoParteMedico> documento({int? id, String? codigo}) async =>
+      DocumentoParteMedico(
+        parte: ParteMedico.fromJson({
+          'id': id,
+          'dni': 23456789,
+          'fecha': '2026-10-23',
+          'tipo': 'DOMICILIO',
+          'empleado_apellido': 'Nuevo',
+          'empleado_nombre': 'Luis',
+          'codigo_qr': id == 100 ? '00001008' : '00001016',
+        }),
+        anulado: false,
+        controles: const [],
+      );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _RasterPrueba extends PdfRaster {
@@ -67,11 +100,18 @@ void main() {
   });
   tearDown(() => PrintingPlatform.instance = original);
 
-  ParteMedico parte(int id, TipoParteMedico tipo, {DateTime? fecha}) =>
+  ParteMedico parte(int id, TipoParteMedico tipo,
+          {DateTime? fecha,
+          ParteMedicoQr? qr,
+          bool esEnfermeria = false,
+          String aclaracionFechaTurno = 'Turno tarde'}) =>
       ParteMedico(
         id: id,
+        qr: qr,
+        esEnfermeria: esEnfermeria,
+        carreraNombre: esEnfermeria ? 'Enfermería' : 'Escalafón General',
         dni: 12345678,
-        fecha: fecha ?? DateTime(2026, 10, 14),
+        fecha: fecha ?? DateTime(2026, 10, 23),
         tipo: tipo,
         empleadoApellido: 'Perez',
         empleadoNombre: 'Ana $id',
@@ -79,7 +119,7 @@ void main() {
         familiarApellidoNombre: tipo.requiereFamiliar ? 'Gomez, Juan' : null,
         familiarEdad: tipo.requiereFamiliar ? 8 : null,
         familiarParentesco: tipo.requiereFamiliar ? 'Hijo' : null,
-        aclaracionFechaTurno: 'Turno tarde',
+        aclaracionFechaTurno: aclaracionFechaTurno,
       );
 
   const persona = MedicoPersona(
@@ -87,16 +127,29 @@ void main() {
 
   Future<void> abrir(WidgetTester tester, List<ParteMedico> registros,
       {Size size = const Size(1440, 900),
+      DateTime? hoy,
       MedicoPersona agente = persona}) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(ProviderScope(
       overrides: [
+        medicosHoyProvider.overrideWith((ref) => hoy ?? DateTime(2026, 10, 23)),
+        medicosRepoProvider.overrideWithValue(_RepositorioPrueba(registros)),
         puedeLeerMedicosProvider.overrideWith((ref) async => true),
         puedeCrearMedicosProvider.overrideWith((ref) async => true),
         puedeAdministrarMedicosProvider.overrideWith((ref) async => false),
         medicosPersonasProvider.overrideWith((ref) async => [agente]),
-        partesMedicosProvider.overrideWith((ref) async => registros),
+        partesMedicosProvider.overrideWith((ref) async {
+          final query = SearchQuery(ref.watch(partesMedicosSearchProvider));
+          return registros
+              .where((p) => query.matches([
+                    p.empleadoCompleto,
+                    p.dni,
+                    p.empleadoLegajo,
+                    p.aclaracionFechaTurno
+                  ]))
+              .toList();
+        }),
         guardarParteMedicoControllerProvider.overrideWith(_GuardarPrueba.new),
         medicosDomicilioProvider.overrideWith((ref, dni) async =>
             const MedicoDomicilio(calle: 'Calle de prueba', numero: '123')),
@@ -124,6 +177,10 @@ void main() {
     }
     expect(printing.impresiones, 0);
     expect(find.text('Bandeja de impresión (2)'), findsOneWidget);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(MedicosPage)));
+    expect(container.read(colaImpresionProvider).map((p) => p.qr!.codigo),
+        ['00001008', '00001016']);
     await tester.tap(find.text('Bandeja de impresión (2)'));
     await tester.pumpAndSettle();
     expect(find.text('Imprimir todos (2)'), findsOneWidget);
@@ -257,7 +314,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('agrupa por dia y muestra primero los primeros cargados',
+  testWidgets('inicia en hoy, filtra el día y conserva el orden de emisión',
       (tester) async {
     final primero =
         parte(1, TipoParteMedico.consultorio, fecha: DateTime(2026, 9, 30));
@@ -270,29 +327,30 @@ void main() {
     // El servidor puede devolver los registros del mas reciente al mas antiguo.
     final registros =
         List<ParteMedico>.unmodifiable([cuarto, tercero, segundo, primero]);
-    await abrir(tester, registros, size: const Size(1600, 1200));
+    await abrir(tester, registros,
+        size: const Size(1600, 1200), hoy: DateTime(2026, 10, 1));
     await tester.tap(find.widgetWithText(Tab, 'Partes registrados'));
     await tester.pumpAndSettle();
 
     final filas = tester.widgetList<ListTile>(find.byType(ListTile)).toList();
     expect(filas.map((fila) => (fila.title! as Text).data), [
-      primero.descripcionRegistro,
-      segundo.descripcionRegistro,
       tercero.descripcionRegistro,
       cuarto.descripcionRegistro,
     ]);
-    expect(find.text('30/09/2026'), findsOneWidget);
-    expect(find.text('01/10/2026'), findsOneWidget);
-    double posicion(Finder finder) => tester.getTopLeft(finder).dy;
-    final filaPrimero =
-        find.widgetWithText(ListTile, primero.descripcionRegistro);
-    final filaSegundo =
-        find.widgetWithText(ListTile, segundo.descripcionRegistro);
-    final filaTercero =
-        find.widgetWithText(ListTile, tercero.descripcionRegistro);
-    expect(posicion(find.text('30/09/2026')), lessThan(posicion(filaPrimero)));
-    expect(posicion(filaSegundo), lessThan(posicion(find.text('01/10/2026'))));
-    expect(posicion(find.text('01/10/2026')), lessThan(posicion(filaTercero)));
+    expect(find.text('30/09/2026'), findsNothing);
+    expect(
+        tester
+            .widget<IconButton>(find.byWidgetPredicate((widget) =>
+                widget is IconButton && widget.tooltip == 'Día siguiente'))
+            .onPressed,
+        isNull);
+    await tester.tap(find.byTooltip('Día anterior'));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widgetList<ListTile>(find.byType(ListTile))
+            .map((fila) => (fila.title! as Text).data),
+        [primero.descripcionRegistro, segundo.descripcionRegistro]);
     expect(
         tester
             .widget<ParteMedicoVistaPanel>(find.byType(ParteMedicoVistaPanel))
@@ -300,6 +358,54 @@ void main() {
             ?.id,
         primero.id);
     expect(registros.first.id, cuarto.id);
+    await tester.tap(find.text('Hoy'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, tercero.descripcionRegistro),
+        findsOneWidget);
+    expect(find.widgetWithText(ListTile, primero.descripcionRegistro),
+        findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'el calendario cambia de fecha sin borrar la búsqueda y admite un día vacío',
+      (tester) async {
+    final ayer =
+        parte(1, TipoParteMedico.consultorio, fecha: DateTime(2026, 10, 22));
+    final hoy = parte(2, TipoParteMedico.canje);
+    await abrir(tester, [ayer, hoy]);
+    await tester.tap(find.widgetWithText(Tab, 'Partes registrados'));
+    await tester.pumpAndSettle();
+    expect(
+        find.widgetWithText(ListTile, hoy.descripcionRegistro), findsOneWidget);
+    expect(
+        find.widgetWithText(ListTile, ayer.descripcionRegistro), findsNothing);
+    await tester.enterText(find.byType(TextField), 'Turno');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Elegir fecha de emisión'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('22'));
+    await tester.tap(find.text('Ver partes'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, ayer.descripcionRegistro),
+        findsOneWidget);
+    expect(
+        find.widgetWithText(ListTile, hoy.descripcionRegistro), findsNothing);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Turno');
+    await tester.tap(find.byTooltip('Día anterior'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sin partes registrados'), findsOneWidget);
+    expect(
+        tester
+            .widget<ParteMedicoVistaPanel>(find.byType(ParteMedicoVistaPanel))
+            .parte,
+        isNull);
+    expect(find.byType(PdfPreview), findsNothing);
+    await tester.tap(find.text('Hoy'));
+    await tester.pumpAndSettle();
+    expect(
+        find.widgetWithText(ListTile, hoy.descripcionRegistro), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -385,6 +491,64 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text,
         'Turno tarde');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'incluye automáticamente toda la carrera Enfermería aunque haya una búsqueda',
+      (tester) async {
+    final canje = parte(2, TipoParteMedico.canje, esEnfermeria: true);
+    await abrir(tester, [
+      parte(1, TipoParteMedico.domicilio, aclaracionFechaTurno: 'No incluido'),
+      canje,
+      parte(3, TipoParteMedico.consultorio, esEnfermeria: true)
+    ]);
+    String? copiado;
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copiado = (call.arguments as Map)['text'] as String;
+      }
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+    await tester.tap(find.widgetWithText(Tab, 'Partes registrados'));
+    await tester.pumpAndSettle();
+    expect(find.text('Seleccionar todos'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'No incluido');
+    await tester.pumpAndSettle();
+    expect(
+        find.widgetWithText(ListTile, canje.descripcionRegistro), findsNothing);
+    await tester.tap(find.text('Listado de Enfermería'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copiar listado'));
+    await tester.pumpAndSettle();
+    expect(copiado, contains('PC — Perez, Ana 2'));
+    expect(copiado, contains('AC — Perez, Ana 3'));
+    expect(copiado, contains('Total: 2'));
+    expect(copiado, contains('Observaciones: Turno tarde'));
+    expect(copiado, isNot(contains('Ana 1')));
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('muestra y permite ampliar el QR real del parte emitido',
+      (tester) async {
+    await abrir(tester, [
+      parte(42, TipoParteMedico.consultorio,
+          qr: ParteMedicoQr.parse('00000422'))
+    ]);
+    await tester.tap(find.widgetWithText(Tab, 'Partes registrados'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ParteMedicoQrWidget), findsOneWidget);
+    await tester.tap(find.byTooltip('Ampliar QR del parte'));
+    await tester.pumpAndSettle();
+    expect(find.text('QR del parte'), findsOneWidget);
+    expect(find.byType(ParteMedicoQrWidget), findsNWidgets(2));
+    await tester.tap(find.text('Cerrar'));
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 }

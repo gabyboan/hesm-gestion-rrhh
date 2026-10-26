@@ -11,6 +11,7 @@ import '../domain/medico_domicilio.dart';
 import '../domain/medico_persona.dart';
 import '../domain/parte_medico.dart';
 import 'parte_medico_vista_ampliada.dart';
+import 'parte_medico_qr_widget.dart';
 
 class ParteMedicoVistaPanel extends ConsumerWidget {
   const ParteMedicoVistaPanel({super.key, this.parte, this.persona});
@@ -58,6 +59,35 @@ class ParteMedicoVistaPanel extends ConsumerWidget {
                   child: Text('Vista preliminar',
                       style: TextStyle(
                           fontWeight: FontWeight.w800, fontSize: 16))),
+              if (registro?.qr != null)
+                Tooltip(
+                  message: 'Ampliar QR del parte',
+                  child: InkWell(
+                    onTap: () => showDialog<void>(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                              title: const Text('QR del parte'),
+                              content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ParteMedicoQrWidget(
+                                        qr: registro.qr!, size: 260),
+                                    const SizedBox(height: 12),
+                                    SelectableText(registro.qr!.codigoManual,
+                                        style: const TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w700)),
+                                  ]),
+                              actions: [
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext),
+                                    child: const Text('Cerrar'))
+                              ],
+                            )),
+                    child: ParteMedicoQrWidget(qr: registro!.qr!, size: 48),
+                  ),
+                ),
               IconButton(
                 tooltip: 'Ampliar vista preliminar',
                 icon: const Icon(Icons.zoom_in),
@@ -74,6 +104,11 @@ class ParteMedicoVistaPanel extends ConsumerWidget {
               Text('${base.tipo.codigo} · ${DateFmt.ddmmyyyy(base.fecha)}'
                   '${registro == null ? ' · Sin registrar' : ''}'
                   '${base.esArt ? ' · ART' : ''}'),
+              if (registro?.qr != null)
+                SelectableText(registro!.qr!.codigoManual),
+              if (registro == null)
+                const Text('El QR se incorpora al registrar el parte.',
+                    style: TextStyle(fontSize: 12)),
               if (vigente)
                 const Text('Domicilio vigente de la ficha',
                     style: TextStyle(fontSize: 12)),
