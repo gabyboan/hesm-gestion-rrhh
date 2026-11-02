@@ -26,7 +26,8 @@ class _ColaImpresionDialogState extends ConsumerState<ColaImpresionDialog> {
       _mensaje = null;
     });
     try {
-      final ok = await ParteMedicoPrinter.imprimirTodos(partes);
+      final ok =
+          await ParteMedicoPrinter.imprimirTodos(partes, context: context);
       if (!mounted) return;
       if (ok) {
         ref

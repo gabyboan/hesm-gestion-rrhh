@@ -1,307 +1,175 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:windows_single_instance/windows_single_instance.dart';
 
 import 'app/app.dart';
+import 'core/startup/startup_checks.dart';
+import 'core/startup/startup_config.dart';
+import 'core/updates/lan_update_gate.dart';
+import 'core/updates/startup_update.dart';
+import 'core/updates/windows_update_service.dart';
 import 'core/widgets/startup_splash.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-  };
-
+  FlutterError.onError = FlutterError.presentError;
   runApp(BootstrapApp(args: args));
 }
 
 class BootstrapApp extends StatefulWidget {
+  const BootstrapApp(
+      {super.key,
+      required this.args,
+      this.checks,
+      this.checkUpdates,
+      this.application,
+      this.minimumSplashDuration = const Duration(seconds: 5)});
   final List<String> args;
-
-  const BootstrapApp({
-    super.key,
-    required this.args,
-  });
+  final StartupChecks? checks;
+  final Future<StartupUpdateState> Function()? checkUpdates;
+  final Widget? application;
+  final Duration minimumSplashDuration;
 
   @override
   State<BootstrapApp> createState() => _BootstrapAppState();
 }
 
 class _BootstrapAppState extends State<BootstrapApp> {
-  Object? _error;
-  StackTrace? _stackTrace;
+  late final StartupChecks _checks;
+  final Map<StartupCheck, StartupCheckState> _results = {};
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  StartupUpdateState _updates =
+      const StartupUpdateState(StartupUpdateStatus.disabled);
+  Future<void>? _instanceInitialization;
+  Future<void>? _supabaseInitialization;
   bool _ready = false;
+  bool _running = false;
+  bool _servicesReady = false;
+  bool _installingUpdate = false;
+  final Stopwatch _presentation = Stopwatch()..start();
+  bool _hasStarted = false;
 
   @override
   void initState() {
     super.initState();
-    _start();
+    _checks = widget.checks ??
+        StartupChecks(
+            loadConfig: loadStartupConfig,
+            ensureInstance: _ensureInstance,
+            prepareApplication: _prepareApplication);
+  }
+
+  Future<void> _ensureInstance() async {
+    if (!Platform.isWindows) return;
+    _instanceInitialization ??= WindowsSingleInstance.ensureSingleInstance(
+        widget.args, 'hesm_gestion_rrhh',
+        onSecondWindow: (args) {});
+    await _instanceInitialization!.timeout(const Duration(seconds: 5));
+  }
+
+  Future<void> _prepareApplication(StartupConfig config) async {
+    // Cache the underlying operation: retrying after a timeout must not start
+    // another initialization while the first is still completing.
+    _supabaseInitialization ??= Supabase.initialize(
+      url: config.endpoint.toString(),
+      anonKey: config.clientKey,
+      authOptions:
+          const FlutterAuthClientOptions(localStorage: EmptyLocalStorage()),
+    ).then((_) {});
+    await _supabaseInitialization!.timeout(const Duration(seconds: 20));
   }
 
   Future<void> _start() async {
-    final startupTimer = Stopwatch()..start();
-    try {
-      await _bootstrap(widget.args);
-      const minimumSplashDuration = Duration(seconds: 5);
-      final remaining = minimumSplashDuration - startupTimer.elapsed;
-      if (remaining > Duration.zero) await Future<void>.delayed(remaining);
-      if (!mounted) return;
-      setState(() => _ready = true);
-    } catch (error, stackTrace) {
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'bootstrap',
-        ),
-      );
-
-      if (!mounted) return;
+    if (_running) return;
+    setState(() {
+      _running = true;
+      _servicesReady = false;
+      _results.clear();
+      _updates = StartupUpdateState(
+          widget.checkUpdates != null || WindowsUpdateService.enabled
+              ? StartupUpdateStatus.checking
+              : StartupUpdateStatus.disabled);
+    });
+    final updateCheck = _checkUpdates();
+    final timer = _hasStarted ? (Stopwatch()..start()) : _presentation;
+    _hasStarted = true;
+    final passed = await _checks.run((result) {
+      if (mounted) setState(() => _results[result.check] = result);
+    });
+    await updateCheck;
+    if (!mounted) return;
+    if (!passed) {
+      setState(() => _running = false);
+      return;
+    }
+    final remaining = widget.minimumSplashDuration - timer.elapsed;
+    if (remaining > Duration.zero) await Future<void>.delayed(remaining);
+    if (mounted) {
       setState(() {
-        _error = error;
-        _stackTrace = stackTrace;
+        _servicesReady = true;
+        _ready = _updates.status != StartupUpdateStatus.available;
+        _running = false;
       });
     }
+  }
+
+  Future<void> _checkUpdates() async {
+    StartupUpdateState result;
+    try {
+      result = await (widget.checkUpdates ?? checkStartupUpdates)()
+          .timeout(const Duration(seconds: 12));
+    } catch (_) {
+      result = const StartupUpdateState(StartupUpdateStatus.unavailable);
+    }
+    if (mounted) setState(() => _updates = result);
+  }
+
+  void _continueWithoutUpdate() {
+    if (!_servicesReady || _installingUpdate) return;
+    setState(() => _ready = true);
+  }
+
+  Future<void> _installUpdate() async {
+    final release = _updates.release;
+    final dialogContext = _navigatorKey.currentState?.overlay?.context;
+    if (release == null || dialogContext == null || _installingUpdate) return;
+    setState(() => _installingUpdate = true);
+    await offerLanUpdate(dialogContext, release, confirm: false);
+    if (mounted) setState(() => _installingUpdate = false);
   }
 
   @override
   Widget build(BuildContext context) {
     if (_ready) {
-      return const ProviderScope(child: App());
+      return widget.application ??
+          ProviderScope(
+              child: App(
+            checkUpdatesOnStart: false,
+            offeredUpdateVersion: _updates.release?.version,
+          ));
     }
-
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
-      home: BootstrapStatusPage(
-        error: _error,
-        stackTrace: _stackTrace,
-      ),
-    );
-  }
-}
-
-Future<void> _bootstrap(List<String> args) async {
-  // Evita doble instancia en Windows.
-  if (Platform.isWindows) {
-    await WindowsSingleInstance.ensureSingleInstance(
-      args,
-      'hesm_gestion_rrhh',
-      onSecondWindow: (args) {},
-    ).timeout(
-      const Duration(seconds: 5),
-      onTimeout: () => throw TimeoutException(
-        'No se pudo validar la instancia unica de Windows en 5 segundos.',
-      ),
-    );
-  }
-
-  const definedSupabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const definedSupabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-
-  final loadedEnv = definedSupabaseUrl.isEmpty || definedSupabaseAnonKey.isEmpty
-      ? await _loadEnv()
-      : const EnvLoadResult(env: <String, String>{}, searchedPaths: <String>[]);
-
-  final supabaseUrl = definedSupabaseUrl.isNotEmpty
-      ? definedSupabaseUrl
-      : loadedEnv.env['SUPABASE_URL'];
-  final supabaseAnonKey = definedSupabaseAnonKey.isNotEmpty
-      ? definedSupabaseAnonKey
-      : loadedEnv.env['SUPABASE_ANON_KEY'];
-
-  if (supabaseUrl == null || supabaseUrl.isEmpty) {
-    throw Exception(
-      _missingCredentialMessage('SUPABASE_URL', loadedEnv.searchedPaths),
-    );
-  }
-  if (supabaseAnonKey == null || supabaseAnonKey.isEmpty) {
-    throw Exception(
-      _missingCredentialMessage('SUPABASE_ANON_KEY', loadedEnv.searchedPaths),
-    );
-  }
-
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
-    authOptions: const FlutterAuthClientOptions(
-      localStorage: EmptyLocalStorage(),
-    ),
-  ).timeout(
-    const Duration(seconds: 20),
-    onTimeout: () => throw TimeoutException(
-      'No se pudo iniciar Supabase en 20 segundos.',
-    ),
-  );
-}
-
-String _missingCredentialMessage(String key, List<String> searchedPaths) {
-  final buffer = StringBuffer()
-    ..write('Falta $key. Crea un archivo llamado credenciales.env junto a ')
-    ..write('app_horas.exe o inicia la app con --dart-define.');
-
-  if (searchedPaths.isNotEmpty) {
-    buffer
-      ..write('\n\nUbicaciones revisadas:\n')
-      ..write(searchedPaths.map((path) => '- $path').join('\n'));
-  }
-
-  return buffer.toString();
-}
-
-class EnvLoadResult {
-  final Map<String, String> env;
-  final List<String> searchedPaths;
-
-  const EnvLoadResult({
-    required this.env,
-    required this.searchedPaths,
-  });
-}
-
-Future<EnvLoadResult> _loadEnv() async {
-  try {
-    await dotenv.load(fileName: 'credenciales.env');
-    return EnvLoadResult(env: dotenv.env, searchedPaths: const <String>[]);
-  } catch (_) {
-    return _loadEnvFromFileSystem();
-  }
-}
-
-Future<EnvLoadResult> _loadEnvFromFileSystem() async {
-  final candidates = <String>{
-    '${Directory.current.path}${Platform.pathSeparator}credenciales.env',
-    '${File(Platform.resolvedExecutable).parent.path}${Platform.pathSeparator}credenciales.env',
-  };
-
-  void addParents(Directory start) {
-    var current = start;
-    for (var i = 0; i < 8; i++) {
-      candidates.add(
-        '${current.path}${Platform.pathSeparator}credenciales.env',
-      );
-
-      final parent = current.parent;
-      if (parent.path == current.path) break;
-      current = parent;
-    }
-  }
-
-  addParents(Directory.current);
-  addParents(File(Platform.resolvedExecutable).parent);
-
-  for (final path in candidates) {
-    final file = File(path);
-    if (!await file.exists()) continue;
-
-    final env = <String, String>{};
-    final lines = await file.readAsLines();
-
-    for (final line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
-
-      final separator = trimmed.indexOf('=');
-      if (separator <= 0) continue;
-
-      final key = trimmed.substring(0, separator).trim();
-      var value = trimmed.substring(separator + 1).trim();
-
-      if (value.length >= 2 &&
-          ((value.startsWith('"') && value.endsWith('"')) ||
-              (value.startsWith("'") && value.endsWith("'")))) {
-        value = value.substring(1, value.length - 1);
-      }
-
-      env[key] = value;
-    }
-
-    if (env.isNotEmpty) {
-      return EnvLoadResult(env: env, searchedPaths: candidates.toList());
-    }
-  }
-
-  return EnvLoadResult(env: const {}, searchedPaths: candidates.toList());
-}
-
-class BootstrapStatusPage extends StatelessWidget {
-  final Object? error;
-  final StackTrace? stackTrace;
-
-  const BootstrapStatusPage({
-    super.key,
-    required this.error,
-    required this.stackTrace,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ThemeData(
-      useMaterial3: true,
-      colorSchemeSeed: const Color(0xFF045E63),
-    );
-
-    return Theme(
-      data: theme,
-      child: Scaffold(
-        body: Center(
-          child: error == null
-              ? const StartupSplash()
-              : ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: _BootstrapError(
-                      error: error!,
-                      stackTrace: stackTrace,
-                    ),
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BootstrapError extends StatelessWidget {
-  final Object error;
-  final StackTrace? stackTrace;
-
-  const _BootstrapError({
-    required this.error,
-    required this.stackTrace,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'No se pudo iniciar la app',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 12),
-        SelectableText(
-          error.toString(),
-          style: const TextStyle(fontSize: 14),
-        ),
-        if (stackTrace != null) ...[
-          const SizedBox(height: 12),
-          SelectableText(
-            stackTrace.toString().split('\n').take(8).join('\n'),
-            style: const TextStyle(fontSize: 12),
-          ),
+      title: 'HESM - Gestión RRHH',
+      theme: ThemeData(
+          useMaterial3: true, colorSchemeSeed: const Color(0xFF045E63)),
+      home: StartupSplash(
+        checks: [
+          for (final check in StartupCheck.values)
+            _results[check] ?? StartupCheckState(check, CheckStatus.pending)
         ],
-      ],
+        onRetry: _running ? null : _start,
+        onReady: _start,
+        updates: _updates,
+        onInstallUpdate: _installingUpdate ? null : _installUpdate,
+        onIgnoreUpdate: _servicesReady && !_installingUpdate
+            ? _continueWithoutUpdate
+            : null,
+      ),
     );
   }
 }

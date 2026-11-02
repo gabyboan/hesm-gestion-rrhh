@@ -183,6 +183,10 @@ class ParteMedico {
           : _asInt(json['familiar_edad_meses'], 'familiar_edad_meses'),
       familiarParentesco: _asNullableString(json['familiar_parentesco']),
       esArt: json['es_art'] == true,
+      domicilio: json['domicilio_emision'] == null
+          ? null
+          : MedicoDomicilio.fromJson(
+              Map<String, dynamic>.from(json['domicilio_emision'] as Map)),
       carreraNombre: _asNullableString(json['carrera_nombre']),
       esEnfermeria: json['es_enfermeria'] == true,
       aclaracionFechaTurno: _asNullableString(json['aclaracion_fecha_turno']),

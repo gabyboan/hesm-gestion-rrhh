@@ -142,7 +142,7 @@ class SessionTimeoutService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kLastActivityMs);
     if (_sb.auth.currentSession != null) {
-      await _sb.auth.signOut();
+      await _sb.auth.signOut(scope: SignOutScope.local);
     }
   }
 

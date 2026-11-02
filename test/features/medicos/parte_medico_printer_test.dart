@@ -1,13 +1,131 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:app_horas/features/medicos/data/ajuste_impresion_medica_repository.dart';
 import 'package:app_horas/features/medicos/data/parte_medico_printer.dart';
+import 'package:app_horas/features/medicos/domain/ajuste_impresion_medica.dart';
 import 'package:app_horas/features/medicos/domain/medico_domicilio.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'package:printing/src/interface.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _Impresora extends PrintingPlatform {
+  Printer? destino;
+  PdfPageFormat? formato;
+  bool? dinamico;
+  bool? usarPreferencias;
+  List<Uint8List> documentos = [];
+
+  @override
+  Future<bool> layoutPdf(
+    Printer? printer,
+    LayoutCallback onLayout,
+    String name,
+    PdfPageFormat format,
+    bool dynamicLayout,
+    bool usePrinterSettings,
+    OutputType outputType,
+    bool forceCustomPrintPaper,
+  ) async {
+    destino = printer;
+    formato = format;
+    dinamico = dynamicLayout;
+    usarPreferencias = usePrinterSettings;
+    // Simulamos el área imprimible que informa un driver y un segundo callback.
+    for (final papel in [format, PdfPageFormat.letter]) {
+      documentos.add(await onLayout(papel));
+    }
+    return true;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('cada impresora usa su ajuste en la impresión individual y por lotes',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    const repository = AjusteImpresionMedicaRepository();
+    const brother = Printer(url: r'\\equipo\Brother HL-1210W series');
+    const canon = Printer(url: r'\\PC01\Canon LBP6030/6040/6018L');
+    const ajusteBrother =
+        AjusteImpresionMedica(horizontalMm: 1, verticalMm: -2);
+    const ajusteCanon =
+        AjusteImpresionMedica(horizontalMm: -3, verticalMm: 0.5);
+    await repository.guardar(ajusteBrother, impresora: brother.url);
+    await repository.guardar(ajusteCanon, impresora: canon.url);
+    final parte = ParteMedico.fromJson({
+      'id': 42,
+      'dni': 12345678,
+      'fecha': '2026-11-02',
+      'tipo': 'DOMICILIO',
+      'empleado_apellido': 'Prueba',
+      'empleado_nombre': 'Impresion',
+      'codigo_qr': '00000422',
+    });
+    final original = PrintingPlatform.instance;
+    final impresora = _Impresora();
+    PrintingPlatform.instance = impresora;
+    addTearDown(() => PrintingPlatform.instance = original);
+
+    await ParteMedicoPrinter.imprimir(parte, impresora: brother);
+    expect(impresora.destino?.url, brother.url);
+    final esperadoBrother = _contenidoCrudoPdf(
+        await ParteMedicoPrinter.generar(parte, ajuste: ajusteBrother));
+    expect(impresora.documentos.map(_contenidoCrudoPdf),
+        everyElement(esperadoBrother));
+    expect(impresora.formato?.width, closeTo(210 * PdfPageFormat.mm, 0.001));
+    expect(impresora.formato?.height, closeTo(297 * PdfPageFormat.mm, 0.001));
+    expect(impresora.formato?.marginLeft, 0);
+    expect(impresora.formato?.marginTop, 0);
+    expect(impresora.dinamico, isFalse);
+    expect(impresora.usarPreferencias, isFalse);
+
+    impresora.documentos.clear();
+    await ParteMedicoPrinter.imprimirTodos([parte, parte], impresora: canon);
+    expect(impresora.destino?.url, canon.url);
+    final esperadoCanon =
+        _contenidoCrudoPdf(await ParteMedicoPrinter.generarTodos(
+      [parte, parte],
+      ajuste: ajusteCanon,
+    ));
+    expect(impresora.documentos.map(_contenidoCrudoPdf),
+        everyElement(esperadoCanon));
+    expect(esperadoCanon, isNot(esperadoBrother));
+  });
+
+  test('el ajuste mueve exactamente los milímetros pedidos en ambos ejes',
+      () async {
+    final parte = ParteMedico.fromJson({
+      'id': 42,
+      'dni': 12345678,
+      'fecha': '2026-11-02',
+      'tipo': 'CONSULTORIO',
+      'empleado_apellido': 'Prueba',
+      'empleado_nombre': 'Impresion',
+      'codigo_qr': '00000422',
+    });
+    final base = _traslacionPdf(await ParteMedicoPrinter.generar(parte));
+    expect(base.x, closeTo(0.5 * PdfPageFormat.mm, 0.001));
+    expect(base.y, closeTo(15 - 0.2 * PdfPageFormat.mm, 0.001));
+    for (final paso in [-2.0, -0.1, 0.1, 2.0]) {
+      final movido = _traslacionPdf(await ParteMedicoPrinter.generar(parte,
+          ajuste: AjusteImpresionMedica(
+            horizontalMm: paso,
+            verticalMm: paso,
+          )));
+      expect(movido.x - base.x, closeTo(paso * PdfPageFormat.mm, 0.001));
+      // El eje vertical del PDF crece hacia arriba.
+      expect(movido.y - base.y, closeTo(-paso * PdfPageFormat.mm, 0.001));
+    }
+  });
 
   test('genera un lote con una hoja por parte y conserva el orden', () async {
     final partes = List.generate(
@@ -332,4 +450,10 @@ String _contenidoCrudoPdf(List<int> bytes) {
       return latin1.decode(stream);
     }
   }).join('\n');
+}
+
+PdfPoint _traslacionPdf(List<int> bytes) {
+  final matriz = RegExp(r'1 0 0 1 ([-\d.]+) ([-\d.]+) cm')
+      .firstMatch(_contenidoCrudoPdf(bytes))!;
+  return PdfPoint(double.parse(matriz[1]!), double.parse(matriz[2]!));
 }

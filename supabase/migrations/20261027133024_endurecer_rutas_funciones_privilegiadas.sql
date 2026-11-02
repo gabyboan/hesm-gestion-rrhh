@@ -1,0 +1,55 @@
+-- Rutas de 45 funciones DEFINER; conserva codigo, autorizacion, propietario y ACL.
+begin;set local search_path=pg_catalog;set local lock_timeout='3s';set local statement_timeout='45s';
+do $check$ declare sig text;p record;begin
+ foreach sig in array array['public._condicion_ok(bigint,text)','public.can_access_person(bigint)','public.can_francos_admin_bank()','public.can_francos_manage()','public.can_francos_read()','public.can_francos_use_bank()','public.can_francos_write()','public.can_imprevistos_admin()','public.can_imprevistos_create()','public.can_imprevistos_read()','public.can_medicos_admin()','public.can_medicos_create()','public.can_medicos_read()','public.es_dia_laborable(date)','public.has_legajo_admin_role()','public.has_legajo_role_ids(bigint[])','public.has_role(text)','public.has_role_code(text)','public.is_rrhh()','public.rpc_borrar_hora(bigint)','public.rpc_cargar_hora(bigint,integer,date,text,integer)','public.rpc_consulta_horas_beneficios_public(integer)','public.rpc_consulta_horas_carrera_preliminar(bigint)','public.rpc_consulta_horas_public(bigint)','public.rpc_francos_banco_inicial_listar(text,bigint,integer,integer)','public.rpc_francos_crear(bigint,bigint,date,integer,text,text)','public.rpc_francos_eliminar(bigint,text)','public.rpc_francos_horario(bigint,bigint)','public.rpc_francos_horario_guardar(bigint,bigint,jsonb)','public.rpc_francos_listado(text)','public.rpc_francos_modificar(bigint,date,integer,text,text)','public.rpc_francos_movimientos(bigint,bigint)','public.rpc_francos_saldo_inicial(bigint,bigint,date,integer,text)','public.rpc_francos_saldo_inicial_actual(bigint,bigint)','public.rpc_francos_saldo_inicial_eliminar(bigint,bigint)','public.rpc_horas_registros_mes(bigint,integer,date)','public.rpc_imprevistos_crear(integer,integer,date,text,integer)','public.rpc_imprevistos_eliminar(bigint)','public.rpc_imprevistos_listado(integer,text)','public.rpc_imprevistos_modificar(bigint,date,text,integer)','public.rpc_imprevistos_registros(integer,integer,integer)','public.rpc_listado_horas_mes()','public.rpc_medicos_anular(bigint)','public.rpc_medicos_personas(text)','public.usuario_tiene_rol(text)'] loop
+  select * into p from pg_proc where oid=to_regprocedure(sig);
+  if not found or not p.prosecdef or p.proconfig not in(array['search_path=public'],array['search_path=""']) then
+    raise exception 'Contrato inesperado, revisar %',sig;end if;
+ end loop;
+end;$check$;
+alter function public._condicion_ok(bigint,text) set search_path='';
+alter function public.can_access_person(bigint) set search_path='';
+alter function public.can_francos_admin_bank() set search_path='';
+alter function public.can_francos_manage() set search_path='';
+alter function public.can_francos_read() set search_path='';
+alter function public.can_francos_use_bank() set search_path='';
+alter function public.can_francos_write() set search_path='';
+alter function public.can_imprevistos_admin() set search_path='';
+alter function public.can_imprevistos_create() set search_path='';
+alter function public.can_imprevistos_read() set search_path='';
+alter function public.can_medicos_admin() set search_path='';
+alter function public.can_medicos_create() set search_path='';
+alter function public.can_medicos_read() set search_path='';
+alter function public.es_dia_laborable(date) set search_path='';
+alter function public.has_legajo_admin_role() set search_path='';
+alter function public.has_legajo_role_ids(bigint[]) set search_path='';
+alter function public.has_role(text) set search_path='';
+alter function public.has_role_code(text) set search_path='';
+alter function public.is_rrhh() set search_path='';
+alter function public.rpc_borrar_hora(bigint) set search_path='';
+alter function public.rpc_cargar_hora(bigint,integer,date,text,integer) set search_path='';
+alter function public.rpc_consulta_horas_beneficios_public(integer) set search_path='';
+alter function public.rpc_consulta_horas_carrera_preliminar(bigint) set search_path='';
+alter function public.rpc_consulta_horas_public(bigint) set search_path='';
+alter function public.rpc_francos_banco_inicial_listar(text,bigint,integer,integer) set search_path='';
+alter function public.rpc_francos_crear(bigint,bigint,date,integer,text,text) set search_path='';
+alter function public.rpc_francos_eliminar(bigint,text) set search_path='';
+alter function public.rpc_francos_horario(bigint,bigint) set search_path='';
+alter function public.rpc_francos_horario_guardar(bigint,bigint,jsonb) set search_path='';
+alter function public.rpc_francos_listado(text) set search_path='';
+alter function public.rpc_francos_modificar(bigint,date,integer,text,text) set search_path='';
+alter function public.rpc_francos_movimientos(bigint,bigint) set search_path='';
+alter function public.rpc_francos_saldo_inicial(bigint,bigint,date,integer,text) set search_path='';
+alter function public.rpc_francos_saldo_inicial_actual(bigint,bigint) set search_path='';
+alter function public.rpc_francos_saldo_inicial_eliminar(bigint,bigint) set search_path='';
+alter function public.rpc_horas_registros_mes(bigint,integer,date) set search_path='';
+alter function public.rpc_imprevistos_crear(integer,integer,date,text,integer) set search_path='';
+alter function public.rpc_imprevistos_eliminar(bigint) set search_path='';
+alter function public.rpc_imprevistos_listado(integer,text) set search_path='';
+alter function public.rpc_imprevistos_modificar(bigint,date,text,integer) set search_path='';
+alter function public.rpc_imprevistos_registros(integer,integer,integer) set search_path='';
+alter function public.rpc_listado_horas_mes() set search_path='';
+alter function public.rpc_medicos_anular(bigint) set search_path='';
+alter function public.rpc_medicos_personas(text) set search_path='';
+alter function public.usuario_tiene_rol(text) set search_path='';
+commit;

@@ -70,9 +70,9 @@ class _MedicosPageState extends ConsumerState<MedicosPage>
           .read(guardarParteMedicoControllerProvider.notifier)
           .crear(data);
       parteGuardadoId = id;
-      // Recuperar la fecha, identidad y código definitivos desde el servidor.
+      // Recuperar también el domicilio fijado al emitir desde el servidor.
       final documento = await ref.read(medicosRepoProvider).documento(id: id);
-      final parte = documento.parte.conDomicilio(data.domicilio);
+      final parte = documento.parte;
       if (documento.anulado || parte.qr == null) {
         throw StateError('El parte no está disponible para imprimir con QR.');
       }
@@ -90,7 +90,8 @@ class _MedicosPageState extends ConsumerState<MedicosPage>
         _tabs.animateTo(1);
         AppSnackBar.success(context, 'Parte médico registrado');
         try {
-          final impreso = await ParteMedicoPrinter.imprimir(parte);
+          final impreso =
+              await ParteMedicoPrinter.imprimir(parte, context: context);
           if (!impreso) {
             ref.read(colaImpresionProvider.notifier).agregar(parte);
             if (context.mounted) {
@@ -543,13 +544,10 @@ class _HistorialPanel extends ConsumerWidget {
   Future<void> _reimprimir(
       BuildContext context, WidgetRef ref, ParteMedico parte) async {
     try {
-      final domicilio = parte.domicilio ??
-          (parte.tipo == TipoParteMedico.consultorio
-              ? null
-              : await ref.read(medicosDomicilioProvider(parte.dni).future));
-      if (!context.mounted) return;
-      final impreso =
-          await ParteMedicoPrinter.imprimir(parte.conDomicilio(domicilio));
+      final impreso = await ParteMedicoPrinter.imprimir(
+        parte,
+        context: context,
+      );
       if (impreso && context.mounted) {
         ref.read(colaImpresionProvider.notifier).quitar(parte.id);
       }
@@ -559,7 +557,7 @@ class _HistorialPanel extends ConsumerWidget {
   }
 
   Future<void> _listado(BuildContext context,
-      Future<List<ParteMedico>> consulta, DateTime fecha) async {
+      Future<List<ParteMedico>> consulta, DateTime fechaEnvio) async {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => FutureBuilder<List<ParteMedico>>(
@@ -568,7 +566,7 @@ class _HistorialPanel extends ConsumerWidget {
           final partes =
               snapshot.data?.where((parte) => parte.esEnfermeria).toList() ??
                   <ParteMedico>[];
-          final texto = listadoParaEnfermeria(partes, fecha);
+          final texto = listadoParaEnfermeria(partes, fechaEnvio: fechaEnvio);
           return AlertDialog(
             title: const Text('Listado para Enfermería'),
             content: SizedBox(
@@ -642,7 +640,7 @@ class _HistorialPanel extends ConsumerWidget {
                     : () => _listado(
                         context,
                         ref.read(medicosRepoProvider).registros(fecha: fecha),
-                        fecha),
+                        ref.read(medicosHoyProvider)),
                 icon: const Icon(Icons.mail_outline),
                 label: const Text('Listado de Enfermería'),
               ),
@@ -720,26 +718,13 @@ class _HistorialPanel extends ConsumerWidget {
                                             'Agregar a la bandeja de impresión',
                                         onPressed: busy
                                             ? null
-                                            : () async {
+                                            : () {
                                                 try {
-                                                  final domicilio = parte
-                                                          .domicilio ??
-                                                      (parte.tipo ==
-                                                              TipoParteMedico
-                                                                  .consultorio
-                                                          ? null
-                                                          : await ref.read(
-                                                              medicosDomicilioProvider(
-                                                                      parte.dni)
-                                                                  .future));
-                                                  if (!context.mounted) return;
                                                   ref
                                                       .read(
                                                           colaImpresionProvider
                                                               .notifier)
-                                                      .agregar(
-                                                          parte.conDomicilio(
-                                                              domicilio));
+                                                      .agregar(parte);
                                                   AppSnackBar.success(context,
                                                       'Parte agregado a la bandeja');
                                                 } catch (e) {

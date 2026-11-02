@@ -6,12 +6,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/network/internet_connection_gate.dart';
+import '../core/updates/lan_update_gate.dart';
 import '../features/auth/application/session_timeout_provider.dart';
 import '../features/auth/presentation/auth_gate.dart';
+import '../features/auth/presentation/gestion_session_guard.dart';
+import '../features/auth/presentation/periodic_mfa_guard.dart';
 import 'theme/theme_mode_provider.dart';
 
 class App extends ConsumerWidget {
-  const App({super.key});
+  const App(
+      {super.key, this.checkUpdatesOnStart = true, this.offeredUpdateVersion});
+  final bool checkUpdatesOnStart;
+  final String? offeredUpdateVersion;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,6 +26,8 @@ class App extends ConsumerWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'HESM - Gestión RRHH',
+      builder: (context, child) => GestionSessionGuard(
+          child: PeriodicMfaGuard(child: child ?? const SizedBox.shrink())),
       themeMode: themeMode,
       theme: ThemeData(
         useMaterial3: true,
@@ -43,18 +51,21 @@ class App extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: InternetConnectionGate(
-        applicationEndpoint: Uri.parse(Supabase.instance.client.rest.url),
-        onConnectionChanged: (hasInternet) {
-          final sessionTimeout = ref.read(sessionTimeoutProvider);
-          if (hasInternet) {
-            unawaited(sessionTimeout.resume());
-          } else {
-            sessionTimeout.pause();
-          }
-        },
-        child: const AuthGate(),
-      ),
+      home: LanUpdateGate(
+          checkOnStart: checkUpdatesOnStart,
+          offeredVersion: offeredUpdateVersion,
+          child: InternetConnectionGate(
+            applicationEndpoint: Uri.parse(Supabase.instance.client.rest.url),
+            onConnectionChanged: (hasInternet) {
+              final sessionTimeout = ref.read(sessionTimeoutProvider);
+              if (hasInternet) {
+                unawaited(sessionTimeout.resume());
+              } else {
+                sessionTimeout.pause();
+              }
+            },
+            child: const AuthGate(),
+          )),
     );
   }
 }

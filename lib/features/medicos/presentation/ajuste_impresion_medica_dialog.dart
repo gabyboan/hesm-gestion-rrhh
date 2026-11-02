@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
 
 import '../../../core/utils/error_text.dart';
 import '../data/ajuste_impresion_medica_repository.dart';
@@ -25,7 +26,11 @@ class _AjusteImpresionMedicaDialogState
   bool _loading = true;
   bool _busy = false;
   bool _loaded = false;
+  bool _destinoCargado = false;
+  List<Printer> _impresoras = const [];
+  Printer? _impresora;
   String? _error;
+  String? _resultadoPrueba;
 
   @override
   void initState() {
@@ -40,7 +45,27 @@ class _AjusteImpresionMedicaDialogState
 
   Future<void> _cargar() async {
     try {
-      final ajuste = await _repository.cargar();
+      final info = await Printing.info();
+      if (info.canListPrinters && info.directPrint) {
+        _impresoras = await Printing.listPrinters();
+        if (_impresoras.isEmpty) {
+          throw StateError('No hay impresoras instaladas en este equipo.');
+        }
+        _impresora = _impresoras.firstWhere(
+          (impresora) => impresora.isDefault,
+          orElse: () => _impresoras.first,
+        );
+      }
+      _destinoCargado = true;
+      await _cargarAjuste();
+    } catch (e) {
+      _mostrarErrorCarga(e);
+    }
+  }
+
+  Future<void> _cargarAjuste() async {
+    try {
+      final ajuste = await _repository.cargar(impresora: _impresora?.url);
       if (!mounted) return;
       setState(() {
         _mostrar(ajuste);
@@ -48,13 +73,29 @@ class _AjusteImpresionMedicaDialogState
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = 'No se pudo cargar el ajuste: ${cleanError(e)}. '
-            'Podés restablecer la calibración inicial.';
-      });
+      _mostrarErrorCarga(e);
     }
+  }
+
+  void _mostrarErrorCarga(Object error) {
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _error = 'No se pudo cargar el ajuste: ${cleanError(error)}. '
+          '${_destinoCargado ? 'Podés restablecer la calibración inicial.' : 'Podés reintentar la carga.'}';
+    });
+  }
+
+  Future<void> _seleccionarImpresora(String? url) async {
+    if (url == null) return;
+    setState(() {
+      _impresora = _impresoras.firstWhere((impresora) => impresora.url == url);
+      _loaded = false;
+      _loading = true;
+      _error = null;
+      _resultadoPrueba = null;
+    });
+    await _cargarAjuste();
   }
 
   double? _numero(String? value) =>
@@ -89,7 +130,7 @@ class _AjusteImpresionMedicaDialogState
       _error = null;
     });
     try {
-      await _repository.guardar(_ajuste);
+      await _repository.guardar(_ajuste, impresora: _impresora?.url);
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
@@ -102,13 +143,28 @@ class _AjusteImpresionMedicaDialogState
   }
 
   Future<void> _probar() async {
+    if (_busy) return;
+    FocusScope.of(context).unfocus();
     if (!_form.currentState!.validate()) return;
+    final ajuste = _ajuste;
+    final impresora = _impresora;
     setState(() {
       _busy = true;
       _error = null;
+      _resultadoPrueba = null;
     });
     try {
-      await ParteMedicoPrinter.imprimir(widget.parte, ajuste: _ajuste);
+      final enviada = await ParteMedicoPrinter.imprimirPrueba(
+        widget.parte,
+        ajuste: ajuste,
+        impresora: impresora,
+      );
+      if (!mounted) return;
+      setState(() => _resultadoPrueba = enviada
+          ? 'Prueba enviada: horizontal ${ajuste.horizontalMm} mm; '
+              'vertical ${ajuste.verticalMm} mm. '
+              'Guardá el ajuste cuando la hoja salga alineada.'
+          : 'Prueba cancelada. Podés ajustar y volver a probar.');
     } catch (e) {
       if (mounted) {
         setState(() => _error = 'No se pudo imprimir: ${cleanError(e)}');
@@ -184,9 +240,31 @@ class _AjusteImpresionMedicaDialogState
                     const Text(
                       'Mové todos los textos y tachaduras del parte. '
                       'Estos valores se suman a la calibración inicial '
-                      'y se guardan en este equipo para las próximas impresiones.',
+                      'y se guardan en este equipo. Cada impresora conserva '
+                      'su propio ajuste para las próximas impresiones.',
                     ),
                     const SizedBox(height: 20),
+                    if (_impresoras.isNotEmpty) ...[
+                      DropdownButtonFormField<String>(
+                        initialValue: _impresora?.url,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Impresora a ajustar',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          for (final impresora in _impresoras)
+                            DropdownMenuItem(
+                              value: impresora.url,
+                              child: Text(impresora.name,
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                        ],
+                        onChanged:
+                            _loading || _busy ? null : _seleccionarImpresora,
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     if (_loading)
                       const Center(child: CircularProgressIndicator())
                     else ...[
@@ -213,14 +291,21 @@ class _AjusteImpresionMedicaDialogState
                     const SizedBox(height: 16),
                     const Text(
                       'Colocá el formulario preimpreso para probar. '
-                      'La prueba no registra un parte. Usá siempre la misma '
-                      'impresora y tamaño A4 al 100 %.',
+                      'La prueba no registra un parte. Se imprime en A4 '
+                      'a tamaño real. Guardá el ajuste después de probarlo.',
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
                       Text(_error!,
                           style: TextStyle(
                               color: Theme.of(context).colorScheme.error)),
+                    ],
+                    if (_resultadoPrueba != null) ...[
+                      const SizedBox(height: 12),
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(_resultadoPrueba!),
+                      ),
                     ],
                     const SizedBox(height: 12),
                     Wrap(
@@ -233,18 +318,30 @@ class _AjusteImpresionMedicaDialogState
                           label: const Text('Imprimir prueba'),
                         ),
                         TextButton(
-                          onPressed: _loading || _busy
+                          onPressed: !_destinoCargado || _loading || _busy
                               ? null
                               : () {
                                   setState(() {
                                     _mostrar(const AjusteImpresionMedica());
                                     _loaded = true;
                                     _error = null;
+                                    _resultadoPrueba = null;
                                   });
                                   _form.currentState!.validate();
                                 },
                           child: const Text('Restablecer'),
                         ),
+                        if (!_loaded && !_loading)
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _loading = true;
+                                _error = null;
+                              });
+                              _cargar();
+                            },
+                            child: const Text('Reintentar'),
+                          ),
                       ],
                     ),
                   ],

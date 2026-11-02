@@ -139,6 +139,34 @@ void main() {
     expect(solicitudes.single.containsKey('p_familiar_edad_meses'), isFalse);
   });
 
+  test(
+      'listados y documento conservan el domicilio emitido al completar carrera',
+      () async {
+    final registro = {
+      'id': 42,
+      'dni': 12345678,
+      'fecha': '2026-11-02',
+      'tipo': 'DOMICILIO',
+      'domicilio_emision': {'calle': 'Original', 'numero': '123'},
+    };
+    filas = [registro];
+    carreras = [
+      {'dni': 12345678, 'carrera_nombre': 'Enfermería', 'es_enfermeria': true}
+    ];
+    for (final fecha in [null, DateTime(2026, 11, 2)]) {
+      final partes = await repository.registros(fecha: fecha);
+      expect(partes.single.domicilio?.calle, 'Original');
+      expect(partes.single.domicilio?.numero, '123');
+      expect(partes.single.esEnfermeria, isTrue);
+    }
+    filas = null;
+    respuesta = {'parte': registro, 'controles': []};
+    final documento = await repository.documento(id: 42);
+    expect(documento.parte.domicilio?.calle, 'Original');
+    expect(
+        rutas.any((ruta) => ruta.endsWith('/rpc_medicos_domicilio')), isFalse);
+  });
+
   test('conserva la edad en meses, incluido un recién nacido', () async {
     for (final meses in [0, 8, 11]) {
       expect(

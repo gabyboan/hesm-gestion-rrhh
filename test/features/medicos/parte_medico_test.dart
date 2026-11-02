@@ -3,6 +3,50 @@ import 'package:app_horas/features/medicos/domain/medico_domicilio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('recupera la copia del domicilio y la conserva al completar la carrera',
+      () {
+    final parte = ParteMedico.fromJson({
+      'id': 10,
+      'dni': 12345678,
+      'fecha': '2026-11-02',
+      'tipo': 'DOMICILIO',
+      'domicilio_emision': {
+        'calle': 'Domicilio original',
+        'numero': '123',
+        'torre': 'B',
+        'casa': '4',
+        'localidad_nombre': 'Paraná',
+        'provincia_nombre': 'Entre Ríos',
+      },
+    }).conCarrera(nombre: 'Enfermería', esEnfermeria: true);
+
+    expect(parte.domicilio?.calle, 'Domicilio original');
+    expect(parte.domicilio?.numero, '123');
+    expect(parte.domicilio?.torre, 'B');
+    expect(parte.domicilio?.casa, '4');
+    expect(parte.domicilio?.localidad, 'Paraná');
+    expect(parte.domicilio?.provincia, 'Entre Ríos');
+  });
+
+  test('distingue una emisión sin domicilio de un parte anterior sin copia',
+      () {
+    final datos = {
+      'id': 10,
+      'dni': 12345678,
+      'fecha': '2026-11-02',
+      'tipo': 'DOMICILIO',
+    };
+    expect(ParteMedico.fromJson(datos).domicilio, isNull);
+    expect(
+        ParteMedico.fromJson({...datos, 'domicilio_emision': null}).domicilio,
+        isNull);
+    expect(
+        ParteMedico.fromJson({...datos, 'domicilio_emision': {}})
+            .domicilio!
+            .estaVacio,
+        isTrue);
+  });
+
   test('lee y conserva un parte de suplente sin legajo', () {
     final parte = ParteMedico.fromJson({
       'id': 2,

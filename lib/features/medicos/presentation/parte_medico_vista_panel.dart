@@ -40,12 +40,9 @@ class ParteMedicoVistaPanel extends ConsumerWidget {
               ));
     final domicilio = base == null || base.tipo == TipoParteMedico.consultorio
         ? const AsyncData<MedicoDomicilio?>(null)
-        : base.domicilio != null
+        : registro != null || base.domicilio != null
             ? AsyncData<MedicoDomicilio?>(base.domicilio)
             : ref.watch(medicosDomicilioProvider(base.dni));
-    final vigente = registro != null &&
-        registro.domicilio == null &&
-        registro.tipo != TipoParteMedico.consultorio;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -109,9 +106,15 @@ class ParteMedicoVistaPanel extends ConsumerWidget {
               if (registro == null)
                 const Text('El QR se incorpora al registrar el parte.',
                     style: TextStyle(fontSize: 12)),
-              if (vigente)
-                const Text('Domicilio vigente de la ficha',
-                    style: TextStyle(fontSize: 12)),
+              if (registro != null &&
+                  registro.tipo != TipoParteMedico.consultorio)
+                Text(
+                    registro.domicilio == null
+                        ? 'Domicilio histórico no disponible para este parte.'
+                        : registro.domicilio!.estaVacio
+                            ? 'Sin domicilio cargado al emitir el parte.'
+                            : 'Domicilio guardado al emitir el parte.',
+                    style: const TextStyle(fontSize: 12)),
             ],
             const SizedBox(height: 8),
             Expanded(
