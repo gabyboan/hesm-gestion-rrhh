@@ -1,5 +1,28 @@
 # Registro de cambios
 
+## 1.0.6.7 · 2 de noviembre de 2026
+
+- Guarda un domicilio inmutable en cada parte al emitir y lo conserva en vistas,
+  bandeja y reimpresiones. Los registros anteriores sin copia histórica lo indican.
+- Reserva una sola Gestión por cuenta en el servidor, con renovación, bloqueo de
+  datos y recuperación tras cierre inesperado. Incluye una prueba de concurrencia.
+- Agrega ajustes por impresora, pruebas repetibles y recuperación ante fallas.
+- Incorpora MFA opcional, revalidación por hora y comprobación de sesiones revocadas.
+- Presenta verificaciones de servicios al iniciar y actualizaciones Windows
+  firmadas con versión visible y opciones de instalar o continuar.
+- Publica guías de desarrollo, instalación y contribución, además de CI para
+  análisis, pruebas Flutter, contratos PostgreSQL y detección de secretos.
+
+Validación: 162 pruebas Flutter y análisis estático aprobados en el conjunto de
+la versión; contratos SQL con fixtures ficticios y dos conexiones concurrentes;
+Windows x64 compilado, empaquetado y verificado. La entrega operativa se comprobó
+con el código del actualizador, incluyendo el rechazo de una copia alterada.
+
+Las migraciones correspondientes se aplicaron y verificaron en el entorno
+operativo. Los clientes anteriores deben actualizarse para participar en la
+reserva de sesión única. La publicación pública contiene código y documentación;
+la distribución del instalador firmado usa el canal privado.
+
 ## Cierre de privacidad histórica · 22 de octubre de 2026
 
 El responsable del proyecto confirmó que el tratamiento de la referencia del
