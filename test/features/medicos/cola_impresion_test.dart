@@ -2,11 +2,15 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:app_horas/features/medicos/application/cola_impresion_provider.dart';
+import 'package:app_horas/features/medicos/data/ajuste_impresion_medica_repository.dart';
+import 'package:app_horas/features/medicos/data/parte_medico_printer.dart';
+import 'package:app_horas/features/medicos/domain/ajuste_impresion_medica.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico.dart';
 import 'package:app_horas/features/medicos/presentation/cola_impresion_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:printing/printing.dart';
 import 'package:printing/src/interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,6 +19,16 @@ class _Impresora extends PrintingPlatform {
   bool fallar = false;
   int trabajos = 0;
   Uint8List? pdf;
+  List<Printer> impresoras = [];
+  Printer? destino;
+
+  @override
+  Future<PrintingInfo> info() async => PrintingInfo(
+      directPrint: impresoras.isNotEmpty,
+      canListPrinters: impresoras.isNotEmpty);
+
+  @override
+  Future<List<Printer>> listPrinters() async => impresoras;
 
   @override
   dynamic noSuchMethod(Invocation invocation) {
@@ -26,6 +40,7 @@ class _Impresora extends PrintingPlatform {
 
   Future<bool> _imprimir(Invocation invocation) async {
     trabajos++;
+    destino = invocation.positionalArguments[0] as Printer?;
     if (fallar) throw StateError('Impresora no disponible');
     final callback = invocation.positionalArguments[1] as dynamic;
     pdf = await callback(invocation.positionalArguments[3]) as Uint8List;
@@ -123,5 +138,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(colaImpresionProvider).map((p) => p.id), [2]);
     expect(impresora.trabajos, 0);
+  });
+
+  testWidgets(
+      'elegir Canon usa su ajuste y cancelar el selector conserva la cola',
+      (tester) async {
+    impresora.impresoras = [
+      const Printer(url: 'Brother', name: 'Brother HL-1210W', isDefault: true),
+      const Printer(url: 'Canon', name: 'Canon LBP6030/6040/6018L'),
+    ];
+    const ajuste = AjusteImpresionMedica(horizontalMm: -2, verticalMm: 1);
+    await const AjusteImpresionMedicaRepository()
+        .guardar(ajuste, impresora: 'Canon');
+    final container = await abrir(tester);
+    await tester.tap(find.text('Imprimir todos (2)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(container.read(colaImpresionProvider), hasLength(2));
+    expect(impresora.trabajos, 0);
+    await tester.tap(find.text('Imprimir todos (2)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Canon LBP6030/6040/6018L'));
+    await tester.pumpAndSettle();
+    expect(impresora.destino?.url, 'Canon');
+    final esperado = await ParteMedicoPrinter.generarTodos(
+      [_parte(1), _parte(2)],
+      ajuste: ajuste,
+    );
+    // Las fechas de creación del PDF pueden variar; comparamos sus páginas.
+    String paginas(List<int> bytes) => RegExp(r'stream[\s\S]*?endstream')
+        .allMatches(latin1.decode(bytes))
+        .map((match) => match[0])
+        .join();
+    expect(paginas(impresora.pdf!), paginas(esperado));
+    expect(container.read(colaImpresionProvider), isEmpty);
   });
 }

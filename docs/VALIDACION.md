@@ -1,5 +1,27 @@
 # Validación de la entrega
 
+## Versión 1.0.6.7 · 2 de noviembre de 2026
+
+El conjunto de la versión pasó **162 pruebas Flutter** y `flutter analyze
+--fatal-infos`. Las pruebas cubren domicilio de emisión, sesión única, bloqueo
+de diálogos, renovación del JWT, revalidación MFA, inicio y actualizaciones.
+El cambio de versión también pasó las 20 pruebas de inicio y actualizaciones.
+
+Los contratos de PostgreSQL 16 se ejecutaron en un clúster temporal con datos
+ficticios: permisos, consultas, auditoría, domicilio inmutable y dos conexiones
+simultáneas que compiten por una sola reserva. El runner de Windows no usa las
+credenciales operativas. GitHub Actions incorpora la misma secuencia funcional
+en un servicio PostgreSQL 16 desechable.
+
+La aplicación Windows x64 se compiló y extrajo del instalador firmado. Se
+comprobaron versión, presencia de ambos cambios, exclusión de archivos privados,
+firma, tamaño y SHA-256. El código Dart del actualizador verificó la copia
+publicada y rechazó una copia alterada. Estas comprobaciones no sustituyen la
+instalación física en cada PC ni una prueba de impresión en otro dispositivo.
+
+El README y las guías actuales corresponden a esta versión. Las secciones
+siguientes conservan las evidencias históricas de las entregas anteriores.
+
 Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) y
 [#3](https://github.com/gabyboan/hesm-gestion-rrhh/pull/3) están integrados en
 `main` desde el 21 de octubre de 2026. El PR #2 conserva los siete commits

@@ -53,7 +53,7 @@ class AuthRepository {
   /// Cierra la sesión actual.
   Future<void> signOut() async {
     try {
-      await _sb.auth.signOut();
+      await _sb.auth.signOut(scope: SignOutScope.local);
     } on AuthException {
       rethrow;
     } catch (e) {

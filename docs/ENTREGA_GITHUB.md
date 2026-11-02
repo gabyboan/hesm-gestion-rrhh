@@ -1,5 +1,19 @@
 # Entrega para GitHub
 
+## Actualización pública 1.0.6.7
+
+La entrega del 2 de noviembre de 2026 parte del `main` público posterior a los
+PR #6 y #7. Agrega los controles de sesión, domicilio histórico, inicio,
+actualizaciones firmadas y mejoras de impresión con sus pruebas y migraciones.
+Actualiza la presentación, las guías y las comprobaciones de GitHub Actions.
+
+La preparación se hizo en una copia aislada sobre la historia saneada. Conserva
+el cierre de privacidad ya registrado, y excluye credenciales, instaladores,
+respaldos, cargas nominales y registros operativos. La revisión abarca tanto la
+diferencia nueva como los archivos elegibles de la publicación.
+
+El inventario de octubre que sigue se conserva como evidencia histórica.
+
 Preparada el 21 de octubre de 2026 en `release/gestion-rrhh-2026-10-21`.
 Base pública limpia: `ecb7bfd61b0973f680b552b99a3ed909eacd256c`.
 

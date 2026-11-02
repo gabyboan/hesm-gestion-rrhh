@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -19,31 +20,95 @@ class ParteMedicoPrinter {
   static const _ajusteVerticalImpresion = 15.0 - 0.2 * PdfPageFormat.mm;
   static const _ajusteHorizontalImpresion = 0.5 * PdfPageFormat.mm;
   static const _tamanoFuente = 11.5;
+  static const _formatoImpresion = PdfPageFormat(
+    210 * PdfPageFormat.mm,
+    297 * PdfPageFormat.mm,
+  );
 
   static Future<bool> imprimir(
     ParteMedico parte, {
     AjusteImpresionMedica? ajuste,
-  }) async {
-    final calibracion =
-        ajuste ?? await const AjusteImpresionMedicaRepository().cargar();
-    return Printing.layoutPdf(
-      name:
-          'parte-medico-${parte.empleadoLegajo ?? parte.dni}-${DateFmt.yyyymmdd(parte.fecha)}',
-      format: PdfPageFormat.a4,
-      onLayout: (_) => generar(parte, ajuste: calibracion),
-    );
-  }
+    BuildContext? context,
+    Printer? impresora,
+  }) =>
+      _imprimir(
+        [parte],
+        nombre:
+            'parte-medico-${parte.empleadoLegajo ?? parte.dni}-${DateFmt.yyyymmdd(parte.fecha)}',
+        ajuste: ajuste,
+        context: context,
+        impresora: impresora,
+      );
 
   static Future<bool> imprimirTodos(
     List<ParteMedico> partes, {
     AjusteImpresionMedica? ajuste,
+    BuildContext? context,
+    Printer? impresora,
+  }) =>
+      _imprimir(
+        partes,
+        nombre: 'partes-medicos-${partes.length}',
+        ajuste: ajuste,
+        context: context,
+        impresora: impresora,
+      );
+
+  static Future<bool> imprimirPrueba(
+    ParteMedico parte, {
+    required AjusteImpresionMedica ajuste,
+    Printer? impresora,
+  }) =>
+      _imprimir(
+        [parte],
+        // Cada prueba es un trabajo nuevo e identificable en la cola de Windows.
+        nombre: 'prueba-parte-${DateTime.now().microsecondsSinceEpoch}'
+            '-h${ajuste.horizontalMm}-v${ajuste.verticalMm}mm',
+        ajuste: ajuste,
+        impresora: impresora,
+      );
+
+  static Future<bool> _imprimir(
+    List<ParteMedico> partes, {
+    required String nombre,
+    AjusteImpresionMedica? ajuste,
+    BuildContext? context,
+    Printer? impresora,
   }) async {
-    final calibracion =
-        ajuste ?? await const AjusteImpresionMedicaRepository().cargar();
+    if (partes.isEmpty) {
+      throw ArgumentError('Agregá al menos un parte para imprimir.');
+    }
+    // El diálogo nativo no devuelve qué impresora se eligió. La seleccionamos
+    // antes de generar el PDF para usar la calibración de ese dispositivo.
+    var destino = impresora;
+    if (destino == null && context != null) {
+      final info = await Printing.info();
+      if (!context.mounted) return false;
+      if (info.canListPrinters && info.directPrint) {
+        destino = await Printing.pickPrinter(
+          context: context,
+          title: 'Imprimir partes · A4, tamaño real',
+        );
+        if (destino == null || !context.mounted) return false;
+      }
+    }
+    final calibracion = ajuste ??
+        await const AjusteImpresionMedicaRepository()
+            .cargar(impresora: destino?.url);
     final bytes = await generarTodos(partes, ajuste: calibracion);
+    if (destino != null) {
+      return Printing.directPrintPdf(
+        printer: destino,
+        name: nombre,
+        format: _formatoImpresion,
+        dynamicLayout: false,
+        onLayout: (_) async => bytes,
+      );
+    }
     return Printing.layoutPdf(
-      name: 'partes-medicos-${partes.length}',
-      format: PdfPageFormat.a4,
+      name: nombre,
+      format: _formatoImpresion,
+      dynamicLayout: false,
       onLayout: (_) async => bytes,
     );
   }
@@ -92,7 +157,7 @@ class ParteMedicoPrinter {
 
       doc.addPage(
         pw.Page(
-          pageFormat: PdfPageFormat.a4,
+          pageFormat: _formatoImpresion,
           margin: pw.EdgeInsets.zero,
           build: (_) => pw.Transform.translate(
             // La vista previa usa el escaneo; el ajuste corresponde a la impresora.

@@ -11,6 +11,7 @@ import '../application/auth_providers.dart';
 import '../application/session_timeout_provider.dart';
 import 'auth_activity_listener.dart';
 import 'login_page.dart';
+import 'mfa_widgets.dart';
 
 /// Sesión actual de Supabase.
 class AuthGate extends ConsumerWidget {
@@ -26,8 +27,9 @@ class AuthGate extends ConsumerWidget {
           return const _LoggedOutGate();
         }
 
-        return _LoggedInGate(
-          key: ValueKey(session.user.id),
+        return MfaGate(
+          key: ValueKey('mfa-${session.user.id}'),
+          child: _LoggedInGate(key: ValueKey(session.user.id)),
         );
       },
       loading: () => const _AuthLoading(),

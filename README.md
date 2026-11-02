@@ -1,148 +1,139 @@
 <div align="center">
-  <img src="docs/branding/hesm-logo.svg" alt="HESM Gestión RRHH" width="190" />
+  <img src="docs/branding/hesm-logo.svg" alt="HESM Gestión RRHH" width="170" />
   <h1>Gestión RRHH</h1>
-  <p><strong>Una herramienta de escritorio para ordenar la gestión diaria de Recursos Humanos.</strong></p>
-  <p>Flutter · Dart · Supabase · Windows</p>
+  <p><strong>Gestión diaria de Recursos Humanos desde una aplicación de escritorio.</strong></p>
+  <p>Flutter · Dart · Riverpod · Supabase · Windows</p>
+  <a href="https://github.com/gabyboan/hesm-gestion-rrhh/actions/workflows/quality.yml">
+    <img src="https://github.com/gabyboan/hesm-gestion-rrhh/actions/workflows/quality.yml/badge.svg?branch=main" alt="Pruebas y calidad" />
+  </a>
+  <a href="https://github.com/gabyboan/hesm-gestion-rrhh/releases">
+    <img src="https://img.shields.io/github/v/release/gabyboan/hesm-gestion-rrhh" alt="Última versión del código" />
+  </a>
 </div>
 
-<p align="center">
-  <a href="https://github.com/gabyboan/hesm-gestion-rrhh/actions/workflows/quality.yml">
-    <img src="https://github.com/gabyboan/hesm-gestion-rrhh/actions/workflows/quality.yml/badge.svg?branch=main" alt="Estado de calidad y pruebas" />
-  </a>
-</p>
+## Qué hace
 
----
+Gestión RRHH reúne las novedades del personal en cinco módulos con acceso por
+roles. Permite registrar movimientos, consultar información y preparar informes
+y partes médicos desde Windows.
 
-## El proyecto
-
-**Gestión RRHH** reúne en una aplicación de escritorio herramientas para
-registrar, consultar y dar seguimiento a novedades del personal. El objetivo es
-reducir tareas manuales y ofrecer información clara para el trabajo cotidiano
-del área.
-
-Es un proyecto en desarrollo activo, construido con Flutter y Supabase. Esta
-presentación describe sus capacidades sin exponer datos ni credenciales de
-personas.
-El símbolo del README también se usa como icono de la aplicación de Windows y
-emplea el color institucional `#045e63`.
-
-## Módulos
-
-| Área | Qué permite hacer |
+| Módulo | Funciones principales |
 | --- | --- |
-| **Horas** | Cargar y consultar horas por persona; revisar cupos, excedentes e informes mensuales. |
-| **Francos** | Registrar y consultar francos del personal. |
-| **Imprevistos** | Registrar novedades y hacer su seguimiento. |
-| **Médicos** | Emitir partes, completar datos del domicilio y familiares, y previsualizar y ajustar la impresión. |
-| **Suplencias** | Consultar y gestionar registros según los permisos asignados. |
+| **Horas** | Carga, consultas, cupos, excedentes e informes mensuales exportables. |
+| **Francos** | Registro, consulta y administración de movimientos según permisos. |
+| **Imprevistos** | Carga y seguimiento de novedades del personal. |
+| **Médicos** | Partes con QR y código manual, familiares, domicilio histórico, devolución con historial, vista previa y bandeja de impresión. |
+| **Suplencias** | Consulta y gestión de registros con permisos por usuario. |
 
-El acceso a cada área depende de los roles configurados en Supabase. También
-incluye preferencias de tema, control de sesión por inactividad y búsquedas por
-múltiples términos.
+## Versión 1.0.6.7
 
-Médicos incluye edad familiar en meses para menores de un año y una bandeja
-para revisar e imprimir varios partes en un único trabajo. Una cancelación
-conserva los partes pendientes en la sesión.
+- **Domicilio histórico:** cada parte conserva el domicilio guardado al emitirse,
+  aunque después cambie la ficha. La vista previa y las reimpresiones usan esa
+  copia. Los partes anteriores sin copia histórica lo indican explícitamente.
+- **Una Gestión por cuenta:** el segundo ingreso se rechaza sin desconectar al
+  primero. El servidor decide el acceso, lo renueva y permite recuperar la cuenta
+  tras un cierre inesperado. Todos los clientes deben actualizarse para participar.
+- **Impresión:** ajustes por impresora, pruebas repetibles y recuperación de la
+  bandeja al cancelar o fallar un trabajo.
+- **Inicio y cuenta:** verificaciones de conectividad y servicios, actualizaciones
+  firmadas, MFA opcional, revalidación periódica y cierre por inactividad.
 
-## Vista del sistema
+Detalles en el [registro de cambios](CHANGELOG.md). El repositorio publica código,
+pruebas y una demo ficticia; los instaladores operativos se distribuyen por el
+canal privado de actualizaciones.
 
-### Panel de módulos
+## Recorrido visual
 
-![Panel de módulos de Gestión RRHH con datos ficticios](docs/mockups/demo/panel.png)
+![Panel de módulos con datos ficticios](docs/mockups/demo/panel.png)
 
-Las capturas se generan desde la interfaz real, con datos ficticios y sin
-conectarse a la base de personal. Podés recorrer los cinco módulos en la
-[galería completa](docs/mockups/README.md).
+Las capturas se generan desde la interfaz con datos de demostración, sin consultar
+la base de personal. Ver la [galería de módulos](docs/mockups/README.md).
 
-## Tecnologías y estructura
+## Probar la demo
 
-- **Flutter y Dart** para la aplicación de escritorio.
-- **Riverpod** para el estado y la coordinación entre capas.
-- **Supabase** para autenticación, datos y permisos.
-- **Arquitectura por funcionalidades:** `application`, `data`, `domain` y
-  `presentation`.
-- **Windows** como plataforma de escritorio.
-
-## Desarrollo local
-
-Para probar la aplicación normal o una demo de consulta sin conexión, consultá
-la [entrega de Windows](docs/WINDOWS.md). Incluye instrucciones de compilación,
-empaquetado y un recorrido de validación manual con datos ficticios.
-
-### Requisitos
-
-- Flutter 3.38.6 y Dart 3.10.7, las versiones verificadas en esta entrega.
-- Acceso a un proyecto de Supabase de desarrollo con el esquema y los permisos
-  requeridos.
-
-### Ejecutar
-
-Instalá las dependencias:
+Requisitos: **Flutter 3.38.6**, Dart **3.10.7** y un entorno de escritorio Windows
+con las herramientas nativas de Flutter.
 
 ```powershell
-flutter pub get
+flutter pub get --enforce-lockfile
+flutter run -d windows -t tool/demo/main.dart
 ```
 
-Para desarrollo local, copiá la plantilla y completá las credenciales de tu
-entorno de prueba:
+La demo permite recorrer los módulos y revisar PDF con datos ficticios. Bloquea
+las escrituras y las solicitudes HTTP; no necesita una cuenta de Supabase.
+
+## Ejecutar con un entorno propio
 
 ```powershell
 Copy-Item credenciales.env.example credenciales.env
+# Completar la URL y la clave publishable/anon del entorno de desarrollo.
+flutter run -d windows
 ```
 
-Como alternativa, podés pasarlas mediante `--dart-define`:
+También se pueden pasar `SUPABASE_URL` y `SUPABASE_ANON_KEY` mediante
+`--dart-define`. El archivo de configuración es externo al ejecutable.
+
+El backend necesita las tablas, RPC y roles del proyecto. Las migraciones públicas
+documentan su evolución y **no constituyen una instalación completa desde cero**.
+Revisar el esquema y el historial de un entorno de prueba antes de aplicarlas.
+Las cargas nominales, credenciales, respaldos y datos de personal quedan excluidos
+del repositorio.
+
+## Verificación
 
 ```powershell
-flutter run `
-  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co `
-  --dart-define=SUPABASE_ANON_KEY=your-supabase-anon-key
+flutter analyze --fatal-infos
+flutter test --reporter expanded
 ```
 
-No guardes credenciales reales, claves `service_role`, datos de personal ni
-exportaciones en el repositorio. Las migraciones deben revisarse y validarse en
-una base de prueba antes de aplicarlas a cualquier entorno compartido.
-
-### Verificar
+Para los contratos SQL, con PostgreSQL 16 instalado en Windows:
 
 ```powershell
-flutter analyze
-flutter test
+powershell -NoProfile -File tool/test_database.ps1
 ```
 
-El workflow de GitHub Actions ejecuta estas comprobaciones con Flutter 3.38.6
-al actualizar `main` y en cada pull request.
+El runner crea un clúster temporal con datos ficticios y comprueba permisos,
+migraciones, domicilio de emisión y dos ingresos concurrentes. No lee las
+credenciales del entorno operativo. GitHub Actions ejecuta análisis, pruebas
+Flutter, contratos PostgreSQL y detección de secretos en cada pull request.
 
-## Alcance y estado
+La versión cuenta con **162 pruebas Flutter aprobadas**, contratos SQL en un
+PostgreSQL aislado y una compilación Windows verificada. Las comprobaciones y sus
+límites están en [Validación](docs/VALIDACION.md).
 
-- Aplicación de escritorio en desarrollo activo; no es un servicio público ni
-  una demo conectada para visitantes.
-- Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) y
-  [#3](https://github.com/gabyboan/hesm-gestion-rrhh/pull/3) están integrados en
-  `main`, con análisis estático y 83 pruebas aprobados también en CI.
-- Las pruebas manuales de sesión, permisos e impresora fueron aprobadas,
-  según confirmación del responsable del proyecto del 21 de octubre de 2026.
-- La revisión de privacidad histórica está cerrada, según confirmación del
-  responsable del 22 de octubre de 2026. El registro está en la
-  [revisión de privacidad](docs/REVISION_PRIVACIDAD.md).
-- Un despliegue de migraciones requiere revisar el esquema y el historial
-  aplicado del entorno de destino.
-- Las capturas y ejemplos destinados al portfolio deben usar exclusivamente
-  información ficticia.
+## Estructura
 
-## Documentación de la entrega
+```text
+lib/
+  app/              Tema y composición de la aplicación
+  core/             Conectividad, inicio, exportación, UI y actualizaciones
+  features/         auth, horas, francos, imprevistos, medicos y suplencias
+supabase/
+  migrations/       Evolución pública del esquema y los permisos
+  tests/            Contratos con datos ficticios
+test/               Pruebas de modelos, repositorios e interfaz
+tool/               Demo, validación y empaquetado
+```
 
-| Documento | Contenido |
+Cada funcionalidad separa `application`, `data`, `domain` y `presentation`.
+Ver las [convenciones de módulos](lib/features/README.md).
+
+## Documentación
+
+| Guía | Contenido |
 | --- | --- |
-| [Registro de cambios](CHANGELOG.md) | Mejoras y comportamiento por módulo. |
-| [Entrega GitHub](docs/ENTREGA_GITHUB.md) | Commits realizados, inventario de publicación y migraciones recuperadas. |
-| [Windows](docs/WINDOWS.md) | Aplicación normal, demo de consulta y validación manual. |
-| [Cambios por archivo](docs/CAMBIOS_POR_ARCHIVO.md) | Inventario individual, dependencias y propuesta de commits. |
-| [Validación](docs/VALIDACION.md) | Pruebas Flutter, contratos SQL y límites de despliegue. |
-| [Preparación para GitHub](docs/PREPARACION_GITHUB.md) | Privacidad y estado de publicación. |
-| [Revisión de privacidad](docs/REVISION_PRIVACIDAD.md) | Historial público, escaneos, limpieza y cierre confirmado. |
+| [Cambios y versiones](CHANGELOG.md) | Evolución funcional y versión actual. |
+| [Demo y desarrollo Windows](docs/WINDOWS.md) | Ejecución, demo y validación manual. |
+| [Instalación y actualizaciones](docs/INSTALADOR_Y_ACTUALIZACIONES.md) | Instaladores, firmas y distribución privada. |
+| [Inicio y diagnóstico](docs/INICIO_DIAGNOSTICO.md) | Comprobaciones de servicios y recuperación. |
+| [Partes médicos y QR](docs/PARTES_MEDICOS_QR.md) | Emisión, devolución e historial. |
+| [Impresión médica](docs/IMPRESION_MEDICA.md) | Calibración por impresora y pruebas. |
+| [Sesión única](docs/SESION_UNICA_GESTION.md) | Reserva por cuenta, concurrencia y recuperación. |
+| [MFA opcional](docs/MFA_Y_SEGURIDAD_AUTH.md) | Alta, verificación y desactivación. |
+| [Duración y revalidación](docs/LIMITES_SESIONES.md) | Límites de acceso y autenticadora. |
+| [Validación](docs/VALIDACION.md) | Evidencia automatizada e histórica. |
+| [Revisión de privacidad](docs/REVISION_PRIVACIDAD.md) | Limpieza y cierre de la revisión histórica. |
+| [Contribuir](CONTRIBUTING.md) | Preparación de cambios y comprobaciones. |
 
----
-
-<div align="center">
-  <sub>Proyecto de portfolio · Aplicación de escritorio para gestión de RRHH</sub>
-</div>
+La revisión de privacidad histórica está cerrada según la confirmación del
+responsable del 22 de octubre de 2026, conservada en su documentación.

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ui/app_snackbar.dart';
+import '../../../core/updates/update_settings_tile.dart';
 import '../../../core/utils/error_text.dart';
+import '../../auth/presentation/mfa_widgets.dart';
 import '../application/user_preferences_providers.dart';
 import '../domain/user_preferences.dart';
 
@@ -101,7 +103,8 @@ class _PreferencesFormState extends ConsumerState<_PreferencesForm> {
       title: const Text('Configuración'),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
-        child: Column(
+        child: SingleChildScrollView(
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -157,6 +160,9 @@ class _PreferencesFormState extends ConsumerState<_PreferencesForm> {
                   ? null
                   : (value) => setState(() => _idleMinutes = value!),
             ),
+            const SizedBox(height: 12),
+            const MfaSettingsTile(),
+            const UpdateSettingsTile(),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Text(
@@ -165,7 +171,7 @@ class _PreferencesFormState extends ConsumerState<_PreferencesForm> {
               ),
             ],
           ],
-        ),
+        )),
       ),
       actions: [
         TextButton(

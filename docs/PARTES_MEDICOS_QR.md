@@ -74,8 +74,16 @@ no demuestra por sí solo que una firma, sello o prescripción en papel sea
 auténtica. El control implementado deja constancia de qué usuario transcribió
 los datos y sus correcciones. El nombre y la matrícula del médico son por ahora
 una transcripción: falta el padrón de médicos habilitados y su validación.
-El domicilio impreso sigue usando la ficha vigente, como antes; esta entrega
-no agrega un archivo inmutable de cada PDF emitido.
+Desde la versión 1.0.6.7 cada parte guarda una copia inmutable del domicilio al
+emitirse. Consultas, vistas y reimpresiones usan esa copia aunque la ficha cambie.
+Si no había domicilio al emitir, el parte continúa sin domicilio. Los partes
+anteriores sin copia indican que el domicilio histórico no está disponible.
+No se archiva cada PDF emitido.
+
+La migración correspondiente es
+`supabase/migrations/20261102135222_conservar_domicilio_emision_partes_medicos.sql`.
+El contrato se verifica con `powershell -File tool/test_database.ps1` en un
+PostgreSQL aislado con datos ficticios.
 
 ## Diseño de la futura app móvil
 

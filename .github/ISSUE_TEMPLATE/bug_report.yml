@@ -1,0 +1,24 @@
+name: Informar un error
+description: Describir un problema reproducible en Gestión RRHH.
+title: "[Error] "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versión y sistema operativo
+      placeholder: Gestión 1.0.6.7, Windows 10/11
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducirlo
+      description: Usar ejemplos ficticios y mensajes sin datos de personal ni credenciales.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado y resultado obtenido
+    validations:
+      required: true

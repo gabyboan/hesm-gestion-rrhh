@@ -1,0 +1,63 @@
+name: Private Windows installer
+
+# Compilation only in a private repository. Publication to the LAN is local.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    if: github.event.repository.private == true
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.6'
+          channel: stable
+          cache: true
+      - name: Validate release configuration
+        shell: pwsh
+        env:
+          UPDATE_PRIVATE_KEY: ${{ secrets.WINDOWS_UPDATE_PRIVATE_KEY }}
+          CLIENT_URL: ${{ secrets.SUPABASE_URL }}
+          CLIENT_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if (-not $env:UPDATE_PRIVATE_KEY -or -not $env:CLIENT_URL -or -not $env:CLIENT_KEY) {
+            throw 'Configure signing and client secrets in this private repository.'
+          }
+          New-Item -ItemType Directory .private -Force | Out-Null
+          [IO.File]::WriteAllText((Join-Path $pwd '.private/windows-updates.key'), $env:UPDATE_PRIVATE_KEY)
+          @{ SUPABASE_URL = $env:CLIENT_URL; SUPABASE_ANON_KEY = $env:CLIENT_KEY } |
+            ConvertTo-Json | Set-Content .private/client-config.json
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Analyze and test
+        shell: pwsh
+        run: |
+          flutter analyze --fatal-infos
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          flutter test --reporter expanded
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco upgrade innosetup --version=6.5.4 --yes --no-progress --allow-downgrade
+      - name: Build and sign installer
+        shell: pwsh
+        run: |
+          ./tool/build_windows_installer.ps1 -Configuracion .private/client-config.json -Destino dist/release
+      - name: Preserve private review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HESM-Windows-private
+          path: dist/release/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove temporary signing and client configuration
+        if: always()
+        shell: pwsh
+        run: |
+          Remove-Item -LiteralPath .private/windows-updates.key,.private/client-config.json -Force -ErrorAction SilentlyContinue

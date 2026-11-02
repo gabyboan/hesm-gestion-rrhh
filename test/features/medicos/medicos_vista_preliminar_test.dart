@@ -45,6 +45,7 @@ class _RepositorioPrueba implements MedicosRepository {
           'tipo': 'DOMICILIO',
           'empleado_apellido': 'Nuevo',
           'empleado_nombre': 'Luis',
+          'domicilio_emision': {'calle': 'Domicilio del servidor'},
           'codigo_qr': id == 100 ? '00001008' : '00001016',
         }),
         anulado: false,
@@ -104,11 +105,13 @@ void main() {
           {DateTime? fecha,
           ParteMedicoQr? qr,
           bool esEnfermeria = false,
+          bool esArt = false,
           String aclaracionFechaTurno = 'Turno tarde'}) =>
       ParteMedico(
         id: id,
         qr: qr,
         esEnfermeria: esEnfermeria,
+        esArt: esArt,
         carreraNombre: esEnfermeria ? 'Enfermería' : 'Escalafón General',
         dni: 12345678,
         fecha: fecha ?? DateTime(2026, 10, 23),
@@ -128,7 +131,8 @@ void main() {
   Future<void> abrir(WidgetTester tester, List<ParteMedico> registros,
       {Size size = const Size(1440, 900),
       DateTime? hoy,
-      MedicoPersona agente = persona}) async {
+      MedicoPersona agente = persona,
+      void Function(int dni)? alConsultarDomicilio}) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(ProviderScope(
@@ -151,8 +155,10 @@ void main() {
               .toList();
         }),
         guardarParteMedicoControllerProvider.overrideWith(_GuardarPrueba.new),
-        medicosDomicilioProvider.overrideWith((ref, dni) async =>
-            const MedicoDomicilio(calle: 'Calle de prueba', numero: '123')),
+        medicosDomicilioProvider.overrideWith((ref, dni) async {
+          alConsultarDomicilio?.call(dni);
+          return const MedicoDomicilio(calle: 'Calle de prueba', numero: '123');
+        }),
       ],
       child: MaterialApp(
           home: ProviderScope(
@@ -181,6 +187,8 @@ void main() {
         ProviderScope.containerOf(tester.element(find.byType(MedicosPage)));
     expect(container.read(colaImpresionProvider).map((p) => p.qr!.codigo),
         ['00001008', '00001016']);
+    expect(container.read(colaImpresionProvider).map((p) => p.domicilio?.calle),
+        everyElement('Domicilio del servidor'));
     await tester.tap(find.text('Bandeja de impresión (2)'));
     await tester.pumpAndSettle();
     expect(find.text('Imprimir todos (2)'), findsOneWidget);
@@ -209,7 +217,9 @@ void main() {
 
   testWidgets('el historial agrega a la bandeja sin duplicar el mismo parte',
       (tester) async {
-    await abrir(tester, [parte(1, TipoParteMedico.domicilio)]);
+    final registro = parte(1, TipoParteMedico.domicilio).conDomicilio(
+        const MedicoDomicilio(calle: 'Domicilio al emitir', numero: '456'));
+    await abrir(tester, [registro]);
     await tester.tap(find.widgetWithText(Tab, 'Partes registrados'));
     await tester.pumpAndSettle();
     for (var index = 0; index < 2; index++) {
@@ -221,9 +231,63 @@ void main() {
         ProviderScope.containerOf(tester.element(find.byType(MedicosPage)));
     expect(container.read(colaImpresionProvider), hasLength(1));
     expect(container.read(colaImpresionProvider).single.domicilio?.calle,
-        'Calle de prueba');
+        'Domicilio al emitir');
     expect(printing.impresiones, 0);
   });
+
+  for (final domicilio in [
+    const MedicoDomicilio(calle: 'Domicilio al emitir', numero: '456'),
+    const MedicoDomicilio(),
+    null,
+  ]) {
+    testWidgets(
+        'historial, ampliación y reimpresión conservan domicilio ${domicilio?.calle ?? domicilio?.estaVacio}',
+        (tester) async {
+      final consultas = <int>[];
+      final registro =
+          parte(1, TipoParteMedico.domicilio).conDomicilio(domicilio);
+      await abrir(tester, [registro], alConsultarDomicilio: consultas.add);
+      await tester.tap(find.widgetWithText(Tab, 'Partes registrados'));
+      await tester.pumpAndSettle();
+      final consultasAntes = consultas.length;
+      final container =
+          ProviderScope.containerOf(tester.element(find.byType(MedicosPage)));
+      // Simula un domicilio de ficha modificado en otra pantalla o equipo.
+      container.invalidate(medicosDomicilioProvider(registro.dni));
+      await tester.pumpAndSettle();
+      expect(consultas.length, consultasAntes);
+      expect(
+          find.text(domicilio == null
+              ? 'Domicilio histórico no disponible para este parte.'
+              : domicilio.estaVacio
+                  ? 'Sin domicilio cargado al emitir el parte.'
+                  : 'Domicilio guardado al emitir el parte.'),
+          findsOneWidget);
+
+      await tester.tap(find.byTooltip('Ampliar vista preliminar'));
+      await tester.pumpAndSettle();
+      expect(
+          tester
+              .widget<ParteMedicoVistaAmpliada>(
+                  find.byType(ParteMedicoVistaAmpliada))
+              .parte
+              .domicilio,
+          same(domicilio));
+      await tester.tap(find.byTooltip('Cerrar vista ampliada'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Agregar a la bandeja de impresión'));
+      await tester.pumpAndSettle();
+      expect(container.read(colaImpresionProvider).single.domicilio,
+          same(domicilio));
+      await tester.tap(find.byTooltip('Reimprimir'));
+      await tester.pumpAndSettle();
+      expect(printing.impresiones, 1);
+      expect(consultas.length, consultasAntes);
+      expect(tester.takeException(), isNull);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+    });
+  }
 
   testWidgets(
       'imprimir desde el historial retira el parte de la bandeja solo al aceptar',
@@ -497,11 +561,17 @@ void main() {
   testWidgets(
       'incluye automáticamente toda la carrera Enfermería aunque haya una búsqueda',
       (tester) async {
-    final canje = parte(2, TipoParteMedico.canje, esEnfermeria: true);
+    final canje = parte(2, TipoParteMedico.canje,
+        esEnfermeria: true, esArt: true, qr: ParteMedicoQr.parse('00000422'));
     await abrir(tester, [
       parte(1, TipoParteMedico.domicilio, aclaracionFechaTurno: 'No incluido'),
+      parte(5, TipoParteMedico.domicilioFamiliar,
+          esEnfermeria: true, aclaracionFechaTurno: '  '),
       canje,
-      parte(3, TipoParteMedico.consultorio, esEnfermeria: true)
+      parte(4, TipoParteMedico.domicilio,
+          esEnfermeria: true, esArt: true, aclaracionFechaTurno: ''),
+      parte(3, TipoParteMedico.consultorio,
+          esEnfermeria: true, aclaracionFechaTurno: '  Turno\n tarde  ')
     ]);
     String? copiado;
     tester.binding.defaultBinaryMessenger
@@ -522,13 +592,21 @@ void main() {
         find.widgetWithText(ListTile, canje.descripcionRegistro), findsNothing);
     await tester.tap(find.text('Listado de Enfermería'));
     await tester.pumpAndSettle();
+    const textoEsperado = 'Fecha: 23/10/2026\n\n'
+        'PC — Perez, Ana 2 — ART — Turno tarde\n'
+        'AC — Perez, Ana 3 — Turno tarde\n'
+        'AD — Perez, Ana 4 — ART\n'
+        'AD — Perez, Ana 5';
+    expect(
+        tester
+            .widget<SelectableText>(find.descendant(
+                of: find.byType(AlertDialog),
+                matching: find.byType(SelectableText)))
+            .data,
+        textoEsperado);
     await tester.tap(find.text('Copiar listado'));
     await tester.pumpAndSettle();
-    expect(copiado, contains('PC — Perez, Ana 2'));
-    expect(copiado, contains('AC — Perez, Ana 3'));
-    expect(copiado, contains('Total: 2'));
-    expect(copiado, contains('Observaciones: Turno tarde'));
-    expect(copiado, isNot(contains('Ana 1')));
+    expect(copiado, textoEsperado);
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
