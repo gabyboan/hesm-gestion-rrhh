@@ -25,8 +25,9 @@ SQL y la comprobación de seguridad originales.
 
 GitHub Actions conserva los controles de Flutter y secretos, incorpora los diez
 contratos nuevos al servicio PostgreSQL desechable y ejecuta las herramientas
-Python en Windows. La prueba concurrente del cupo de Estudio se ejecutó con el
-runner local de Windows. Las comprobaciones anteriores de instalación e impresión
+Python en Windows. Ambos runners incluyen la prueba concurrente del cupo de
+Estudio antes del contrato de catálogo, que comprueba el consumo resultante.
+Las comprobaciones anteriores de instalación e impresión
 física corresponden a sus fechas y versiones originales; esta revisión no genera
 un instalador nuevo. Ver [Estado actual](ESTADO_ACTUAL.md).
 
