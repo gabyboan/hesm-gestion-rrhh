@@ -2,7 +2,9 @@
 
 Migración aplicada el 23/10/2026 en el proyecto de destino, después de
 acortar el código manual a ocho números.
-La app móvil todavía no está implementada. Falta recompilar y distribuir el escritorio.
+La app móvil todavía no está implementada. El escritorio con QR se incorporó
+al repositorio y a la distribución 1.0.6.7 documentada el 2/11/2026. El trabajo
+posterior y sus pendientes están en [Estado actual](ESTADO_ACTUAL.md).
 
 El 23/10/2026 también se aplicó `20261023102714_partes_medicos_por_fecha.sql`
 para el selector de fecha. Se verificó la consulta diaria bajo el rol

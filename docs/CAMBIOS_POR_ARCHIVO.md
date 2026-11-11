@@ -1,5 +1,18 @@
 # Cambios por archivo
 
+## Referencia actual · 11 de noviembre de 2026
+
+El inventario que sigue corresponde a octubre. El trabajo posterior agrega
+los directorios `lib/features/ficha/` y `lib/features/licencias/`, sus pruebas,
+la integración en Shell e Imprevistos y los proveedores ficticios de la demo.
+Incluye doce migraciones de noviembre, diez contratos SQL y las herramientas
+Python de importación y respaldo con sus pruebas.
+
+Las reglas implementadas y los pendientes se detallan en
+[Estado actual](ESTADO_ACTUAL.md); la base de publicación y las comprobaciones
+están en [Entrega GitHub](ENTREGA_GITHUB.md) y [Validación](VALIDACION.md).
+Los 108 archivos del inventario original no representan el total actual.
+
 Revisión: 21 de octubre de 2026. Comparación de los archivos existentes contra
 `d045999`; los archivos nuevos se revisan completos. Este inventario describe
 **108 archivos: 37 modificados, 2 retirados y 69 nuevos**, incluida la

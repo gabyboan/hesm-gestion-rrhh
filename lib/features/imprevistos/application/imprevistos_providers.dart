@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
+import '../../ficha/application/ficha_providers.dart';
+import '../../licencias/application/licencias_providers.dart';
 import '../data/imprevistos_repository.dart';
 import '../domain/imprevisto_persona.dart';
 import '../domain/imprevisto_registro.dart';
@@ -72,6 +74,9 @@ final imprevistosRegistrosProvider =
 void invalidateImprevistos(Ref ref) {
   ref.invalidate(imprevistosListadoProvider);
   ref.invalidate(imprevistosRegistrosProvider);
+  ref.invalidate(licenciasRegistrosProvider);
+  ref.invalidate(fichaLicenciasProvider);
+  ref.invalidate(fichaLicenciasAcumuladasProvider);
 }
 
 class ImprevistoFormData {

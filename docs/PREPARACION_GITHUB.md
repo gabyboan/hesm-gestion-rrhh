@@ -1,5 +1,16 @@
 # Preparación para GitHub
 
+## Revisión del 11 de noviembre de 2026
+
+La actualización actual parte de la historia pública `dcda287` y agrega el
+trabajo posterior de Ficha y Licencias en una copia aislada. Conserva la revisión
+de privacidad cerrada y las mejoras ya publicadas. Su alcance está en
+[Estado actual](ESTADO_ACTUAL.md), su preparación en
+[Entrega GitHub](ENTREGA_GITHUB.md) y los resultados en [Validación](VALIDACION.md).
+
+La revisión inicial de octubre que sigue se conserva como registro histórico;
+sus cantidades de archivos y pruebas no describen la actualización actual.
+
 Revisión inicial: 20 de octubre de 2026.
 Actualización de verificaciones: 21 de octubre de 2026.
 

@@ -1,5 +1,11 @@
 # Windows: aplicación y demostración
 
+Actualización del código al 11/11/2026: la demo incluye Ficha y Licencias y
+permite recorrer siete módulos. Las entregas portátiles de octubre descritas
+aquí son históricas. La última distribución operativa documentada es 1.0.6.7;
+los módulos nuevos requieren una nueva compilación para distribuirse. Ver
+[Estado actual](ESTADO_ACTUAL.md).
+
 Entrega portátil para Windows x64, preparada con Flutter 3.38.6 y Dart 3.10.7.
 Descomprimí el ZIP completo y ejecutá `app_horas.exe` desde su carpeta, junto
 con las DLL y el directorio `data`.
@@ -23,6 +29,9 @@ domicilio/ART y familiar de seis meses. No representan personal real.
   la bandeja para una prueba de impresión. La impresión se inicia por acción
   del usuario y puede consumir papel.
 - Suplencias permite consultar, buscar y ordenar los ejemplos.
+- Licencias y Ficha muestran registros ficticios desde 2026, con permisos de
+  consulta. Los ejemplos de estos módulos son independientes del padrón de
+  tres personas utilizado por las pantallas originales.
 - El tema se puede cambiar durante el recorrido. **Salir** reinicia la demo,
   sus preferencias en memoria y la bandeja.
 - La calibración de impresión se guarda con un prefijo exclusivo de la demo,

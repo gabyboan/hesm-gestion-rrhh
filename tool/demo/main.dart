@@ -4,8 +4,11 @@ import 'package:app_horas/app/theme/theme_mode_provider.dart';
 import 'package:app_horas/core/supabase/supabase_provider.dart';
 import 'package:app_horas/core/utils/search_query.dart';
 import 'package:app_horas/features/auth/application/auth_providers.dart';
+import 'package:app_horas/features/auth/application/mfa_providers.dart';
 import 'package:app_horas/features/auth/application/current_roles_provider.dart';
 import 'package:app_horas/features/auth/data/auth_repository.dart';
+import 'package:app_horas/features/ficha/application/ficha_providers.dart';
+import 'package:app_horas/features/ficha/domain/ficha_persona.dart';
 import 'package:app_horas/features/francos/application/francos_providers.dart';
 import 'package:app_horas/features/francos/domain/franco_movimiento.dart';
 import 'package:app_horas/features/francos/domain/franco_persona.dart';
@@ -15,6 +18,8 @@ import 'package:app_horas/features/horas/domain/persona.dart';
 import 'package:app_horas/features/imprevistos/application/imprevistos_providers.dart';
 import 'package:app_horas/features/imprevistos/domain/imprevisto_persona.dart';
 import 'package:app_horas/features/imprevistos/domain/imprevisto_registro.dart';
+import 'package:app_horas/features/licencias/application/licencias_providers.dart';
+import 'package:app_horas/features/licencias/domain/licencia.dart';
 import 'package:app_horas/features/medicos/application/cola_impresion_provider.dart';
 import 'package:app_horas/features/medicos/application/medicos_providers.dart';
 import 'package:app_horas/features/medicos/domain/medico_domicilio.dart';
@@ -212,6 +217,7 @@ class _DemoAppState extends State<DemoApp> {
   Widget build(BuildContext context) => ProviderScope(
         key: ValueKey(generation),
         overrides: [
+          mfaUiEnabledProvider.overrideWithValue(false),
           supabaseClientProvider.overrideWith(
               (ref) => throw StateError('La demo no se conecta a Supabase.')),
           authRepoProvider.overrideWith(
@@ -373,6 +379,56 @@ class _DemoAppState extends State<DemoApp> {
               .overrideWith((ref) => ColaImpresionController()),
           puedeLeerSuplenciasProvider.overrideWith((ref) async => true),
           suplenciasRepoProvider.overrideWith((ref) => _DemoSuplencias()),
+          licenciasPermisosProvider
+              .overrideWith((ref) async => const LicenciasPermisos(leer: true)),
+          licenciasTiposProvider.overrideWith(
+              (ref) async => const [LicenciaTipo(id: 6, nombre: 'Lic. Anual')]),
+          licenciasRegistrosProvider.overrideWith((ref) async => [
+                LicenciaRegistro(
+                  id: 1,
+                  dni: 10000001,
+                  nombre: 'PERSONA DEMO',
+                  tipoId: 6,
+                  tipo: 'Lic. Anual',
+                  desde: DateTime(demoDate.year, demoDate.month, 1),
+                  hasta: DateTime(demoDate.year, demoDate.month, 7),
+                  dias: 7,
+                )
+              ]),
+          licenciasPendientesProvider.overrideWith((ref) async => []),
+          licenciasImportadasResumenProvider.overrideWith((ref) async => []),
+          puedeLeerFichaProvider.overrideWith((ref) async => true),
+          fichaLicenciasAcumuladasProvider.overrideWith((ref, dni) async => [
+                LicenciaRegistro(
+                    id: 1,
+                    dni: dni,
+                    nombre: 'PERSONA DEMO',
+                    tipoId: 101,
+                    tipo: 'Licencia Anual Ordinaria',
+                    codigo: '01',
+                    columnaFicha: 'ANUAL',
+                    desde: DateTime(2026, 1, 1),
+                    hasta: DateTime(2026, 1, 7),
+                    dias: 7),
+              ]),
+          fichaPersonasProvider.overrideWith((ref, buscar) async => const [
+                FichaPersona(
+                    dni: 10000001,
+                    nombre: 'PERSONA DEMO',
+                    legajo: 1,
+                    carrera: 'Carrera demo'),
+              ]),
+          fichaLicenciasProvider.overrideWith((ref, consulta) async => [
+                LicenciaRegistro(
+                    id: 1,
+                    dni: consulta.dni,
+                    nombre: 'PERSONA DEMO',
+                    tipoId: 6,
+                    tipo: 'Lic. Anual',
+                    desde: DateTime(consulta.anio, 1, 1),
+                    hasta: DateTime(consulta.anio, 1, 7),
+                    dias: 7),
+              ]),
         ],
         child: const _DemoMaterialApp(),
       );

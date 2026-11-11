@@ -66,3 +66,60 @@ assert all('RESERVA:true' in result or 'RESERVA:false' in result for result in r
 assert sum('RESERVA:true' in result for result in results) == 1, results
 print('OK: dos ingresos concurrentes, una sola Gestión admitida.')
 PY
+
+# Los contratos comparten una base ficticia y aplican las migraciones en orden.
+createdb licencias_test
+for contract in \
+  licencias \
+  ficha_licencias \
+  ficha_formulario_codigos \
+  ficha_imprevistos \
+  licencias_estudio; do
+  sql licencias_test "supabase/tests/$contract.sql" "$contract"
+done
+
+# El catálogo también comprueba el cupo consumido por este ensayo concurrente.
+psql -X --dbname=licencias_test --set=ON_ERROR_STOP=1 \
+  >build/sql-ci/study-prepare.log 2>&1 <<'SQL'
+begin;
+insert into public.usuario_roles select '00000000-0000-4000-8000-000000000001',id from public.roles
+where codigo in('LICENCIAS_LECTURA','LICENCIAS_CARGA');
+set local request.jwt.claim.sub='00000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select public.rpc_licencias_guardar(null,12345678,129::smallint,d,h,'Cupo concurrente')
+from (values('2026-06-01'::date,'2026-06-05'::date),('2026-06-08','2026-06-12'),
+('2026-06-15','2026-06-19'),('2026-06-22','2026-06-25')) x(d,h);
+commit;
+SQL
+
+contenders=()
+for day in 29 30; do
+  psql -X -A -t -q --dbname=licencias_test --set=ON_ERROR_STOP=1 \
+    >"build/sql-ci/study-$day.log" 2>"build/sql-ci/study-$day.err" <<SQL &
+begin;
+set local request.jwt.claim.sub='00000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select public.rpc_licencias_guardar(null,12345678,129::smallint,'2026-06-$day','2026-06-$day','Cupo concurrente');
+select pg_sleep(0.5);
+commit;
+SQL
+  contenders+=("$!")
+done
+study_winners=0
+for contender in "${contenders[@]}"; do
+  if wait "$contender"; then study_winners=$((study_winners + 1)); fi
+done
+if [[ "$study_winners" != 1 ]]; then
+  echo "El último día de Estudio fue consumido por $study_winners solicitudes." >&2
+  exit 1
+fi
+echo 'OK: cupo de Estudio protegido ante dos solicitudes simultáneas.'
+
+for contract in \
+  licencias_catalogo_excel \
+  licencias_fichas_papel \
+  licencias_duelo_parentescos \
+  licencias_francos_cantidad_papel \
+  licencias_documentacion_pendiente; do
+  sql licencias_test "supabase/tests/$contract.sql" "$contract"
+done

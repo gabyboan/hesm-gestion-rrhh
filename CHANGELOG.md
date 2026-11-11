@@ -1,5 +1,50 @@
 # Registro de cambios
 
+## Estado del repositorio · 11 de noviembre de 2026
+
+Se incorpora el trabajo de Ficha y Licencias realizado después de la distribución
+1.0.6.7. El README describe los siete módulos y enlaza el
+[estado actual](docs/ESTADO_ACTUAL.md), con la distribución documentada y los
+pendientes separados. Se conservan las mejoras ya publicadas y se amplían los
+contratos de validación para cubrir los módulos nuevos.
+
+## Fichas: francos y documentación pendiente · 10 de noviembre de 2026
+
+Dos francos del código 60 anotados en una fecha se contabilizan como dos unidades
+y conservan un día de duración calendario. Una cantidad de uno con Hasta vacío
+se interpreta como la misma fecha de Desde, conservando la evidencia original;
+la planilla imprime `/ / /` en Hasta para los períodos de una fecha.
+
+La marca de documentación pendiente es independiente de la confirmación de una
+importación. Se muestra en gris en la planilla, incluidas sus continuaciones,
+y se informa en el historial y la exportación sin modificar los cómputos.
+Modificar la persona, el tipo o el período invalida la cantidad verificada del
+papel para evitar reutilizar un cómputo anterior.
+
+## Ficha, Licencias e historial integrado · 3 al 5 de noviembre de 2026
+
+Licencias incorpora carga, consulta, filtros, modificación, anulación auditada
+y exportación XLSX. Ficha consulta los mismos registros confirmados desde 2026,
+los datos del padrón y los resúmenes por año. La planilla A4 horizontal ofrece
+vista preliminar, ampliación e impresión, con tantas hojas como necesite el
+historial y sin impresión automática.
+
+Los imprevistos se consultan desde su módulo de origen sin duplicar cargas:
+primera carga 43 y siguientes 98 por persona y año. La consulta excluye los
+imprevistos importados del Excel y refleja cambios y anulaciones del módulo.
+Las importaciones pendientes de confirmación se conservan en una revisión
+separada y no aparecen en las consultas y exportaciones habituales.
+
+El selector utiliza los 30 tipos del Excel y los códigos confirmados.
+Profiláctica usa 03; Estudio usa 29 y computa días hábiles con los topes de 20
+por persona y año y 5 por solicitud, incluido el control de cargas simultáneas.
+Las fichas de papel conservan evidencia, cantidades y año de cupo; los
+parentescos confirmados de Duelo se mantienen en el catálogo operativo.
+
+Estas entradas describen el código incorporado. La última distribución
+operativa documentada continúa siendo 1.0.6.7. Reglas y pendientes en
+[Ficha y Licencias](docs/FICHA_Y_LICENCIAS.md).
+
 ## 1.0.6.7 · 2 de noviembre de 2026
 
 - Guarda un domicilio inmutable en cada parte al emitir y lo conserva en vistas,

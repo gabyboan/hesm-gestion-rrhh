@@ -76,7 +76,15 @@ void main() {
         throwsUnsupportedError);
     await tester.tap(find.byTooltip('Módulos'));
     await tester.pumpAndSettle();
-    for (final module in ['Francos', 'Imprevisto', 'Médicos', 'Suplencias']) {
+    for (final module in [
+      'Francos',
+      'Imprevisto',
+      'Médicos',
+      'Suplencias',
+      'Licencias',
+      'Ficha'
+    ]) {
+      await tester.ensureVisible(find.text(module).first);
       await tester.tap(find.text(module).first);
       await tester.pumpAndSettle();
       if (module == 'Francos') {
