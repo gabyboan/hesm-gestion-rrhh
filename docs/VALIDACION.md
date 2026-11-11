@@ -1,5 +1,35 @@
 # Validación de la entrega
 
+## Revisión actual · 11 de noviembre de 2026
+
+Comprobaciones ejecutadas en una copia aislada sobre `dcda287`, con el código de
+Ficha y Licencias, su integración con Imprevistos y los ajustes del 10 de
+noviembre. No se consultó ni modificó la base operativa en esta revisión.
+
+| Control | Resultado y alcance |
+| --- | --- |
+| `flutter pub get --enforce-lockfile` | Aprobado con el lockfile existente. |
+| `flutter analyze --fatal-infos` | Aprobado, sin observaciones. |
+| `flutter test --reporter expanded` | **194 pruebas aprobadas**, incluidos los módulos nuevos y la demo. |
+| `tool/test_database.ps1` | Aprobado en PostgreSQL 16 aislado: contratos anteriores y diez contratos de Ficha/Licencias, con permisos, catálogo, impresión, cantidades y documentación pendiente. |
+| Concurrencia SQL | Una sola reserva por cuenta y un solo consumo de Estudio cuando dos solicitudes compiten por el último día disponible. |
+| `python -m unittest discover -s tool/tests -v` | **13 pruebas aprobadas**: lectura de Excel, selección conservadora y fallos de la tarea de copia. Ejecutadas con las dependencias de `tool/backup_requirements.txt` instaladas. |
+| Demo ampliada | Las tres pruebas de la demo vuelven a pasar después de ampliar el recorrido a los siete módulos, con HTTP y escrituras bloqueados. |
+| Gitleaks 8.30.1 | Árbol público seleccionado escaneado con redacción completa, sin hallazgos. |
+| Enlaces locales y diferencias | Enlaces de la documentación comprobados y `git diff --check` aprobado. |
+
+Se fijan saltos de línea LF para SQL mediante `.gitattributes`: el guard de la
+migración de sesión única comprueba la huella de la función anterior y los CRLF
+introducidos por el checkout de Windows alteraban esa huella. Se conservan el
+SQL y la comprobación de seguridad originales.
+
+GitHub Actions conserva los controles de Flutter y secretos, incorpora los diez
+contratos nuevos al servicio PostgreSQL desechable y ejecuta las herramientas
+Python en Windows. La prueba concurrente del cupo de Estudio se ejecutó con el
+runner local de Windows. Las comprobaciones anteriores de instalación e impresión
+física corresponden a sus fechas y versiones originales; esta revisión no genera
+un instalador nuevo. Ver [Estado actual](ESTADO_ACTUAL.md).
+
 ## Versión 1.0.6.7 · 2 de noviembre de 2026
 
 El conjunto de la versión pasó **162 pruebas Flutter** y `flutter analyze
@@ -19,8 +49,8 @@ firma, tamaño y SHA-256. El código Dart del actualizador verificó la copia
 publicada y rechazó una copia alterada. Estas comprobaciones no sustituyen la
 instalación física en cada PC ni una prueba de impresión en otro dispositivo.
 
-El README y las guías actuales corresponden a esta versión. Las secciones
-siguientes conservan las evidencias históricas de las entregas anteriores.
+Este apartado corresponde a esa distribución. Las secciones siguientes
+conservan las evidencias históricas de las entregas anteriores.
 
 Los PR [#2](https://github.com/gabyboan/hesm-gestion-rrhh/pull/2) y
 [#3](https://github.com/gabyboan/hesm-gestion-rrhh/pull/3) están integrados en

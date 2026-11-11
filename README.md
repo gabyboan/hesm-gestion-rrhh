@@ -13,7 +13,7 @@
 
 ## Qué hace
 
-Gestión RRHH reúne las novedades del personal en cinco módulos con acceso por
+Gestión RRHH reúne las novedades del personal en siete módulos con acceso por
 roles. Permite registrar movimientos, consultar información y preparar informes
 y partes médicos desde Windows.
 
@@ -24,8 +24,28 @@ y partes médicos desde Windows.
 | **Imprevistos** | Carga y seguimiento de novedades del personal. |
 | **Médicos** | Partes con QR y código manual, familiares, domicilio histórico, devolución con historial, vista previa y bandeja de impresión. |
 | **Suplencias** | Consulta y gestión de registros con permisos por usuario. |
+| **Licencias** | Carga, modificación, anulación y exportación; catálogo operativo, cupos de Estudio y revisión separada de importaciones. |
+| **Ficha** | Datos del personal, historial integrado desde 2026, resumen anual y planilla PDF con continuaciones. |
 
-## Versión 1.0.6.7
+## Estado del trabajo · 11 de noviembre de 2026
+
+El desarrollo actual incorpora **Ficha y Licencias**. Licencias concentra las
+cargas y correcciones; Ficha consulta los mismos registros confirmados y los
+imprevistos de su módulo de origen, sin duplicarlos. La planilla incluye vista
+preliminar, ampliación, impresión y PDF con tantas hojas como requiera el historial.
+
+Los últimos ajustes conservan la cantidad verificada en las fichas de papel,
+admiten dos francos del código 60 en una sola fecha y muestran en gris la
+documentación pendiente sin alterar los cómputos. Las importaciones que requieren
+revisión permanecen separadas de las consultas y exportaciones habituales.
+
+La última distribución operativa documentada es **1.0.6.7**, del 2 de noviembre.
+Los cambios posteriores se incorporan al código con sus pruebas y migraciones;
+su inclusión aquí no acredita una nueva instalación en los puestos de trabajo.
+Ver el [estado actual y los pendientes](docs/ESTADO_ACTUAL.md) y el
+[alcance de Ficha y Licencias](docs/FICHA_Y_LICENCIAS.md).
+
+## Base operativa 1.0.6.7
 
 - **Domicilio histórico:** cada parte conserva el domicilio guardado al emitirse,
   aunque después cambie la ficha. La vista previa y las reimpresiones usan esa
@@ -59,7 +79,7 @@ flutter pub get --enforce-lockfile
 flutter run -d windows -t tool/demo/main.dart
 ```
 
-La demo permite recorrer los módulos y revisar PDF con datos ficticios. Bloquea
+La demo permite recorrer los siete módulos y revisar PDF con datos ficticios. Bloquea
 las escrituras y las solicitudes HTTP; no necesita una cuenta de Supabase.
 
 ## Ejecutar con un entorno propio
@@ -93,13 +113,13 @@ powershell -NoProfile -File tool/test_database.ps1
 ```
 
 El runner crea un clúster temporal con datos ficticios y comprueba permisos,
-migraciones, domicilio de emisión y dos ingresos concurrentes. No lee las
+migraciones, domicilio de emisión, dos ingresos concurrentes y los contratos de
+Ficha y Licencias, incluido el cupo de Estudio ante cargas simultáneas. No lee las
 credenciales del entorno operativo. GitHub Actions ejecuta análisis, pruebas
 Flutter, contratos PostgreSQL y detección de secretos en cada pull request.
 
-La versión cuenta con **162 pruebas Flutter aprobadas**, contratos SQL en un
-PostgreSQL aislado y una compilación Windows verificada. Las comprobaciones y sus
-límites están en [Validación](docs/VALIDACION.md).
+Los resultados de la revisión actual y las comprobaciones históricas de la
+versión instalada están separados en [Validación](docs/VALIDACION.md).
 
 ## Estructura
 
@@ -107,7 +127,8 @@ límites están en [Validación](docs/VALIDACION.md).
 lib/
   app/              Tema y composición de la aplicación
   core/             Conectividad, inicio, exportación, UI y actualizaciones
-  features/         auth, horas, francos, imprevistos, medicos y suplencias
+  features/         auth, ficha, francos, horas, imprevistos, licencias,
+                    medicos, preferences, shell y suplencias
 supabase/
   migrations/       Evolución pública del esquema y los permisos
   tests/            Contratos con datos ficticios
@@ -123,6 +144,9 @@ Ver las [convenciones de módulos](lib/features/README.md).
 | Guía | Contenido |
 | --- | --- |
 | [Cambios y versiones](CHANGELOG.md) | Evolución funcional y versión actual. |
+| [Estado actual](docs/ESTADO_ACTUAL.md) | Trabajo implementado, distribución documentada y pendientes. |
+| [Ficha y Licencias](docs/FICHA_Y_LICENCIAS.md) | Historial compartido, planilla, códigos y revisión de evidencia. |
+| [Licencias](docs/LICENCIAS.md) | Cargas, cupos, permisos, exportación e importaciones. |
 | [Demo y desarrollo Windows](docs/WINDOWS.md) | Ejecución, demo y validación manual. |
 | [Instalación y actualizaciones](docs/INSTALADOR_Y_ACTUALIZACIONES.md) | Instaladores, firmas y distribución privada. |
 | [Inicio y diagnóstico](docs/INICIO_DIAGNOSTICO.md) | Comprobaciones de servicios y recuperación. |
@@ -132,6 +156,7 @@ Ver las [convenciones de módulos](lib/features/README.md).
 | [MFA opcional](docs/MFA_Y_SEGURIDAD_AUTH.md) | Alta, verificación y desactivación. |
 | [Duración y revalidación](docs/LIMITES_SESIONES.md) | Límites de acceso y autenticadora. |
 | [Validación](docs/VALIDACION.md) | Evidencia automatizada e histórica. |
+| [Respaldos](docs/RESPALDOS_BASE_DATOS.md) | Copias cifradas, ensayo aislado de restauración y tarea de Windows. |
 | [Revisión de privacidad](docs/REVISION_PRIVACIDAD.md) | Limpieza y cierre de la revisión histórica. |
 | [Contribuir](CONTRIBUTING.md) | Preparación de cambios y comprobaciones. |
 

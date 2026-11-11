@@ -2,3 +2,6 @@
 /windows/flutter/generated_plugin_registrant.cc text eol=lf
 /windows/flutter/generated_plugin_registrant.h text eol=lf
 /windows/flutter/generated_plugins.cmake text eol=lf
+
+# SQL function fingerprints must be identical on Windows and Linux.
+/supabase/**/*.sql text eol=lf

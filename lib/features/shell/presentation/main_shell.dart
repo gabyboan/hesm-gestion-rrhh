@@ -6,6 +6,8 @@ import '../../../core/ui/app_snackbar.dart';
 import '../../../core/utils/error_text.dart';
 import '../../auth/application/auth_providers.dart';
 import '../../auth/application/current_roles_provider.dart';
+import '../../ficha/application/ficha_providers.dart';
+import '../../ficha/presentation/ficha_page.dart';
 import '../../francos/application/francos_providers.dart';
 import '../../francos/presentation/francos_page.dart';
 import '../../horas/presentation/cargar/cargar_horas_page.dart';
@@ -13,6 +15,8 @@ import '../../horas/presentation/informe/informe_page.dart';
 import '../../horas/presentation/ver/ver_horas_page.dart';
 import '../../imprevistos/application/imprevistos_providers.dart';
 import '../../imprevistos/presentation/imprevistos_page.dart';
+import '../../licencias/application/licencias_providers.dart';
+import '../../licencias/presentation/licencias_page.dart';
 import '../../medicos/application/medicos_providers.dart';
 import '../../medicos/presentation/medicos_page.dart';
 import '../../preferences/application/user_preferences_providers.dart';
@@ -26,6 +30,8 @@ enum _AppModule {
   imprevisto,
   medicos,
   suplencias,
+  licencias,
+  ficha,
   capacitacion,
 }
 
@@ -119,6 +125,20 @@ class _MainShellState extends ConsumerState<MainShell> {
       ref.invalidate(puedeLeerSuplenciasProvider);
     }
 
+    if (module == _AppModule.licencias) {
+      ref.invalidate(licenciasPermisosProvider);
+      ref.invalidate(licenciasRegistrosProvider);
+      ref.invalidate(licenciasTiposProvider);
+      ref.invalidate(licenciasPendientesProvider);
+      ref.invalidate(licenciasImportadasResumenProvider);
+    }
+    if (module == _AppModule.ficha) {
+      ref.invalidate(puedeLeerFichaProvider);
+      ref.invalidate(fichaPersonasProvider);
+      ref.invalidate(fichaLicenciasProvider);
+      ref.invalidate(fichaLicenciasAcumuladasProvider);
+    }
+
     setState(() => _selectedModule = module);
   }
 
@@ -188,6 +208,20 @@ class _MainShellState extends ConsumerState<MainShell> {
           onBackToModules: _backToModules,
           onSignOut: _signOut,
         ),
+      _AppModule.licencias => _SinglePageModuleShell(
+          title: 'Licencias',
+          body: const LicenciasPage(),
+          signingOut: _signingOut,
+          onBackToModules: _backToModules,
+          onSignOut: _signOut,
+        ),
+      _AppModule.ficha => _SinglePageModuleShell(
+          title: 'Ficha',
+          body: const FichaPage(),
+          signingOut: _signingOut,
+          onBackToModules: _backToModules,
+          onSignOut: _signOut,
+        ),
     };
   }
 }
@@ -210,6 +244,8 @@ class _ModulesDashboard extends ConsumerWidget {
     final imprevistosAsync = ref.watch(puedeLeerImprevistosProvider);
     final medicosAsync = ref.watch(puedeLeerMedicosProvider);
     final suplenciasAsync = ref.watch(puedeLeerSuplenciasProvider);
+    final licenciasAsync = ref.watch(licenciasPermisosProvider);
+    final fichaAsync = ref.watch(puedeLeerFichaProvider);
     final profileAsync = ref.watch(currentUserProfileProvider);
 
     final tieneRolOperativo = rolesAsync.valueOrNull?.codes.isNotEmpty ?? false;
@@ -329,6 +365,24 @@ class _ModulesDashboard extends ConsumerWidget {
                           enabled: puedeLeerSuplencias,
                           loading: suplenciasAsync.isLoading,
                           onTap: () => onOpenModule(_AppModule.suplencias),
+                        ),
+                        _ModuleHeroCard(
+                          icon: Icons.date_range_outlined,
+                          title: 'Licencias',
+                          detail: 'Cargar licencias y consultar el historial',
+                          color: const Color(0xFF0F766E),
+                          enabled: licenciasAsync.valueOrNull?.leer ?? false,
+                          loading: licenciasAsync.isLoading,
+                          onTap: () => onOpenModule(_AppModule.licencias),
+                        ),
+                        _ModuleHeroCard(
+                          icon: Icons.badge_outlined,
+                          title: 'Ficha',
+                          detail: 'Datos del personal e historial de licencias',
+                          color: const Color(0xFF0369A1),
+                          enabled: fichaAsync.valueOrNull ?? false,
+                          loading: fichaAsync.isLoading,
+                          onTap: () => onOpenModule(_AppModule.ficha),
                         ),
                       ],
                     ),

@@ -1,5 +1,29 @@
 # Entrega para GitHub
 
+## Trabajo incorporado · 11 de noviembre de 2026
+
+Preparado en `update/estado-real-2026-11-11`, sobre `main` público `dcda287`, en
+una copia separada del repositorio de trabajo. Incorpora Ficha y Licencias,
+su integración con Imprevistos, la demo de siete módulos, doce migraciones
+públicas de noviembre y diez contratos SQL nuevos. Incluye las herramientas
+de importación conservadora y copia cifrada con sus pruebas y guías.
+
+El cambio reúne **76 archivos** sobre esa base. La comparación del pull request
+es el inventario exacto; los recuentos de octubre que siguen son históricos.
+
+El README, el registro de cambios y [Estado actual](ESTADO_ACTUAL.md) describen
+el alcance implementado y los pendientes. La última distribución operativa
+documentada continúa siendo 1.0.6.7; no se prepara un nuevo instalador ni se
+aplican migraciones sobre una base compartida durante esta actualización.
+
+La copia conserva las mejoras publicadas anteriormente, los workflows y las
+plantillas de contribución. Excluye configuración privada, respaldos, fuentes
+nominales y documentos de origen. No incorpora el historial local anterior.
+
+Validación local: 194 pruebas Flutter, análisis estático sin observaciones,
+13 pruebas Python y contratos PostgreSQL aislados aprobados. El alcance y las
+limitaciones están en [Validación](VALIDACION.md).
+
 ## Actualización pública 1.0.6.7
 
 La entrega del 2 de noviembre de 2026 parte del `main` público posterior a los

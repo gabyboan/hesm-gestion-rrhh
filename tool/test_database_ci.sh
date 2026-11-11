@@ -66,3 +66,19 @@ assert all('RESERVA:true' in result or 'RESERVA:false' in result for result in r
 assert sum('RESERVA:true' in result for result in results) == 1, results
 print('OK: dos ingresos concurrentes, una sola Gestión admitida.')
 PY
+
+# Los contratos comparten una base ficticia y aplican las migraciones en orden.
+createdb licencias_test
+for contract in \
+  licencias \
+  ficha_licencias \
+  ficha_formulario_codigos \
+  ficha_imprevistos \
+  licencias_estudio \
+  licencias_catalogo_excel \
+  licencias_fichas_papel \
+  licencias_duelo_parentescos \
+  licencias_francos_cantidad_papel \
+  licencias_documentacion_pendiente; do
+  sql licencias_test "supabase/tests/$contract.sql" "$contract"
+done

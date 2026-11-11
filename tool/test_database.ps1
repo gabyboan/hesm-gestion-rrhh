@@ -143,6 +143,85 @@ commit;
     if ($resultText.Contains('RESERVA:true')) { $winners++ }
   }
   if ($winners -ne 1) { throw "La misma cuenta obtuvo $winners reservas concurrentes." }
+  Invoke-CheckedNative (Join-Path $PostgresBin 'createdb.exe') @(
+    '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres', 'licencias_test'
+  ) 'createdb-licencias.log'
+  Invoke-CheckedNative $psql (@('-X', '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres',
+    '-d', 'licencias_test', '-v', 'ON_ERROR_STOP=1', '-f',
+    (Join-Path $repoPath 'supabase/tests/licencias.sql'))) 'licencias.log'
+  Invoke-CheckedNative $psql (@('-X', '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres',
+    '-d', 'licencias_test', '-v', 'ON_ERROR_STOP=1', '-f',
+    (Join-Path $repoPath 'supabase/tests/ficha_licencias.sql'))) 'ficha-licencias.log'
+  Invoke-CheckedNative $psql (@('-X', '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres',
+    '-d', 'licencias_test', '-v', 'ON_ERROR_STOP=1', '-f',
+    (Join-Path $repoPath 'supabase/tests/ficha_formulario_codigos.sql'))) 'ficha-formulario-codigos.log'
+  Invoke-CheckedNative $psql (@('-X', '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres',
+    '-d', 'licencias_test', '-v', 'ON_ERROR_STOP=1', '-f',
+    (Join-Path $repoPath 'supabase/tests/ficha_imprevistos.sql'))) 'ficha-imprevistos.log'
+  $licenciasArgs = @('-X', '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres',
+    '-d', 'licencias_test', '-v', 'ON_ERROR_STOP=1')
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/licencias_estudio.sql'))) 'licencias-estudio.log'
+  # Con un solo día disponible, dos solicitudes simultáneas no pueden usarlo ambas.
+  $studySetup = Join-Path $runPath 'estudio-concurrente-preparar.sql'
+  @'
+begin;
+insert into public.usuario_roles select '00000000-0000-4000-8000-000000000001',id from public.roles
+where codigo in('LICENCIAS_LECTURA','LICENCIAS_CARGA');
+set local request.jwt.claim.sub='00000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select public.rpc_licencias_guardar(null,12345678,129::smallint,d,h,'Cupo concurrente')
+from (values('2026-06-01'::date,'2026-06-05'::date),('2026-06-08','2026-06-12'),
+('2026-06-15','2026-06-19'),('2026-06-22','2026-06-25')) x(d,h);
+commit;
+'@ | Set-Content -LiteralPath $studySetup -Encoding UTF8
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f', $studySetup)) 'estudio-concurrente-preparar.log'
+  $studyContenders = @()
+  foreach ($studyDay in @('29', '30')) {
+    $sqlPath = Join-Path $runPath "estudio-concurrente-$studyDay.sql"
+    $outPath = Join-Path $runPath "estudio-concurrente-$studyDay.log"
+    $errPath = Join-Path $runPath "estudio-concurrente-$studyDay.err"
+    $sqlTemplate = @'
+create function pg_temp.intentar_estudio(p_fecha date) returns boolean language plpgsql as
+'begin perform public.rpc_licencias_guardar(null,12345678,129::smallint,p_fecha,p_fecha,''Último día'');
+return true; exception when sqlstate ''22023'' then return false; end;';
+begin;
+set local request.jwt.claim.sub='00000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select 'ESTUDIO:'||pg_temp.intentar_estudio('2026-06-{dia}')::text;
+select pg_sleep(0.5);
+commit;
+'@
+    $sqlTemplate.Replace('{dia}', $studyDay) | Set-Content -LiteralPath $sqlPath -Encoding UTF8
+    $process = Start-Process -FilePath $psql -ArgumentList ($licenciasArgs + @('-A', '-t', '-q', '-f',
+      ('"{0}"' -f $sqlPath))) -WindowStyle Hidden -PassThru `
+      -RedirectStandardOutput $outPath -RedirectStandardError $errPath
+    $null = $process.Handle
+    $studyContenders += @{ Process = $process; Output = $outPath; Error = $errPath }
+  }
+  $studyWinners = 0
+  foreach ($contender in $studyContenders) {
+    $contender.Process.WaitForExit()
+    if ($contender.Process.ExitCode -ne 0) {
+      Get-Content -LiteralPath $contender.Error | Write-Host
+      throw 'Falló la prueba concurrente del cupo de Estudio.'
+    }
+    $resultText = Get-Content -LiteralPath $contender.Output -Raw
+    if ($resultText -notmatch 'ESTUDIO:(true|false)') { throw 'Falta el resultado de Estudio.' }
+    if ($resultText.Contains('ESTUDIO:true')) { $studyWinners++ }
+  }
+  if ($studyWinners -ne 1) { throw "El último día de Estudio admitió $studyWinners solicitudes." }
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/licencias_catalogo_excel.sql'))) 'licencias-catalogo-excel.log'
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/licencias_fichas_papel.sql'))) 'licencias-fichas-papel.log'
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/licencias_duelo_parentescos.sql'))) 'licencias-duelo-parentescos.log'
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/licencias_francos_cantidad_papel.sql'))) 'licencias-francos-cantidad-papel.log'
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/licencias_documentacion_pendiente.sql'))) 'licencias-documentacion-pendiente.log'
+  Write-Host 'OK: cupo de Estudio protegido ante dos solicitudes simultáneas.'
   Write-Host 'OK: dos ingresos simultáneos, una sola Gestión admitida.'
   Get-Content -LiteralPath (Join-Path $runPath 'horas-seguridad.log') -Tail 5 | Write-Host
   Get-Content -LiteralPath (Join-Path $runPath 'seguridad-rendimiento.log') -Tail 22 | Write-Host

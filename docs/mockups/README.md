@@ -5,6 +5,11 @@ Todas las personas, registros y documentos son ficticios. Los identificadores
 `1001`–`1003` son ejemplos cortos; no corresponden a personal del sistema.
 Cada imagen lleva un aviso visible de demostración.
 
+Esta galería corresponde a los cinco módulos de la entrega de octubre de 2026.
+El código actual también incluye Ficha y Licencias; la demo sin conexión permite
+recorrer los siete. Las capturas de esos dos módulos están pendientes de generar.
+Ver el [estado actual](../ESTADO_ACTUAL.md).
+
 | Panel | Horas |
 | --- | --- |
 | ![Panel de módulos con cuenta DEMO](demo/panel.png) | ![Consulta de horas ficticias](demo/horas.png) |
