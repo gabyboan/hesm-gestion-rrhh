@@ -11,6 +11,7 @@ import '../../ficha/presentation/ficha_page.dart';
 import '../../francos/application/francos_providers.dart';
 import '../../francos/presentation/francos_page.dart';
 import '../../horas/presentation/cargar/cargar_horas_page.dart';
+import '../../horas/application/horas_providers.dart';
 import '../../horas/presentation/informe/informe_page.dart';
 import '../../horas/presentation/ver/ver_horas_page.dart';
 import '../../imprevistos/application/imprevistos_providers.dart';
@@ -94,6 +95,13 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   void _openModule(_AppModule module) {
+    if (module == _AppModule.horas) {
+      ref.invalidate(listadoProvider);
+      ref.invalidate(listadoOficialesProvider);
+      ref.invalidate(registrosProvider);
+      ref.invalidate(registrosPeriodoProvider);
+      ref.invalidate(periodosConRegistrosProvider);
+    }
     if (module == _AppModule.francos) {
       ref.invalidate(puedeLeerFrancosProvider);
       ref.invalidate(puedeUsarBancoFrancosProvider);

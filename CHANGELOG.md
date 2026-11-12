@@ -1,5 +1,27 @@
 # Registro de cambios
 
+## Preparación 1.0.7.8 · 12 de noviembre de 2026
+
+- Agrega Horas Gremiales para las distintas carreras del padrón de Oficiales,
+  con duración extendida, filtro y sección propia en el informe y el Excel.
+- Bloquea envíos de horas concurrentes en el cliente y utiliza un UUID por
+  operación en la nueva RPC transaccional. Un reenvío confirmado devuelve la
+  misma hora; otra carga legítima utiliza un identificador distinto.
+- Incorpora caché de sesión acotada, con tiempos de 25 segundos a cinco minutos
+  según los datos. Agrupa solicitudes iguales, invalida al guardar o actualizar
+  y elimina los datos al salir o cambiar de cuenta. No cachea controles de acceso.
+- Pagina los registros de horas y consulta los meses distintos en el servidor.
+- Agrega espera progresiva después de contraseñas incorrectas, cuenta regresiva,
+  tratamiento de 429 y mensajes de red sin volcar excepciones internas.
+- Exige capacidades de backend 2 antes de operar y las declara en el manifiesto
+  firmado de los próximos instaladores. Registra fallos técnicos con rotación.
+- Prepara copia externa configurable de respaldos verificados y custodia RSA
+  para recuperar sus claves en otro perfil de Windows, con clave privada cifrada.
+
+La versión del código es `1.0.7+8`; la última distribución operativa documentada
+continúa siendo `1.0.6.7`. Las nuevas migraciones y el recorrido de puesta en
+servicio están en [Actualización 1.0.7.8](docs/ACTUALIZACION_1_0_7.md).
+
 ## Estado del repositorio · 11 de noviembre de 2026
 
 Se incorpora el trabajo de Ficha y Licencias realizado después de la distribución

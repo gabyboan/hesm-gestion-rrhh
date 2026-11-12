@@ -1,3 +1,4 @@
+import 'dart:async';
 // lib/features/auth/presentation/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,10 +7,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../app/theme/theme_mode_provider.dart';
 import '../../../core/widgets/startup_splash.dart';
 import '../application/auth_providers.dart';
+import '../application/login_attempt_provider.dart';
 import '../application/session_timeout_provider.dart';
+import '../../../core/diagnostics/app_diagnostics.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.diagnostics});
+  final AppDiagnostics? diagnostics;
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -24,9 +28,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _loading = false;
   bool _showPass = false;
   String? _error;
+  Timer? _retryTimer;
+  int _waitSeconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _email.addListener(_updateRetryWait);
+  }
+
+  void _updateRetryWait() {
+    if (!mounted) return;
+    final seconds =
+        ref.read(loginAttemptLimiterProvider).remaining(_email.text).inSeconds;
+    if (_waitSeconds != seconds) setState(() => _waitSeconds = seconds);
+    if (seconds > 0) {
+      _retryTimer ??=
+          Timer.periodic(const Duration(seconds: 1), (_) => _updateRetryWait());
+    } else {
+      _retryTimer?.cancel();
+      _retryTimer = null;
+    }
+  }
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
+    _email.removeListener(_updateRetryWait);
     _email.dispose();
     _pass.dispose();
     super.dispose();
@@ -40,7 +68,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    if (_loading) return;
+    _updateRetryWait();
+    if (_loading || _waitSeconds > 0) return;
+    final limiter = ref.read(loginAttemptLimiterProvider);
 
     setState(() {
       _loading = true;
@@ -53,10 +83,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             email: _email.text,
             password: _pass.text,
           );
+      limiter.success(_email.text);
     } on AuthException catch (e) {
+      if (e.statusCode == '429' || e.code == 'over_request_rate_limit') {
+        limiter.serverLimited();
+      } else if (e.code == 'invalid_credentials' ||
+          e.message.toLowerCase().contains('invalid login credentials')) {
+        limiter.invalidCredentials(_email.text);
+      }
+      _updateRetryWait();
       if (!mounted) return;
       setState(() => _error = _authErrorMessage(e));
     } catch (e) {
+      unawaited((widget.diagnostics ?? AppDiagnostics.instance)
+          .record('login_connection', e));
       if (!mounted) return;
       setState(() => _error = _genericErrorMessage(e));
     } finally {
@@ -108,18 +148,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return 'El email todavía no fue confirmado.';
     }
 
-    return msg;
-  }
-
-  String _genericErrorMessage(Object e) {
-    final msg = e.toString().trim();
-
-    if (msg.isEmpty) {
-      return 'No se pudo iniciar sesión.';
+    if (e.statusCode == '429' || e.code == 'over_request_rate_limit') {
+      return 'Hay demasiados intentos. Esperá antes de volver a ingresar.';
     }
-
-    return msg.replaceFirst('Exception: ', '');
+    return 'No se pudo iniciar sesión. Revisá la conexión y volvé a intentar.';
   }
+
+  String _genericErrorMessage(Object e) =>
+      'No se pudo conectar para iniciar sesión. Revisá la conexión y volvé a intentar.';
 
   void _toggleTheme() {
     final current = ref.read(themeModeProvider);
@@ -279,6 +315,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
               ),
+              if (_waitSeconds > 0) ...[
+                const SizedBox(height: 16),
+                Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      'Podés volver a intentar en $_waitSeconds segundos.',
+                      style: TextStyle(color: cs.error),
+                    )),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 16),
                 Semantics(
@@ -294,7 +339,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: _loading ? null : _login,
+                  onPressed: _loading || _waitSeconds > 0 ? null : _login,
                   child: _loading
                       ? SizedBox.square(
                           dimension: 22,

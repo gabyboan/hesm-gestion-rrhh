@@ -11,13 +11,15 @@ class LanRelease {
       required this.fileName,
       required this.length,
       required this.sha256Hex,
-      required this.signature});
+      required this.signature,
+      this.requiredSchema = 1});
 
   final String version;
   final String fileName;
   final int length;
   final String sha256Hex;
   final String signature;
+  final int requiredSchema;
   static const maxInstallerBytes = 150 * 1024 * 1024;
 
   static List<int> versionParts(String version) {
@@ -51,6 +53,10 @@ class LanRelease {
           'La firma del aviso de actualización no es válida.');
     }
     final data = jsonDecode(utf8.decode(payload)) as Map<String, dynamic>;
+    final requiredSchema = data['required_schema'] ?? 1;
+    if (requiredSchema is! int || requiredSchema < 1) {
+      throw const FormatException('Requisito de servicios inválido.');
+    }
     if (data['schema'] != 1) {
       throw const FormatException('Formato no compatible.');
     }
@@ -70,6 +76,7 @@ class LanRelease {
       throw const FormatException('Datos de instalador inválidos.');
     }
     return LanRelease(
+        requiredSchema: requiredSchema,
         version: version,
         fileName: fileName,
         length: length,

@@ -1,3 +1,4 @@
+import '../../../../core/cache/session_cache_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -50,6 +51,7 @@ class InformePage extends ConsumerWidget {
       final periodo = DateFmt.monthStart(picked);
       ref.read(periodoProvider.notifier).state = periodo;
 
+      ref.read(sessionDataCacheProvider).invalidate('horas');
       ref.invalidate(registrosPeriodoProvider);
       ref.invalidate(informeRowsProvider);
     } catch (e) {
@@ -72,6 +74,7 @@ class InformePage extends ConsumerWidget {
 
       ref.read(periodoProvider.notifier).state = periodo;
 
+      ref.read(sessionDataCacheProvider).invalidate('horas');
       ref.invalidate(registrosPeriodoProvider);
       ref.invalidate(informeRowsProvider);
 
@@ -112,11 +115,21 @@ class InformePage extends ConsumerWidget {
         children: [
           Align(
             alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              onPressed: () => _exportExcelMes(context, ref),
-              icon: const Icon(Icons.download),
-              label: const Text('Exportar Excel'),
-            ),
+            child: Wrap(spacing: 8, children: [
+              IconButton(
+                  tooltip: 'Actualizar datos',
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () {
+                    ref.invalidate(sessionDataCacheProvider);
+                    ref.invalidate(registrosPeriodoProvider);
+                    ref.invalidate(periodosConRegistrosProvider);
+                  }),
+              ElevatedButton.icon(
+                onPressed: () => _exportExcelMes(context, ref),
+                icon: const Icon(Icons.download),
+                label: const Text('Exportar Excel'),
+              ),
+            ]),
           ),
           const SizedBox(height: 8),
           InformePeriodoHeader(

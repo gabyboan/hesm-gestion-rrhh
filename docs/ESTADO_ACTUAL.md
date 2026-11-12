@@ -1,5 +1,19 @@
 # Estado actual de HESM Gestión RRHH
 
+## Preparación del 12 de noviembre de 2026
+
+El código `1.0.7+8` agrega Horas Gremiales, guardado con reconocimiento de
+reenvíos, caché por sesión y espera progresiva del login. Incluye paginación,
+compatibilidad del backend, diagnóstico local y herramientas de respaldo
+externo configurable. El alcance, las pruebas y el orden de actualización se
+detallan en [Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md).
+
+Las dos migraciones nuevas están preparadas y verificadas en una base aislada;
+su aplicación y la distribución del instalador siguen pendientes. La última
+distribución operativa documentada es `1.0.6.7`.
+
+La revisión siguiente conserva la evidencia del trabajo de Ficha y Licencias.
+
 Revisión del 11 de noviembre de 2026. La referencia pública anterior es el
 commit `dcda287` de `main`, correspondiente al PR #8 del 2 de noviembre.
 Este documento describe el código preparado sobre esa base y distingue su

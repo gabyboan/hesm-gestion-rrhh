@@ -111,7 +111,7 @@ class ResumenHorasCard extends StatelessWidget {
     required this.hhmmFromMinutes,
   });
 
-  static const _oficialLine = 'Horas oficiales: sin límite';
+  static const _oficialLine = 'Horas oficiales y gremiales: sin límite mensual';
 
   @override
   Widget build(BuildContext context) {

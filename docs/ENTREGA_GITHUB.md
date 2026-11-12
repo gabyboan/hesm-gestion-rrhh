@@ -1,5 +1,17 @@
 # Entrega para GitHub
 
+## Preparación de la próxima versión · 12 de noviembre de 2026
+
+Rama `update/gremiales-cache-2026-11-12`, sobre el `main` público posterior al
+PR #9 (`f5db5a1`). Incluye Horas Gremiales, guardado transaccional con UUID,
+espera del login, caché de sesión, paginación, compatibilidad, diagnóstico y
+respaldo externo configurable con custodia de claves.
+
+Las dos migraciones nuevas fueron creadas con la CLI fijada y probadas en una
+base aislada. El código usa `1.0.7+8`; el instalador operativo anterior sigue
+siendo `1.0.6.7`. La guía de preparación es
+[Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md).
+
 ## Trabajo incorporado · 11 de noviembre de 2026
 
 Preparado en `update/estado-real-2026-11-11`, sobre `main` público `dcda287`, en

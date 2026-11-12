@@ -203,5 +203,55 @@ Excel buildInformeExcel({
     rExcel++;
   }
 
+  // ===== Sección gremiales
+  rExcel += 2;
+
+  sheet.merge(
+    CellIndex.indexByString('A$rExcel'),
+    CellIndex.indexByString('C$rExcel'),
+  );
+
+  final greTitle = sheet.cell(CellIndex.indexByString('A$rExcel'));
+  greTitle.value = TextCellValue('HORAS GREMIALES');
+  greTitle.cellStyle = CellStyle(
+    bold: true,
+    fontSize: 14,
+    horizontalAlign: HorizontalAlign.Center,
+    verticalAlign: VerticalAlign.Center,
+  );
+
+  rExcel++;
+
+  sheet.cell(CellIndex.indexByString('A$rExcel')).value =
+      TextCellValue('Gremiales');
+  sheet.cell(CellIndex.indexByString('B$rExcel')).value =
+      TextCellValue('Apellido, Nombre');
+  sheet.cell(CellIndex.indexByString('C$rExcel')).value =
+      TextCellValue('Detalle');
+
+  sheet.cell(CellIndex.indexByString('A$rExcel')).cellStyle = headerStyle;
+  sheet.cell(CellIndex.indexByString('B$rExcel')).cellStyle = headerStyle;
+  sheet.cell(CellIndex.indexByString('C$rExcel')).cellStyle = headerStyle;
+
+  rExcel++;
+
+  final rowsGremialesConUso = rows.where((row) {
+    return row.gremialesPorDia.isNotEmpty;
+  });
+
+  for (final r in rowsGremialesConUso) {
+    final p = r.persona;
+
+    sheet.cell(CellIndex.indexByString('A$rExcel')).value = TextCellValue('SI');
+
+    sheet.cell(CellIndex.indexByString('B$rExcel')).value =
+        TextCellValue("${p.apellido}, ${p.nombre}");
+
+    sheet.cell(CellIndex.indexByString('C$rExcel')).value =
+        TextCellValue(DateFmt.resumenMinutosConFecha(r.gremialesPorDia));
+
+    rExcel++;
+  }
+
   return excel;
 }

@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:windows_single_instance/windows_single_instance.dart';
 
 import 'app/app.dart';
+import 'core/diagnostics/app_diagnostics.dart';
 import 'core/startup/startup_checks.dart';
 import 'core/startup/startup_config.dart';
 import 'core/updates/lan_update_gate.dart';
@@ -15,7 +18,14 @@ import 'core/widgets/startup_splash.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterError.onError = FlutterError.presentError;
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    unawaited(AppDiagnostics.instance.record('flutter', details.exception));
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    unawaited(AppDiagnostics.instance.record('async', error));
+    return true;
+  };
   runApp(BootstrapApp(args: args));
 }
 

@@ -76,14 +76,18 @@ final _people = [
 ];
 final _hours = [
   for (final person in _people)
-    for (var i = 0; i < 3; i++)
+    for (var i = 0; i < 4; i++)
       HoraRegistro(
           id: person.dni * 10 + i,
           dni: person.dni,
           carreraId: person.carreraId,
           fecha: DateTime(2026, 10, 12 + 3 * i),
           periodo: demoPeriod,
-          tipo: i == 2 ? 'OFICIAL' : 'PARTICULAR',
+          tipo: i == 3
+              ? 'GREMIAL'
+              : i == 2
+                  ? 'OFICIAL'
+                  : 'PARTICULAR',
           minutos: 60 + 30 * i,
           minutosAplicados: 60 + 30 * i,
           minutosExcedidos: 0,

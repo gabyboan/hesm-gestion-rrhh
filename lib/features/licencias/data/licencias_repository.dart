@@ -1,12 +1,20 @@
+import '../../../core/cache/session_data_cache.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/licencia.dart';
 
 class LicenciasRepository {
-  const LicenciasRepository(this.sb);
+  const LicenciasRepository(this.sb, {this.cache});
+  final SessionDataCache? cache;
+  Future<T> _cached<T>(Object key, Future<T> Function() load,
+          {Duration ttl = const Duration(seconds: 25)}) =>
+      cache?.read('licencias', key, load, ttl: ttl) ?? load();
   final SupabaseClient sb;
 
-  Future<List<LicenciaTipo>> tipos() async {
+  Future<List<LicenciaTipo>> tipos() =>
+      _cached('tipos', _tipos, ttl: const Duration(minutes: 5));
+
+  Future<List<LicenciaTipo>> _tipos() async {
     final rows = await sb
         .from('licencias_tipos_excel')
         .select()
@@ -15,7 +23,10 @@ class LicenciasRepository {
     return rows.map(LicenciaTipo.fromJson).toList();
   }
 
-  Future<List<LicenciaPersona>> personas(String buscar) async {
+  Future<List<LicenciaPersona>> personas(String buscar) => _cached(
+      ('personas', buscar.trim().toLowerCase()), () => _personas(buscar));
+
+  Future<List<LicenciaPersona>> _personas(String buscar) async {
     final rows = await sb.rpc('rpc_licencias_personas', params: {
       'p_buscar': buscar.trim(),
     });
@@ -26,12 +37,14 @@ class LicenciasRepository {
 
   Future<List<LicenciaRegistro>> registros(int anio, {int? personaDni}) async {
     if (anio < 2026) throw ArgumentError('Las consultas comienzan en 2026.');
-    return _consultarRegistros(anio: anio, personaDni: personaDni);
+    return _cached(('historial', anio, personaDni),
+        () => _consultarRegistros(anio: anio, personaDni: personaDni));
   }
 
   Future<List<LicenciaRegistro>> registrosDesde2026(
           {required int personaDni}) =>
-      _consultarRegistros(personaDni: personaDni);
+      _cached(('acumulado', personaDni),
+          () => _consultarRegistros(personaDni: personaDni));
 
   Future<List<LicenciaRegistro>> _consultarRegistros(
       {int? anio, int? personaDni}) async {
@@ -81,6 +94,7 @@ class LicenciasRepository {
     int? numeroOrden,
     String? cantidadFicha,
   }) async {
+    cache?.invalidate('licencias');
     await sb.rpc('rpc_licencias_guardar_con_datos', params: {
       'p_id': id,
       'p_dni': dni,
@@ -92,10 +106,16 @@ class LicenciasRepository {
       'p_numero_orden': numeroOrden,
       'p_cantidad_ficha': cantidadFicha,
     });
+    cache?.invalidate('licencias');
   }
 
-  Future<bool> anular(int id) async =>
-      await sb.rpc('rpc_licencias_anular', params: {'p_id': id}) == true;
+  Future<bool> anular(int id) async {
+    cache?.invalidate('licencias');
+    final ok =
+        await sb.rpc('rpc_licencias_anular', params: {'p_id': id}) == true;
+    cache?.invalidate('licencias');
+    return ok;
+  }
 
   static String _fecha(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'

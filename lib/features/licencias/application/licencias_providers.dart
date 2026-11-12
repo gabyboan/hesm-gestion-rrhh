@@ -1,3 +1,4 @@
+import '../../../core/cache/session_cache_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
@@ -14,7 +15,8 @@ class LicenciasPermisos {
 }
 
 final licenciasRepoProvider = Provider<LicenciasRepository>((ref) {
-  return LicenciasRepository(ref.watch(supabaseClientProvider));
+  return LicenciasRepository(ref.watch(supabaseClientProvider),
+      cache: ref.watch(sessionDataCacheProvider));
 });
 
 final licenciasPermisosProvider =

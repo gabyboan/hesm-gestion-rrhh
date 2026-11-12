@@ -1,5 +1,32 @@
 # Validación de la entrega
 
+## Preparación 1.0.7.8 · 12 de noviembre de 2026
+
+- **211 pruebas Flutter aprobadas**: caché y cambio de sesión, agrupación de
+  solicitudes, caducidad, errores, guardado compartido, reintento con UUID,
+  respuestas posteriores al logout, espera del login, Enter, 429, Gremiales,
+  Excel, capacidades de backend y manifiestos firmados.
+- Análisis estático con infos fatales sin observaciones.
+- Contratos PostgreSQL aislados aprobados, incluidos Gremiales en otra carrera,
+  conservación del cupo Particular, 1.100 filas en un mismo mes, períodos
+  distintos, permisos, reutilización de UUID y dos conexiones que reciben la
+  misma hora al enviar simultáneamente una operación.
+- **17 pruebas Python aprobadas**, con recuperación de claves sin depender del
+  perfil original, rechazo de contraseña errónea y metadatos alterados, copia
+  externa idéntica y conservación de la copia local al fallar el destino.
+- Compilación Windows x64 release verificada. Los artefactos y registros quedan
+  en `build/`, fuera del repositorio.
+
+En la prueba HTTP del padrón, tres lecturas reutilizaron una solicitud y el
+guardado forzó la consulta siguiente. Un informe de 1.101 registros se recuperó
+en tres páginas y una lectura posterior reutilizó el resultado vigente. Esto
+verifica recorridos concretos, no una mejora porcentual general del sistema.
+
+Se consultaron estructura y configuración remotas en modo de lectura. Las
+nuevas migraciones no se aplicaron a la base compartida y no se distribuyó un
+instalador. El orden y las limitaciones están en
+[Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md).
+
 ## Revisión actual · 11 de noviembre de 2026
 
 Comprobaciones ejecutadas en una copia aislada sobre `dcda287`, con el código de

@@ -13,7 +13,7 @@ class WindowsUpdateService {
   static final instance = WindowsUpdateService();
   static const publicKey = String.fromEnvironment('WINDOWS_UPDATE_PUBLIC_KEY');
   static const version =
-      String.fromEnvironment('WINDOWS_APP_VERSION', defaultValue: '1.0.6.7');
+      String.fromEnvironment('WINDOWS_APP_VERSION', defaultValue: '1.0.7.8');
   static const _shareKey = 'windows_updates.share.v1';
   static bool get enabled =>
       !kIsWeb &&

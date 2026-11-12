@@ -123,3 +123,21 @@ for contract in \
   licencias_documentacion_pendiente; do
   sql licencias_test "supabase/tests/$contract.sql" "$contract"
 done
+
+createdb horas_next_test
+sql horas_next_test supabase/tests/horas_gremiales.sql gremiales
+
+contenders=()
+for attempt in 1 2; do
+  psql -X -A -t -q --dbname=horas_next_test --set=ON_ERROR_STOP=1 \
+    --file=supabase/tests/horas_operacion_concurrente.sql >"build/sql-ci/hours-$attempt.log" 2>"build/sql-ci/hours-$attempt.err" &
+  contenders+=("$!")
+done
+for contender in "${contenders[@]}"; do wait "$contender"; done
+python3 - <<'PY'
+import re
+from pathlib import Path
+ids = [re.search(r'OPERACION:(\d+)', Path(f'build/sql-ci/hours-{i}.log').read_text()).group(1) for i in (1, 2)]
+assert len(set(ids)) == 1, ids
+print('OK: reenvios concurrentes de horas sin duplicados.')
+PY
