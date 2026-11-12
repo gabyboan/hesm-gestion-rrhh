@@ -5,8 +5,9 @@ Revisión inicial del 12 de noviembre de 2026. Este alcance fue la base del trab
 La implementación preparada `1.0.7.8` se describe en
 [Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md): Horas Gremiales, guardado con
 reconocimiento de reenvíos, caché por sesión, espera del login, compatibilidad,
-diagnóstico y herramientas de copia externa. Las migraciones y el instalador
-requieren su puesta en servicio. Los hallazgos siguientes conservan la revisión
+diagnóstico y herramientas de copia externa. Las migraciones ya se aplicaron
+durante la [prueba local](PRUEBA_LOCAL_1_0_7.md); el instalador requiere su puesta
+en servicio. Los hallazgos siguientes conservan la revisión
 previa a esa implementación.
 
 ## Horas Gremiales
