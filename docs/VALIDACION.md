@@ -1,5 +1,20 @@
 # Validación de la entrega
 
+## Distribución 1.0.7.8 · 12 de noviembre de 2026
+
+El instalador operativo se compiló desde `d9590c6`, se firmó y se publicó por
+el canal privado del hospital. Se extrajo y verificó su contenido, versión,
+runtime y exclusión de archivos privados. La lectura posterior por UNC
+confirmó las firmas de aviso e instalador, tamaño y SHA-256.
+
+El código Dart actual y el de `1.0.6.7` aceptaron el paquete firmado. El
+verificador rechazó un instalador alterado y comprobó la actualización desde
+las versiones anteriores. La base ya anuncia capacidades 2. Se conservaron
+los instaladores previos y los permisos de la carpeta de distribución.
+
+Las comprobaciones de paquete y red se distinguen de la instalación física
+en cada puesto. Véase [Distribución 1.0.7.8](DISTRIBUCION_1_0_7.md).
+
 ## Prueba local · 12 de noviembre de 2026
 
 La aplicación Windows llegó al login y el responsable confirmó el aviso de

@@ -1,6 +1,6 @@
 # Estado actual de HESM Gestión RRHH
 
-## Preparación del 12 de noviembre de 2026
+## Distribución del 12 de noviembre de 2026
 
 El código `1.0.7+8` agrega Horas Gremiales, guardado con reconocimiento de
 reenvíos, caché por sesión y espera progresiva del login. Incluye paginación,
@@ -10,8 +10,11 @@ detallan en [Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md).
 
 Las dos migraciones nuevas fueron aplicadas a la base compartida durante la
 prueba local del 12/11/2026, con respaldo restaurado y ensayo sobre esa copia.
-La distribución del instalador sigue pendiente. La última distribución operativa
-documentada es `1.0.6.7`. Véase [Prueba local](PRUEBA_LOCAL_1_0_7.md).
+El instalador firmado `1.0.7.8` ya se publicó en el canal privado del hospital.
+Se comprobaron firmas, tamaño y SHA-256 desde la red, y la compatibilidad con
+el código del cliente anterior. La instalación de cada puesto sigue su proceso
+de actualización. Véanse [Prueba local](PRUEBA_LOCAL_1_0_7.md) y
+[Distribución](DISTRIBUCION_1_0_7.md).
 
 La revisión siguiente conserva la evidencia del trabajo de Ficha y Licencias.
 

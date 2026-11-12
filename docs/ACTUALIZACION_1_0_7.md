@@ -1,4 +1,4 @@
-# Actualización preparada 1.0.7.8
+# Actualización 1.0.7.8
 
 Preparación del 12 de noviembre de 2026. Código `1.0.7+8`.
 La distribución operativa anterior documentada es `1.0.6.7`.
@@ -6,7 +6,10 @@ La distribución operativa anterior documentada es `1.0.6.7`.
 Durante la [prueba local del 12/11/2026](PRUEBA_LOCAL_1_0_7.md) se aplicaron las
 dos migraciones a la base compartida, después de restaurar y verificar un
 respaldo reciente y ensayar ambas sobre esa copia. La base ya anuncia las
-capacidades de esquema **2**. La distribución del instalador continúa pendiente.
+capacidades de esquema **2**. El instalador firmado se publicó después en el
+canal privado del hospital; se verificaron firma y hash desde la ruta de red.
+El detalle y los pasos de instalación están en
+[Distribución 1.0.7.8](DISTRIBUCION_1_0_7.md).
 
 ## Horas Gremiales y guardado
 
@@ -106,8 +109,8 @@ no interrumpe la aplicación.
    desinstalando la aplicación ni borrando indiscriminadamente migraciones.
 
 Las dos migraciones ya se aplicaron en la base compartida para la prueba local.
-La guía conserva el orden para otros entornos. Todavía no se publicó un instalador
-operativo. Las consultas de comprobación usaron metadatos; el respaldo del ensayo
+La guía conserva el orden para otros entornos. El instalador operativo ya está
+publicado. Las consultas de comprobación usaron metadatos; el respaldo del ensayo
 se conservó cifrado y su restauración se realizó en un contenedor aislado.
 
 ## Respaldo externo configurable

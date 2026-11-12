@@ -1,5 +1,17 @@
 # Registro de cambios
 
+## Distribución 1.0.7.8 · 12 de noviembre de 2026
+
+Instalador firmado publicado en el canal privado del hospital. Incluye Ficha y
+Licencias, Gremiales, caché, guardado seguro, espera del login y recuperación
+del acceso. La base compartida ya tiene las dos migraciones y capacidades 2.
+
+Se extrajo y revisó el paquete y se verificaron firmas, tamaño y SHA-256 desde
+la ruta de red. El código del cliente anterior aceptó la actualización y el
+verificador rechazó un archivo alterado. Se conservan las versiones anteriores.
+La instalación en los puestos receptores se comprueba desde cada cliente.
+Véase [Distribución 1.0.7.8](docs/DISTRIBUCION_1_0_7.md).
+
 ## Prueba local 1.0.7.8 · 12 de noviembre de 2026
 
 - Aplica las dos migraciones nuevas a la base compartida tras restaurar y
@@ -9,7 +21,7 @@
   permite reintentar la comprobación o volver al login, sin exponer errores
   internos literalmente.
 
-La distribución del instalador continúa pendiente. El detalle está en
+Durante esa prueba todavía no se había distribuido el instalador. El detalle está en
 [Prueba local 1.0.7.8](docs/PRUEBA_LOCAL_1_0_7.md).
 
 ## Preparación 1.0.7.8 · 12 de noviembre de 2026
@@ -30,8 +42,8 @@ La distribución del instalador continúa pendiente. El detalle está en
 - Prepara copia externa configurable de respaldos verificados y custodia RSA
   para recuperar sus claves en otro perfil de Windows, con clave privada cifrada.
 
-La versión del código es `1.0.7+8`; la última distribución operativa documentada
-continúa siendo `1.0.6.7`. Las nuevas migraciones y el recorrido de puesta en
+La versión del código es `1.0.7+8`; al preparar estos cambios la última distribución
+operativa documentada era `1.0.6.7`. Las nuevas migraciones y el recorrido de puesta en
 servicio están en [Actualización 1.0.7.8](docs/ACTUALIZACION_1_0_7.md).
 
 ## Estado del repositorio · 11 de noviembre de 2026

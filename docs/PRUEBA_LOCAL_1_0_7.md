@@ -46,8 +46,8 @@ release se verificó y quedó abierta para la prueba del responsable.
 ## Alcance
 
 La base compartida ya tiene las capacidades requeridas para `1.0.7+8`.
-La prueba usa una compilación local: todavía no se distribuyó un instalador
-firmado ni se actualizaron los demás puestos. Antes de comenzar a registrar
+La prueba inicial usó una compilación local. Después se preparó y publicó el
+[instalador firmado](DISTRIBUCION_1_0_7.md). Antes de comenzar a registrar
 Gremiales en el trabajo habitual, coordinar esa actualización para que todos
 los informes reconozcan la nueva modalidad.
 

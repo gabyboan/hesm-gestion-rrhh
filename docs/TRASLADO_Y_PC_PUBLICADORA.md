@@ -43,8 +43,8 @@ mantiene un bloqueo o detecta cambios pendientes, se detiene sin moverlo.
 
 ## Habilitar la carpeta compartida
 
-La distribución operativa posterior documentada es **1.0.6.7**, del 2/11/2026.
-El código de Ficha y Licencias aún requiere una nueva distribución. Ver
+La distribución vigente es **1.0.7.8**, del 12/11/2026, e incluye Ficha y
+Licencias y Horas Gremiales. Ver [Distribución 1.0.7.8](DISTRIBUCION_1_0_7.md) y
 [Estado actual](ESTADO_ACTUAL.md). El recorrido siguiente conserva la evidencia
 del traslado y las publicaciones de octubre.
 

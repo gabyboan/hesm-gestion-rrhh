@@ -1,8 +1,10 @@
 # Instalación y actualizaciones de Windows
 
-La versión del código **1.0.6.7** agrega el domicilio histórico de los partes
-y una Gestión por cuenta. El instalador operativo se genera y distribuye por
-un canal privado. Las rutas y cuentas siguientes son ejemplos de configuración.
+La versión vigente **1.0.7.8** incluye Ficha y Licencias, Horas Gremiales, caché
+por sesión y guardado protegido contra reenvíos. El instalador firmado ya está
+publicado en el canal privado del hospital. El detalle de verificación está en
+[Distribución 1.0.7.8](DISTRIBUCION_1_0_7.md). Las rutas y cuentas siguientes
+son ejemplos de configuración.
 
 ## Instalar y actualizar
 
@@ -29,10 +31,10 @@ Inno Setup 6.5 o posterior y una clave local de firma Ed25519.
 
 ```powershell
 powershell -NoProfile -File tool/build_windows_installer.ps1 `
-  -Version '1.0.6+7' `
+  -Version '1.0.7+8' `
   -Configuracion 'credenciales.env' `
   -SigningKey '.private/windows-updates.key' `
-  -Destino 'dist/Windows-LAN-1.0.6.7'
+  -Destino 'dist/Windows-LAN-1.0.7.8'
 ```
 
 El script valida la clave publishable/anon, compila en una carpeta temporal
@@ -51,12 +53,12 @@ código público.
 
 ```powershell
 powershell -NoProfile -File tool/publish_windows_update.ps1 `
-  -Paquete 'dist/Windows-LAN-1.0.6.7' `
+  -Paquete 'dist/Windows-LAN-1.0.7.8' `
   -CarpetaRed '\\PC-PUBLICADORA\HESM-Actualizaciones'
 ```
 
 El publicador verifica firma, hash y tamaño, conserva las versiones anteriores
-y copia el instalador a `versions/1.0.6.7/`. Solo después reemplaza `latest.json`
+y copia el instalador a `versions/1.0.7.8/`. Solo después reemplaza `latest.json`
 de forma atómica. Rechaza una versión igual o anterior a la publicada.
 
 El cliente verifica el manifiesto y el instalador antes de ejecutarlo, incluida
@@ -66,8 +68,8 @@ repositorio privado mediante ejecución manual y secretos de ese entorno.
 
 ## Validación de la versión
 
-La entrega de Windows 1.0.6.7 se compiló, extrajo y comprobó: versión del
-ejecutable, presencia de ambos cambios, archivos privados excluidos, firmas,
+La entrega de Windows 1.0.7.8 se compiló, extrajo y comprobó: versión del
+ejecutable, presencia de las funciones nuevas, archivos privados excluidos, firmas,
 SHA-256 y tamaño. El código Dart del actualizador reconoció versiones anteriores
 y rechazó un instalador alterado. La instalación física en cada equipo se
 comprueba desde su cliente instalado.

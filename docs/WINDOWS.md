@@ -2,9 +2,9 @@
 
 Actualización del código al 11/11/2026: la demo incluye Ficha y Licencias y
 permite recorrer siete módulos. Las entregas portátiles de octubre descritas
-aquí son históricas. La última distribución operativa documentada es 1.0.6.7;
-los módulos nuevos requieren una nueva compilación para distribuirse. Ver
-[Estado actual](ESTADO_ACTUAL.md).
+aquí son históricas. La distribución vigente es **1.0.7.8**, publicada el
+12/11/2026 con los módulos nuevos. Ver [Estado actual](ESTADO_ACTUAL.md) y
+[Distribución 1.0.7.8](DISTRIBUCION_1_0_7.md).
 
 Entrega portátil para Windows x64, preparada con Flutter 3.38.6 y Dart 3.10.7.
 Descomprimí el ZIP completo y ejecutá `app_horas.exe` desde su carpeta, junto
