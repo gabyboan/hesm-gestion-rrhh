@@ -1,5 +1,13 @@
 # Entrega para GitHub
 
+## Distribución 1.0.7.8 · 12 de noviembre de 2026
+
+El instalador operativo se generó desde el `main` público `d9590c6`, después
+de los PR #10 y #11 y de la prueba local confirmada por el responsable. Está
+firmado y publicado en el canal privado, con verificaciones del paquete y de
+su lectura por UNC. La entrega pública conserva únicamente código, pruebas y
+documentación. Véase [Distribución 1.0.7.8](DISTRIBUCION_1_0_7.md).
+
 ## Preparación de la próxima versión · 12 de noviembre de 2026
 
 Rama `update/gremiales-cache-2026-11-12`, sobre el `main` público posterior al

@@ -6,8 +6,8 @@ La implementación preparada `1.0.7.8` se describe en
 [Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md): Horas Gremiales, guardado con
 reconocimiento de reenvíos, caché por sesión, espera del login, compatibilidad,
 diagnóstico y herramientas de copia externa. Las migraciones ya se aplicaron
-durante la [prueba local](PRUEBA_LOCAL_1_0_7.md); el instalador requiere su puesta
-en servicio. Los hallazgos siguientes conservan la revisión
+durante la [prueba local](PRUEBA_LOCAL_1_0_7.md); el instalador firmado ya se
+[publicó en el canal privado](DISTRIBUCION_1_0_7.md). Los hallazgos siguientes conservan la revisión
 previa a esa implementación.
 
 ## Horas Gremiales

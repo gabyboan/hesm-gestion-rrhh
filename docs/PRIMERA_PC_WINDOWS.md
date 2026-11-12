@@ -1,7 +1,8 @@
 # Primera PC con Windows 10/11
 
-Última entrega operativa documentada: **1.0.6.7**, del 2/11/2026. Los cambios
-posteriores de Ficha y Licencias todavía requieren una nueva distribución.
+Entrega vigente: **1.0.7.8**, publicada el 12/11/2026. Incluye Ficha y Licencias,
+Horas Gremiales, caché y guardado protegido contra reenvíos. Ver
+[Distribución 1.0.7.8](DISTRIBUCION_1_0_7.md).
 Requiere Windows de 64 bits, versión 10 1809
 (compilación 17763) o posterior. Windows 7 queda fuera de esta entrega.
 
@@ -9,8 +10,8 @@ Requiere Windows de 64 bits, versión 10 1809
 2. Desde la PC receptora abrir `\\PC-04\HESM-Actualizaciones`. Cuando Windows
    pida credenciales, usar `PC-04\HESM-Lector` y la contraseña que eligió el
    responsable en PC-04. Es independiente del usuario de RRHH.
-3. Entrar a `versions\1.0.6.7` y copiar
-   `HESM-Gestion-RRHH-1.0.6.7-Setup.exe` a una carpeta local de la PC receptora.
+3. Entrar a `versions\1.0.7.8` y copiar
+   `HESM-Gestion-RRHH-1.0.7.8-Setup.exe` a una carpeta local de la PC receptora.
 4. Guardar el trabajo y cerrar la versión anterior de HESM, si está abierta.
    Ejecutar la copia local del instalador. No requiere Flutter ni Visual Studio.
 5. Abrir HESM: la marca sube y se achica, y aparecen las tarjetas de comprobación.

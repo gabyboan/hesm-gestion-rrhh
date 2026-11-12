@@ -27,7 +27,7 @@ y partes médicos desde Windows.
 | **Licencias** | Carga, modificación, anulación y exportación; catálogo operativo, cupos de Estudio y revisión separada de importaciones. |
 | **Ficha** | Datos del personal, historial integrado desde 2026, resumen anual y planilla PDF con continuaciones. |
 
-## Próxima actualización preparada · 12 de noviembre de 2026
+## Actualización 1.0.7.8 publicada · 12 de noviembre de 2026
 
 El código `1.0.7+8` incorpora Horas Gremiales, guardado de horas con protección
 contra reenvíos, espera progresiva del login y caché en memoria por sesión.
@@ -40,11 +40,11 @@ de compatibilidad de la base y respaldo externo configurable con custodia de
 recuperación. La [guía de la actualización](docs/ACTUALIZACION_1_0_7.md) detalla
 las dos migraciones requeridas y el orden de puesta en servicio.
 
-La distribución operativa documentada sigue siendo **1.0.6.7**. Esta preparación
-no distribuye un instalador. Para la prueba local del 12/11/2026 se aplicaron las
-dos migraciones en la base compartida, después de verificar el respaldo y ensayar
-la actualización sobre su copia restaurada. El estado se detalla en
-[Prueba local 1.0.7.8](docs/PRUEBA_LOCAL_1_0_7.md).
+El instalador firmado **1.0.7.8** ya está publicado en el canal privado del
+hospital, con firma, tamaño y SHA-256 verificados desde la red. Las dos
+migraciones se aplicaron antes de distribuir, tras verificar el respaldo y
+ensayarlas sobre su copia restaurada. El estado y los pasos para cada puesto
+están en [Distribución 1.0.7.8](docs/DISTRIBUCION_1_0_7.md).
 
 ## Ficha y Licencias
 
@@ -58,9 +58,9 @@ admiten dos francos del código 60 en una sola fecha y muestran en gris la
 documentación pendiente sin alterar los cómputos. Las importaciones que requieren
 revisión permanecen separadas de las consultas y exportaciones habituales.
 
-La última distribución operativa documentada es **1.0.6.7**, del 2 de noviembre.
-Los cambios posteriores se incorporan al código con sus pruebas y migraciones;
-su inclusión aquí no acredita una nueva instalación en los puestos de trabajo.
+La distribución vigente **1.0.7.8**, del 12 de noviembre, incluye estos módulos.
+Su publicación permite actualizar los puestos; la instalación en cada PC
+se comprueba desde su cliente.
 Ver el [estado actual y los pendientes](docs/ESTADO_ACTUAL.md) y el
 [alcance de Ficha y Licencias](docs/FICHA_Y_LICENCIAS.md).
 
