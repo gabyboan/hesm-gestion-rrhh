@@ -11,7 +11,16 @@ import '../application/auth_providers.dart';
 import '../application/session_timeout_provider.dart';
 import 'auth_activity_listener.dart';
 import 'login_page.dart';
+import '../../../core/startup/backend_capabilities.dart';
+import '../../../core/supabase/supabase_provider.dart';
 import 'mfa_widgets.dart';
+import '../../horas/application/horas_providers.dart';
+import '../../ficha/application/ficha_providers.dart';
+import '../../licencias/application/licencias_providers.dart';
+import '../../francos/application/francos_providers.dart';
+import '../../imprevistos/application/imprevistos_providers.dart';
+import '../../medicos/application/medicos_providers.dart';
+import '../../suplencias/application/suplencias_providers.dart';
 
 /// Sesión actual de Supabase.
 class AuthGate extends ConsumerWidget {
@@ -53,6 +62,18 @@ class _LoggedOutGateState extends ConsumerState<_LoggedOutGate> {
   void initState() {
     super.initState();
     ref.read(sessionTimeoutProvider).stop();
+    ref.invalidate(cargarHoraControllerProvider);
+    ref.invalidate(selectedPersonaProvider);
+    ref.invalidate(horasRepoProvider);
+    ref.invalidate(fichaRepoProvider);
+    ref.invalidate(licenciasRepoProvider);
+    ref.invalidate(francosRepoProvider);
+    ref.invalidate(selectedFrancoPersonaProvider);
+    ref.invalidate(imprevistosRepoProvider);
+    ref.invalidate(selectedImprevistoPersonaProvider);
+    ref.invalidate(medicosRepoProvider);
+    ref.invalidate(selectedMedicoPersonaProvider);
+    ref.invalidate(suplenciasRepoProvider);
   }
 
   @override
@@ -85,6 +106,7 @@ class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
   }
 
   Future<void> _startAuthenticatedSession() async {
+    await requireCompatibleBackend(ref.read(supabaseClientProvider));
     var preferences = UserPreferences.defaults;
 
     try {

@@ -1,3 +1,4 @@
+import '../../../core/cache/session_cache_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,6 +32,7 @@ class _LicenciasPageState extends ConsumerState<LicenciasPage> {
       builder: (_) => _LicenciaDialog(registro: registro),
     );
     if (saved == true && mounted) {
+      ref.read(sessionDataCacheProvider).invalidate('licencias');
       ref.invalidate(licenciasRegistrosProvider);
       AppSnackBar.success(context,
           registro == null ? 'Licencia guardada' : 'Licencia modificada');
@@ -60,6 +62,7 @@ class _LicenciasPageState extends ConsumerState<LicenciasPage> {
         throw StateError(
             'La licencia ya no está disponible. Actualizá el listado.');
       }
+      ref.read(sessionDataCacheProvider).invalidate('licencias');
       ref.invalidate(licenciasRegistrosProvider);
       if (mounted) AppSnackBar.success(context, 'Licencia anulada');
     } catch (e) {
@@ -242,6 +245,9 @@ class _LicenciasPageState extends ConsumerState<LicenciasPage> {
                           ? null
                           : () {
                               ref.invalidate(licenciasPermisosProvider);
+                              ref
+                                  .read(sessionDataCacheProvider)
+                                  .invalidate('licencias');
                               ref.invalidate(licenciasRegistrosProvider);
                               ref.invalidate(licenciasTiposProvider);
                               ref.invalidate(licenciasPendientesProvider);

@@ -5,6 +5,7 @@ enum TipoHora {
   particular,
   enfermedad,
   oficial,
+  gremial,
 }
 
 extension TipoHoraDb on TipoHora {
@@ -17,6 +18,8 @@ extension TipoHoraDb on TipoHora {
         return 'ENFERMEDAD';
       case TipoHora.oficial:
         return 'OFICIAL';
+      case TipoHora.gremial:
+        return 'GREMIAL';
     }
   }
 
@@ -29,6 +32,8 @@ extension TipoHoraDb on TipoHora {
         return 'Enfermedad';
       case TipoHora.oficial:
         return 'Oficial';
+      case TipoHora.gremial:
+        return 'Gremial';
     }
   }
 
@@ -37,6 +42,7 @@ extension TipoHoraDb on TipoHora {
     switch (this) {
       case TipoHora.particular:
       case TipoHora.oficial:
+      case TipoHora.gremial:
         return true;
       case TipoHora.enfermedad:
         return false;
@@ -46,6 +52,9 @@ extension TipoHoraDb on TipoHora {
   bool get esParticular => this == TipoHora.particular;
 
   bool get esEnfermedad => this == TipoHora.enfermedad;
+
+  bool get usaDuracionExtendida =>
+      this == TipoHora.oficial || this == TipoHora.gremial;
 
   bool get esOficial => this == TipoHora.oficial;
 }
@@ -62,6 +71,8 @@ extension TipoHoraParser on TipoHora {
         return TipoHora.particular;
       case 'ENFERMEDAD':
         return TipoHora.enfermedad;
+      case 'GREMIAL':
+        return TipoHora.gremial;
       case 'OFICIAL':
         return TipoHora.oficial;
       default:

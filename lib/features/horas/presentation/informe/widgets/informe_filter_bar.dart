@@ -20,6 +20,7 @@ class InformeFilterBar extends ConsumerWidget {
           _chip(ref, filtros, InformeFiltro.particulares, 'Particulares'),
           _chip(ref, filtros, InformeFiltro.enfermedad, 'Enfermedad'),
           _chip(ref, filtros, InformeFiltro.oficiales, 'Oficiales'),
+          _chip(ref, filtros, InformeFiltro.gremiales, 'Gremiales'),
           _chip(ref, filtros, InformeFiltro.excedidos, 'Excedidos'),
         ],
       ),

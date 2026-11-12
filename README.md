@@ -19,7 +19,7 @@ y partes médicos desde Windows.
 
 | Módulo | Funciones principales |
 | --- | --- |
-| **Horas** | Carga, consultas, cupos, excedentes e informes mensuales exportables. |
+| **Horas** | Particular, Enfermedad, Oficial y Gremial; consultas, cupos e informes mensuales exportables. |
 | **Francos** | Registro, consulta y administración de movimientos según permisos. |
 | **Imprevistos** | Carga y seguimiento de novedades del personal. |
 | **Médicos** | Partes con QR y código manual, familiares, domicilio histórico, devolución con historial, vista previa y bandeja de impresión. |
@@ -27,7 +27,23 @@ y partes médicos desde Windows.
 | **Licencias** | Carga, modificación, anulación y exportación; catálogo operativo, cupos de Estudio y revisión separada de importaciones. |
 | **Ficha** | Datos del personal, historial integrado desde 2026, resumen anual y planilla PDF con continuaciones. |
 
-## Estado del trabajo · 11 de noviembre de 2026
+## Próxima actualización preparada · 12 de noviembre de 2026
+
+El código `1.0.7+8` incorpora Horas Gremiales, guardado de horas con protección
+contra reenvíos, espera progresiva del login y caché en memoria por sesión.
+La caché reutiliza padrones, catálogos y consultas recientes y se invalida al
+guardar, actualizar o cambiar de sesión. Permisos y verificaciones de acceso
+continúan en el servidor.
+
+Incluye consultas paginadas, diagnóstico local sin mensajes sensibles, control
+de compatibilidad de la base y respaldo externo configurable con custodia de
+recuperación. La [guía de la actualización](docs/ACTUALIZACION_1_0_7.md) detalla
+las dos migraciones requeridas y el orden de puesta en servicio.
+
+La distribución operativa documentada sigue siendo **1.0.6.7**. Esta preparación
+no distribuye un instalador ni aplica las nuevas migraciones al entorno compartido.
+
+## Ficha y Licencias
 
 El desarrollo actual incorpora **Ficha y Licencias**. Licencias concentra las
 cargas y correcciones; Ficha consulta los mismos registros confirmados y los

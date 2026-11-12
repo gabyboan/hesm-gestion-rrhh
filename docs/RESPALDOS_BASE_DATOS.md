@@ -1,5 +1,20 @@
 # Copia local y prueba de recuperación
 
+## Copia externa y custodia portable preparadas
+
+La actualización del 12/11/2026 agrega `tool/backup_recovery.py` y la lectura
+opcional de `.private/backup-external.json` por la tarea semanal. El destino
+queda configurable. Se copia únicamente un respaldo ya restaurado y verificado,
+se comprueba su SHA-256 y se entrega cada clave AES cifrada con una clave pública
+RSA de recuperación. La clave privada permanece cifrada bajo una frase que
+debe custodiarse fuera de la PC publicadora.
+
+La preparación y recuperación están en
+[Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md#respaldo-externo-configurable).
+Estas herramientas amplían el esquema DPAPI descrito a continuación. La copia
+externa real requiere elegir su destino y preparar la custodia; su existencia
+no se presume a partir de las pruebas automatizadas.
+
 `tool/backup_database.py` genera una copia lógica de HESM-SUPLENCIAS y la
 restaura en un PostgreSQL temporal de la misma versión. La producción se
 consulta mediante una transacción de solo lectura. El ensayo no acepta

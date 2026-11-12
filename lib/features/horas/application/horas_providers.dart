@@ -1,7 +1,9 @@
+import 'dart:math';
 // lib/features/horas/application/horas_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
+import '../../../core/cache/session_cache_provider.dart';
 import '../../../core/utils/search_query.dart';
 import '../../../core/utils/date_fmt.dart';
 import '../data/horas_repository.dart';
@@ -13,7 +15,7 @@ import '../domain/tipo_hora.dart';
 
 final horasRepoProvider = Provider<HorasRepository>((ref) {
   final sb = ref.watch(supabaseClientProvider);
-  return HorasRepository(sb);
+  return HorasRepository(sb, cache: ref.watch(sessionDataCacheProvider));
 });
 
 /// ====== LISTADOS DE PERSONAS ======
@@ -41,7 +43,7 @@ final listadoOficialesProvider = FutureProvider<List<Persona>>((ref) async {
 final listadoSegunTipoProvider = FutureProvider<List<Persona>>((ref) async {
   final tipo = ref.watch(tipoHoraProvider);
 
-  if (tipo == TipoHora.oficial) {
+  if (tipo.usaDuracionExtendida) {
     return ref.watch(listadoOficialesProvider.future);
   }
 
@@ -87,7 +89,10 @@ final personasByDniProvider = Provider<Map<int, Persona>>((ref) {
 
 /// ====== ESTADO DE UI ======
 
-final selectedPersonaProvider = StateProvider<Persona?>((ref) => null);
+final selectedPersonaProvider = StateProvider<Persona?>((ref) {
+  ref.watch(sessionDataCacheProvider);
+  return null;
+});
 
 final fechaProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
@@ -241,9 +246,32 @@ void _invalidateRegistros(Ref ref) {
 
 class CargarHoraController extends AsyncNotifier<void> {
   @override
-  Future<void> build() async {}
+  Future<void> build() async {
+    _generation++;
+    _submission = null;
+    _operationId = null;
+    _lastPayload = null;
+    ref.onDispose(() => _generation++);
+  }
 
-  Future<void> submit() async {
+  int _generation = 0;
+
+  Future<void>? _submission;
+  Object? _lastPayload;
+  String? _operationId;
+
+  Future<void> submit() {
+    final pending = _submission;
+    if (pending != null) return pending;
+    late final Future<void> operation;
+    operation = _submit(_generation).whenComplete(() {
+      if (identical(_submission, operation)) _submission = null;
+    });
+    _submission = operation;
+    return operation;
+  }
+
+  Future<void> _submit(int generation) async {
     final persona = ref.read(selectedPersonaProvider);
     if (persona == null) {
       throw Exception('Seleccioná una persona');
@@ -257,18 +285,47 @@ class CargarHoraController extends AsyncNotifier<void> {
       throw Exception('Seleccioná minutos');
     }
 
-    await ref.read(horasRepoProvider).cargarHora(
-          dni: persona.dni,
-          carreraId: persona.carreraId,
-          fecha: fecha,
-          tipoDb: tipo.db,
-          minutos: tipo.requiereMinutos ? minutos : null,
-        );
+    final payload = (
+      persona.dni,
+      persona.carreraId,
+      fecha.year,
+      fecha.month,
+      fecha.day,
+      tipo.db,
+      tipo.requiereMinutos ? minutos : null
+    );
+    if (_lastPayload != payload || _operationId == null) {
+      _lastPayload = payload;
+      final bytes = List<int>.generate(16, (_) => Random.secure().nextInt(256));
+      bytes[6] = (bytes[6] & 15) | 64;
+      bytes[8] = (bytes[8] & 63) | 128;
+      final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+      _operationId =
+          '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+    }
+    state = const AsyncLoading();
+    try {
+      await ref.read(horasRepoProvider).cargarHora(
+            operacionId: _operationId,
+            dni: persona.dni,
+            carreraId: persona.carreraId,
+            fecha: fecha,
+            tipoDb: tipo.db,
+            minutos: tipo.requiereMinutos ? minutos : null,
+          );
 
-    ref.read(minutosProvider.notifier).state = null;
+      if (generation != _generation) return;
+      ref.read(minutosProvider.notifier).state = null;
 
-    _invalidateListados(ref);
-    _invalidateRegistros(ref);
+      _invalidateListados(ref);
+      _invalidateRegistros(ref);
+      _operationId = null;
+      _lastPayload = null;
+      state = const AsyncData(null);
+    } catch (error, stack) {
+      if (generation == _generation) state = AsyncError(error, stack);
+      rethrow;
+    }
   }
 }
 

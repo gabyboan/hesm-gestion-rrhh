@@ -1,6 +1,7 @@
 // lib/features/horas/data/horas_repository.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/cache/session_data_cache.dart';
 import '../domain/hora_registro.dart';
 import '../domain/persona.dart';
 
@@ -16,21 +17,61 @@ import '../domain/persona.dart';
 class HorasRepository {
   final SupabaseClient _sb;
 
-  HorasRepository(this._sb);
+  HorasRepository(this._sb, {this.cache});
+  final SessionDataCache? cache;
+  Future<T> _cached<T>(Object key, Future<T> Function() load,
+          {Duration ttl = const Duration(seconds: 25)}) =>
+      cache?.read('horas', key, load, ttl: ttl) ?? load();
+
+  Future<List<Persona>> listadoMes() =>
+      _cached('personas', _listadoMes, ttl: const Duration(minutes: 3));
+  Future<List<Persona>> listadoHorasOficiales() =>
+      _cached('activas', _listadoHorasOficiales,
+          ttl: const Duration(minutes: 3));
+  Future<List<HoraRegistro>> registrosMes(
+          {required int dni,
+          required int carreraId,
+          required DateTime periodo}) =>
+      _cached((
+        'persona',
+        dni,
+        carreraId,
+        _toYmd(_monthStart(periodo))
+      ), () => _registrosMes(dni: dni, carreraId: carreraId, periodo: periodo));
+  Future<List<HoraRegistro>> registrosPeriodo({required DateTime periodo}) =>
+      _cached(('periodo', _toYmd(_monthStart(periodo))),
+          () => _registrosPeriodo(periodo: periodo));
+  Future<Set<DateTime>> periodosConRegistros() =>
+      _cached('periodos', _periodosConRegistros);
+
+  Future<List<Map<String, dynamic>>> _allRows(
+      String rpc, Map<String, dynamic> parameters) async {
+    final result = <Map<String, dynamic>>[];
+    const pageSize = 500;
+    for (var offset = 0;; offset += pageSize) {
+      final rows = _asRows(await _sb
+          .rpc(rpc, params: parameters)
+          .order('id')
+          .range(offset, offset + pageSize - 1));
+      result.addAll(rows);
+      if (rows.length < pageSize) break;
+    }
+    return result;
+  }
 
   static const _rpcListadoHorasMes = 'rpc_listado_horas_mes';
   static const _rpcListadoHorasOficiales =
       'rpc_listado_horas_oficiales_activas';
   static const _rpcHorasRegistrosMes = 'rpc_horas_registros_mes';
   static const _rpcHorasRegistrosPeriodo = 'rpc_horas_registros_periodo';
-  static const _rpcCargarHora = 'rpc_cargar_hora';
+  static const _rpcCargarHora = 'rpc_cargar_hora_segura';
   static const _rpcBorrarHora = 'rpc_borrar_hora';
 
   /// Listado mensual principal.
   ///
   /// Según la estructura actual del sistema, esta RPC trae el listado usado
   /// para horas comunes/particulares.
-  Future<List<Persona>> listadoMes() async {
+  Future<List<Persona>> _listadoMes() async {
     final res = await _sb.rpc(_rpcListadoHorasMes);
     final rows = _asRows(res);
 
@@ -42,7 +83,7 @@ class HorasRepository {
   /// Incluye a toda persona activa con una carrera asignada. La exclusión de
   /// bajas (jubilación, renuncia, fallecimiento, etc.) se resuelve en la RPC
   /// `rpc_listado_horas_oficiales_activas` en Postgres.
-  Future<List<Persona>> listadoHorasOficiales() async {
+  Future<List<Persona>> _listadoHorasOficiales() async {
     final res = await _sb.rpc(_rpcListadoHorasOficiales);
     final rows = _asRows(res);
 
@@ -53,14 +94,14 @@ class HorasRepository {
   ///
   /// La combinación DNI + carrera es necesaria porque una misma persona puede
   /// estar asociada a más de una carrera.
-  Future<List<HoraRegistro>> registrosMes({
+  Future<List<HoraRegistro>> _registrosMes({
     required int dni,
     required int carreraId,
     required DateTime periodo,
   }) async {
-    final res = await _sb.rpc(
+    final res = await _allRows(
       _rpcHorasRegistrosMes,
-      params: {
+      {
         'p_dni': dni,
         'p_carrera_id': carreraId,
         'p_periodo': _toYmd(periodo),
@@ -93,12 +134,12 @@ class HorasRepository {
   /// - minutos_aplicados
   /// - minutos_excedidos
   /// - excedido
-  Future<List<HoraRegistro>> registrosPeriodo({
+  Future<List<HoraRegistro>> _registrosPeriodo({
     required DateTime periodo,
   }) async {
-    final res = await _sb.rpc(
+    final res = await _allRows(
       _rpcHorasRegistrosPeriodo,
-      params: {
+      {
         'p_periodo': _toYmd(periodo),
       },
     );
@@ -112,18 +153,19 @@ class HorasRepository {
   ///
   /// Se usa para mostrar meses sin datos deshabilitados, sin ocultar huecos
   /// entre meses cargados.
-  Future<Set<DateTime>> periodosConRegistros() async {
-    final res = await _sb
-        .from('horas_registros')
-        .select('periodo')
-        .order('periodo', ascending: false);
-
-    final rows = _asRows(res);
-
-    return {
-      for (final row in rows)
-        _monthStart(_asDate(row['periodo'], field: 'periodo')),
-    };
+  Future<Set<DateTime>> _periodosConRegistros() async {
+    final result = <DateTime>{};
+    const pageSize = 500;
+    for (var offset = 0;; offset += pageSize) {
+      final res = await _sb
+          .rpc('rpc_horas_periodos')
+          .range(offset, offset + pageSize - 1);
+      final rows = _asRows(res);
+      result.addAll(rows.map(
+          (row) => _monthStart(_asDate(row['periodo'], field: 'periodo'))));
+      if (rows.length < pageSize) break;
+    }
+    return result;
   }
 
   /// Carga un registro de hora.
@@ -133,28 +175,36 @@ class HorasRepository {
   /// [minutos] puede ser `null` para tipos que no consumen minutos, por ejemplo
   /// enfermedad, si así está definido en la lógica de base de datos.
   Future<void> cargarHora({
+    String? operacionId,
     required int dni,
     required int carreraId,
     required DateTime fecha,
     required String tipoDb,
     int? minutos,
   }) async {
-    await _sb.rpc(
-      _rpcCargarHora,
-      params: {
-        'p_dni': dni,
-        'p_carrera_id': carreraId,
-        'p_fecha': _toYmd(fecha),
-        'p_tipo': tipoDb,
-        'p_minutos': minutos,
-      },
-    );
+    cache?.invalidate('horas');
+    try {
+      await _sb.rpc(
+        _rpcCargarHora,
+        params: {
+          'p_operacion_id': operacionId,
+          'p_dni': dni,
+          'p_carrera_id': carreraId,
+          'p_fecha': _toYmd(fecha),
+          'p_tipo': tipoDb,
+          'p_minutos': minutos,
+        },
+      ).timeout(const Duration(seconds: 30));
+    } finally {
+      cache?.invalidate('horas');
+    }
   }
 
   /// Borra un registro de hora por ID.
   ///
   /// Devuelve `true` solo si la RPC confirma explícitamente el borrado.
   Future<bool> borrarHora({required int id}) async {
+    cache?.invalidate('horas');
     final res = await _sb.rpc(
       _rpcBorrarHora,
       params: {
@@ -162,6 +212,7 @@ class HorasRepository {
       },
     );
 
+    cache?.invalidate('horas');
     return res == true;
   }
 

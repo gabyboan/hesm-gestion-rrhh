@@ -36,6 +36,18 @@ void main() {
     final changed = Uint8List.fromList(installer)..[0] ^= 1;
     expect(release.verifyInstaller(changed, publicKey), isFalse);
   });
+  test('authenticates the required backend version and accepts older manifests',
+      () {
+    expect(
+        LanRelease.fromEnvelope(envelope(metadata()), publicKey).requiredSchema,
+        1);
+    final data = metadata()..['required_schema'] = 2;
+    expect(
+        LanRelease.fromEnvelope(envelope(data), publicKey).requiredSchema, 2);
+    data['required_schema'] = -1;
+    expect(() => LanRelease.fromEnvelope(envelope(data), publicKey),
+        throwsFormatException);
+  });
   test('rejects tampered metadata even if the installer signature is unchanged',
       () {
     final data =

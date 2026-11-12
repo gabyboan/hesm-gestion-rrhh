@@ -16,6 +16,7 @@ import traceback
 import uuid
 
 import backup_database as backup
+from backup_recovery import copy_external
 
 REPO = Path(__file__).resolve().parent.parent
 CLI_VERSION = '2.122.0'
@@ -69,6 +70,7 @@ def main():
     parser.add_argument('--backup-root', type=Path,
                         default=REPO / '.private' / 'database-backups' / 'weekly')
     parser.add_argument('--key-dir', type=Path, default=Path.home() / '.hesm-backup-keys')
+    parser.add_argument('--external-config', type=Path, default=REPO / '.private' / 'backup-external.json')
     parser.add_argument('--check', action='store_true', help='Comprueba requisitos locales sin crear una copia.')
     args = parser.parse_args()
     root = args.backup_root.resolve()
@@ -132,6 +134,18 @@ def main():
                       storage_objects=report['storage_objects'], vault_secrets=report['vault_secrets'])
         write_status(root / 'last-success.json', status)
         write_status(root / 'last-run.json', status)
+        if args.external_config.exists():
+            try:
+                configuration = json.loads(args.external_config.read_text(encoding='utf-8'))
+                status['external'] = copy_external(archive, job.key, job.key_id, configuration)
+                write_status(root / 'last-success.json', status)
+                write_status(root / 'last-run.json', status)
+            except Exception:
+                status.update(estado='verificado_local_fallo_externo')
+                job.private_log('external-error', traceback.format_exc().encode())
+                write_status(root / 'last-run.json', status)
+                backup.emit('fallo_copia_externa', detalle='La copia local sigue verificada; revisar el destino externo.')
+                return 1
         backup.emit('backup_semanal_verificado', archivo=str(archive), bytes=archive.stat().st_size,
                     storage_objects=report['storage_objects'], vault_secrets=report['vault_secrets'])
         return 0

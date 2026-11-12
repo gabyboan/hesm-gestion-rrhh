@@ -1,3 +1,4 @@
+import '../../../core/cache/session_cache_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -66,6 +67,9 @@ class _FichaPageState extends ConsumerState<FichaPage> {
                         icon: const Icon(Icons.refresh),
                         onPressed: () {
                           ref.invalidate(puedeLeerFichaProvider);
+                          ref.read(sessionDataCacheProvider)
+                            ..invalidate('ficha')
+                            ..invalidate('licencias');
                           ref.invalidate(fichaPersonasProvider);
                           ref.invalidate(fichaLicenciasProvider);
                           ref.invalidate(fichaLicenciasAcumuladasProvider);

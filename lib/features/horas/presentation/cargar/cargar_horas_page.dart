@@ -1,5 +1,6 @@
 // lib/features/horas/presentation/cargar/cargar_horas_page.dart
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/ui/app_snackbar.dart';
@@ -53,6 +54,9 @@ class CargarHorasPage extends ConsumerWidget {
   }
 
   String _errorMessage(Object e) {
+    if (e is TimeoutException) {
+      return 'No se pudo confirmar el guardado. Reintentá sin cambiar los datos para comprobar la misma operación.';
+    }
     final raw = e.toString().trim();
 
     if (raw.isEmpty) {
@@ -227,11 +231,11 @@ class CargarHorasPage extends ConsumerWidget {
           const SizedBox(height: 16),
           if (tipo.requiereMinutos) ...[
             Text(
-              tipo == TipoHora.oficial ? 'Duración' : 'Minutos',
+              tipo.usaDuracionExtendida ? 'Duración' : 'Minutos',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
-            if (tipo == TipoHora.oficial)
+            if (tipo.usaDuracionExtendida)
               DuracionOficialField(
                 minutos: minutos,
                 onTap: () => _pickDuracionOficial(

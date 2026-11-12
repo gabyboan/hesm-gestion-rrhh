@@ -21,7 +21,7 @@ class InformeRowsTable extends StatelessWidget {
           const _InformeRow3Cols(
             enf: 'Enfermedad',
             nombre: 'Apellido, Nombre',
-            part: 'Particulares',
+            part: 'Horas y detalle',
             trailingSmall: '',
             header: true,
           ),
@@ -56,7 +56,14 @@ class InformeRowsTable extends StatelessWidget {
                     return _InformeRow3Cols(
                       enf: enfermedad,
                       nombre: '${persona.apellido}, ${persona.nombre}',
-                      part: particulares,
+                      part: [
+                        if (particulares.isNotEmpty)
+                          'Particulares: $particulares',
+                        if (row.tieneOficiales)
+                          'Oficiales: ${DateFmt.resumenMinutosConFecha(row.oficialesPorDia)}',
+                        if (row.tieneGremiales)
+                          'Gremiales: ${DateFmt.resumenMinutosConFecha(row.gremialesPorDia)}',
+                      ].join('\n'),
                       trailingSmall:
                           'DNI ${persona.dni} • C${persona.carreraId}',
                     );

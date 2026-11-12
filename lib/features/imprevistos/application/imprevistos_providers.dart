@@ -1,3 +1,4 @@
+import '../../../core/cache/session_cache_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
@@ -72,6 +73,7 @@ final imprevistosRegistrosProvider =
 });
 
 void invalidateImprevistos(Ref ref) {
+  ref.read(sessionDataCacheProvider).invalidate('licencias');
   ref.invalidate(imprevistosListadoProvider);
   ref.invalidate(imprevistosRegistrosProvider);
   ref.invalidate(licenciasRegistrosProvider);

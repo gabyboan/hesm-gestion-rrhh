@@ -221,6 +221,36 @@ commit;
     (Join-Path $repoPath 'supabase/tests/licencias_francos_cantidad_papel.sql'))) 'licencias-francos-cantidad-papel.log'
   Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
     (Join-Path $repoPath 'supabase/tests/licencias_documentacion_pendiente.sql'))) 'licencias-documentacion-pendiente.log'
+  Invoke-CheckedNative (Join-Path $PostgresBin 'createdb.exe') @(
+    '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres', 'horas_next_test'
+  ) 'createdb-horas-next.log'
+  Invoke-CheckedNative $psql (@('-X','-h','127.0.0.1','-p',"$port",'-U','postgres',
+    '-d','horas_next_test','-v','ON_ERROR_STOP=1','-f',
+    (Join-Path $repoPath 'supabase/tests/horas_gremiales.sql'))) 'horas-gremiales.log'
+  $hourContenders = @()
+  foreach ($hourIndex in @(1,2)) {
+    $hourOut = Join-Path $runPath "horas-concurrente-$hourIndex.log"
+    $hourErr = Join-Path $runPath "horas-concurrente-$hourIndex.err"
+    $hourProcess = Start-Process -FilePath $psql -ArgumentList @('-X','-A','-t','-q',
+      '-h','127.0.0.1','-p',"$port",'-U','postgres','-d','horas_next_test',
+      '-v','ON_ERROR_STOP=1','-f',('"{0}"' -f (Join-Path $repoPath 'supabase/tests/horas_operacion_concurrente.sql'))) `
+      -WindowStyle Hidden -PassThru -RedirectStandardOutput $hourOut -RedirectStandardError $hourErr
+    $null = $hourProcess.Handle
+    $hourContenders += @{Process=$hourProcess;Output=$hourOut;Error=$hourErr}
+  }
+  $hourIds = @()
+  foreach ($hourAttempt in $hourContenders) {
+    $hourAttempt.Process.WaitForExit()
+    if ($hourAttempt.Process.ExitCode -ne 0) {
+      Get-Content -LiteralPath $hourAttempt.Error | Write-Host
+      throw 'Fallo del reenvio concurrente de horas.'
+    }
+    $hourText = Get-Content -LiteralPath $hourAttempt.Output -Raw
+    if ($hourText -notmatch 'OPERACION:(\d+)') { throw 'Falta resultado de operacion de horas.' }
+    $hourIds += $Matches[1]
+  }
+  if (@($hourIds | Select-Object -Unique).Count -ne 1) { throw 'El reenvio duplico la hora.' }
+  Write-Host 'OK: dos reenvios simultaneos devolvieron la misma hora.'
   Write-Host 'OK: cupo de Estudio protegido ante dos solicitudes simultáneas.'
   Write-Host 'OK: dos ingresos simultáneos, una sola Gestión admitida.'
   Get-Content -LiteralPath (Join-Path $runPath 'horas-seguridad.log') -Tail 5 | Write-Host

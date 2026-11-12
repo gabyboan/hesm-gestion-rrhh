@@ -71,6 +71,8 @@ class HoraRegistro {
 
   bool get esEnfermedad => tipoNormalizado == 'ENFERMEDAD';
 
+  bool get esGremial => tipoNormalizado == 'GREMIAL';
+
   bool get esOficial => tipoNormalizado == 'OFICIAL';
 
   bool get tieneExcedente => excedido || minutosExcedidos > 0;

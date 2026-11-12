@@ -1,3 +1,4 @@
+import '../../../core/cache/session_cache_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
@@ -7,8 +8,9 @@ import '../../licencias/domain/licencia.dart';
 import '../data/ficha_repository.dart';
 import '../domain/ficha_persona.dart';
 
-final fichaRepoProvider = Provider<FichaRepository>(
-    (ref) => FichaRepository(ref.watch(supabaseClientProvider)));
+final fichaRepoProvider = Provider<FichaRepository>((ref) => FichaRepository(
+    ref.watch(supabaseClientProvider),
+    cache: ref.watch(sessionDataCacheProvider)));
 
 final puedeLeerFichaProvider = FutureProvider.autoDispose<bool>((ref) async {
   final userId =

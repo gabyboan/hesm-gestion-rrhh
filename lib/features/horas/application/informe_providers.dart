@@ -28,6 +28,7 @@ enum InformeFiltro {
   particulares,
   enfermedad,
   oficiales,
+  gremiales,
   excedidos,
 }
 
@@ -55,12 +56,14 @@ class InformeRow {
 
   /// Día -> minutos oficiales reales.
   final Map<DateTime, int> oficialesPorDia;
+  final Map<DateTime, int> gremialesPorDia;
 
   const InformeRow({
     required this.persona,
     required this.particularesPorDia,
     required this.enfermedadPorDia,
     required this.oficialesPorDia,
+    this.gremialesPorDia = const {},
   });
 
   bool get tieneParticulares => particularesPorDia.isNotEmpty;
@@ -69,13 +72,17 @@ class InformeRow {
 
   bool get tieneOficiales => oficialesPorDia.isNotEmpty;
 
-  bool get tieneUso => tieneParticulares || tieneEnfermedad || tieneOficiales;
+  bool get tieneGremiales => gremialesPorDia.isNotEmpty;
+
+  bool get tieneUso =>
+      tieneParticulares || tieneEnfermedad || tieneOficiales || tieneGremiales;
 }
 
 class _Flags {
   bool tienePart = false;
   bool tieneEnf = false;
   bool tieneOfi = false;
+  bool tieneGre = false;
   bool tieneExc = false;
 }
 
@@ -104,6 +111,7 @@ List<InformeRow> _buildInforme({
   final part = <String, Map<DateTime, int>>{};
   final enf = <String, Map<DateTime, int>>{};
   final ofi = <String, Map<DateTime, int>>{};
+  final gre = <String, Map<DateTime, int>>{};
   final flags = <String, _Flags>{};
 
   final filtrarExcedidos =
@@ -163,12 +171,16 @@ List<InformeRow> _buildInforme({
     // OFICIAL:
     // Usa minutos reales, porque en base de datos `minutosAplicados`
     // suele venir en 0.
-    if (r.esOficial) {
+    if (r.esOficial || r.esGremial) {
       final minutos = r.minutos ?? 0;
 
       if (minutos > 0) {
-        addMin(ofi, key, d, minutos);
-        flags[key]!.tieneOfi = true;
+        addMin(r.esGremial ? gre : ofi, key, d, minutos);
+        if (r.esGremial) {
+          flags[key]!.tieneGre = true;
+        } else {
+          flags[key]!.tieneOfi = true;
+        }
       }
 
       flags[key]!.tieneExc = flags[key]!.tieneExc || r.tieneExcedente;
@@ -190,6 +202,7 @@ List<InformeRow> _buildInforme({
       particularesPorDia: part[key] ?? <DateTime, int>{},
       enfermedadPorDia: enf[key] ?? <DateTime, int>{},
       oficialesPorDia: ofi[key] ?? <DateTime, int>{},
+      gremialesPorDia: gre[key] ?? <DateTime, int>{},
     );
 
     final f = flags[key] ?? _Flags();
@@ -210,6 +223,7 @@ List<InformeRow> _buildInforme({
       if (wantPart && !f.tienePart) continue;
       if (wantEnf && !f.tieneEnf) continue;
       if (wantOfi && !f.tieneOfi) continue;
+      if (filtros.contains(InformeFiltro.gremiales) && !f.tieneGre) continue;
 
       // Excedidos:
       // muestra solo personas con al menos un registro excedido considerado.
