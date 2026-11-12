@@ -3,6 +3,11 @@
 Preparación del 12 de noviembre de 2026. Código `1.0.7+8`.
 La distribución operativa anterior documentada es `1.0.6.7`.
 
+Durante la [prueba local del 12/11/2026](PRUEBA_LOCAL_1_0_7.md) se aplicaron las
+dos migraciones a la base compartida, después de restaurar y verificar un
+respaldo reciente y ensayar ambas sobre esa copia. La base ya anuncia las
+capacidades de esquema **2**. La distribución del instalador continúa pendiente.
+
 ## Horas Gremiales y guardado
 
 - Nueva modalidad Gremial con duración de 30 minutos a 10 horas, en pasos de
@@ -75,6 +80,11 @@ Si falta, muestra un aviso de actualización de la base. El manifiesto firmado d
 instalador incluye `required_schema=2`; la comprobación operativa se realiza al
 ingresar. Los manifiestos anteriores continúan siendo legibles.
 
+Si falla esa comprobación, se muestra un aviso con **Reintentar** y **Volver al
+inicio de sesión**. La comprobación puede repetirse después de actualizar la
+base, sin dejar al usuario detenido en una pantalla de texto técnico. Los errores
+internos de acceso no se muestran literalmente.
+
 Los errores de Flutter, los errores asincrónicos y las fallas de conexión del
 login generan eventos en `%LOCALAPPDATA%\HESM-Gestion-RRHH\logs`. Se guardan fecha
 UTC, versión, componente, tipo y código técnico seguro. Se conservan dos archivos
@@ -95,9 +105,10 @@ no interrumpe la aplicación.
 5. Conservar un instalador anterior compatible. Los datos nuevos no se revierten
    desinstalando la aplicación ni borrando indiscriminadamente migraciones.
 
-Esta preparación no aplica migraciones sobre la base compartida ni publica un
-instalador operativo. Las lecturas remotas de esta revisión fueron de configuración
-y estructura, sin extraer registros del personal.
+Las dos migraciones ya se aplicaron en la base compartida para la prueba local.
+La guía conserva el orden para otros entornos. Todavía no se publicó un instalador
+operativo. Las consultas de comprobación usaron metadatos; el respaldo del ensayo
+se conservó cifrado y su restauración se realizó en un contenedor aislado.
 
 ## Respaldo externo configurable
 

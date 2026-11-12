@@ -1,5 +1,17 @@
 # Registro de cambios
 
+## Prueba local 1.0.7.8 · 12 de noviembre de 2026
+
+- Aplica las dos migraciones nuevas a la base compartida tras restaurar y
+  verificar el respaldo y ensayarlas sobre esa copia. Las capacidades de
+  esquema 2 y los permisos de las nuevas RPC quedaron comprobados.
+- Sustituye la pantalla sin acciones de error al ingresar por un aviso que
+  permite reintentar la comprobación o volver al login, sin exponer errores
+  internos literalmente.
+
+La distribución del instalador continúa pendiente. El detalle está en
+[Prueba local 1.0.7.8](docs/PRUEBA_LOCAL_1_0_7.md).
+
 ## Preparación 1.0.7.8 · 12 de noviembre de 2026
 
 - Agrega Horas Gremiales para las distintas carreras del padrón de Oficiales,

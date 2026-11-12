@@ -8,9 +8,10 @@ compatibilidad del backend, diagnóstico local y herramientas de respaldo
 externo configurable. El alcance, las pruebas y el orden de actualización se
 detallan en [Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md).
 
-Las dos migraciones nuevas están preparadas y verificadas en una base aislada;
-su aplicación y la distribución del instalador siguen pendientes. La última
-distribución operativa documentada es `1.0.6.7`.
+Las dos migraciones nuevas fueron aplicadas a la base compartida durante la
+prueba local del 12/11/2026, con respaldo restaurado y ensayo sobre esa copia.
+La distribución del instalador sigue pendiente. La última distribución operativa
+documentada es `1.0.6.7`. Véase [Prueba local](PRUEBA_LOCAL_1_0_7.md).
 
 La revisión siguiente conserva la evidencia del trabajo de Ficha y Licencias.
 

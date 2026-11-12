@@ -1,5 +1,17 @@
 # Copia local y prueba de recuperación
 
+## Verificación del 12 de noviembre de 2026
+
+Antes de la actualización de la base se creó y restauró un respaldo nuevo.
+Coincidieron 88 tablas y 18.775 filas, además de estructura y permisos. Sobre
+esa copia se ensayaron las dos migraciones de `1.0.7.8` antes de aplicarlas al
+entorno compartido. Véase [Prueba local](PRUEBA_LOCAL_1_0_7.md).
+
+Durante la exportación conviene evitar otras operaciones de la CLI que regeneren
+las credenciales del rol temporal de conexión: pueden invalidar la conexión
+del respaldo en curso. El informe de la tarea determina si la copia terminó
+verificada; un intento fallido no reemplaza la última copia válida.
+
 ## Copia externa y custodia portable preparadas
 
 La actualización del 12/11/2026 agrega `tool/backup_recovery.py` y la lectura

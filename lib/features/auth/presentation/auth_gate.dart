@@ -11,6 +11,7 @@ import '../application/auth_providers.dart';
 import '../application/session_timeout_provider.dart';
 import 'auth_activity_listener.dart';
 import 'login_page.dart';
+import 'session_startup_error_view.dart';
 import '../../../core/startup/backend_capabilities.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import 'mfa_widgets.dart';
@@ -42,7 +43,10 @@ class AuthGate extends ConsumerWidget {
         );
       },
       loading: () => const _AuthLoading(),
-      error: (e, _) => _AuthError(error: e),
+      error: (e, _) => _AuthError(
+        error: e,
+        onRetry: () => ref.invalidate(authSessionProvider),
+      ),
     );
   }
 }
@@ -95,7 +99,7 @@ class _LoggedInGate extends ConsumerStatefulWidget {
 }
 
 class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
-  late final Future<void> _startTimeoutFuture;
+  late Future<void> _startTimeoutFuture;
 
   @override
   void initState() {
@@ -132,7 +136,12 @@ class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
         }
 
         if (snapshot.hasError) {
-          return _AuthError(error: snapshot.error!);
+          return _AuthError(
+            error: snapshot.error!,
+            onRetry: () => setState(() {
+              _startTimeoutFuture = _startAuthenticatedSession();
+            }),
+          );
         }
 
         return ProviderScope(
@@ -162,9 +171,11 @@ class _AuthLoading extends StatelessWidget {
 
 class _AuthError extends ConsumerStatefulWidget {
   final Object error;
+  final VoidCallback onRetry;
 
   const _AuthError({
     required this.error,
+    required this.onRetry,
   });
 
   @override
@@ -172,6 +183,9 @@ class _AuthError extends ConsumerStatefulWidget {
 }
 
 class _AuthErrorState extends ConsumerState<_AuthError> {
+  bool _signingOut = false;
+  String? _signOutError;
+
   @override
   void initState() {
     super.initState();
@@ -180,10 +194,32 @@ class _AuthErrorState extends ConsumerState<_AuthError> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text('Auth error: ${widget.error}'),
-      ),
+    return SessionStartupErrorView(
+      error: widget.error,
+      busy: _signingOut,
+      actionError: _signOutError,
+      onRetry: widget.onRetry,
+      onSignOut: () async {
+        setState(() {
+          _signingOut = true;
+          _signOutError = null;
+        });
+        try {
+          await ref
+              .read(authRepoProvider)
+              .signOut()
+              .timeout(const Duration(seconds: 15));
+        } catch (_) {
+          if (mounted) {
+            setState(() {
+              _signOutError =
+                  'No se pudo cerrar la sesión. Revisá la conexión y reintentá.';
+            });
+          }
+        } finally {
+          if (mounted) setState(() => _signingOut = false);
+        }
+      },
     );
   }
 }

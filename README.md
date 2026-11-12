@@ -41,7 +41,10 @@ recuperación. La [guía de la actualización](docs/ACTUALIZACION_1_0_7.md) deta
 las dos migraciones requeridas y el orden de puesta en servicio.
 
 La distribución operativa documentada sigue siendo **1.0.6.7**. Esta preparación
-no distribuye un instalador ni aplica las nuevas migraciones al entorno compartido.
+no distribuye un instalador. Para la prueba local del 12/11/2026 se aplicaron las
+dos migraciones en la base compartida, después de verificar el respaldo y ensayar
+la actualización sobre su copia restaurada. El estado se detalla en
+[Prueba local 1.0.7.8](docs/PRUEBA_LOCAL_1_0_7.md).
 
 ## Ficha y Licencias
 

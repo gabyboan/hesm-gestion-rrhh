@@ -1,5 +1,23 @@
 # Validación de la entrega
 
+## Prueba local · 12 de noviembre de 2026
+
+La aplicación Windows llegó al login y el responsable confirmó el aviso de
+base pendiente al ingresar. Se creó un respaldo cifrado nuevo: su restauración
+aislada verificó 88 tablas y 18.775 filas, junto con datos, estructura y permisos.
+Las dos migraciones se ensayaron sobre esa copia antes de aplicarlas juntas
+en una transacción en el entorno compartido, conservando el historial previo.
+La lectura posterior confirmó ambas migraciones, las tres RPC y el registro
+de operaciones privado.
+
+Tras reabrir la compilación se observó la pantalla de módulos de la cuenta
+autenticada y el responsable confirmó que funciona en esta PC. La corrección
+de recuperación del acceso pasó **213 pruebas Flutter**, el análisis estático
+sin observaciones y la compilación Windows release.
+
+El detalle y los límites de esta prueba están en
+[Prueba local 1.0.7.8](PRUEBA_LOCAL_1_0_7.md).
+
 ## Preparación 1.0.7.8 · 12 de noviembre de 2026
 
 - **211 pruebas Flutter aprobadas**: caché y cambio de sesión, agrupación de
@@ -22,9 +40,9 @@ guardado forzó la consulta siguiente. Un informe de 1.101 registros se recuper�
 en tres páginas y una lectura posterior reutilizó el resultado vigente. Esto
 verifica recorridos concretos, no una mejora porcentual general del sistema.
 
-Se consultaron estructura y configuración remotas en modo de lectura. Las
-nuevas migraciones no se aplicaron a la base compartida y no se distribuyó un
-instalador. El orden y las limitaciones están en
+En esa validación inicial se consultaron estructura y configuración remotas
+en modo de lectura. Las migraciones se aplicaron después, durante la prueba
+local descrita arriba. No se distribuyó un instalador. El orden y las limitaciones están en
 [Actualización 1.0.7.8](ACTUALIZACION_1_0_7.md).
 
 ## Revisión actual · 11 de noviembre de 2026
