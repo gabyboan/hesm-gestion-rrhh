@@ -64,6 +64,8 @@ try {
   Invoke-CheckedNative $psql ($connectionArgs + @('-f',
     (Join-Path $repoPath 'supabase/tests/partes_medicos_domicilio_emision.sql'))) 'domicilio-emision.log'
   Invoke-CheckedNative $psql ($connectionArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/partes_medicos_condicion.sql'))) 'condicion-emision.log'
+  Invoke-CheckedNative $psql ($connectionArgs + @('-f',
     (Join-Path $repoPath 'supabase/tests/seguridad_rendimiento.sql'))) 'seguridad-rendimiento.log'
   Invoke-CheckedNative $psql ($connectionArgs + @('-A', '-t', '-f',
     (Join-Path $repoPath 'supabase/audits/seguridad_rendimiento.sql'))) 'auditoria.json'

@@ -155,7 +155,8 @@ void main() {
     await expectLater(ParteMedicoPrinter.generarTodos([]), throwsArgumentError);
   });
 
-  test('genera el parte y la vista previa de un suplente sin legajo', () async {
+  test('sin legajo no atribuye una suplencia en vista previa, parte ni lote',
+      () async {
     final parte = ParteMedico.fromJson({
       'id': 1,
       'dni': 23456789,
@@ -164,13 +165,39 @@ void main() {
       'empleado_apellido': 'Perez',
       'empleado_nombre': 'Ana',
       'empleado_legajo': null,
+      'empleado_condicion': 'Titular',
     });
 
     for (final bytes in [
       await ParteMedicoPrinter.generar(parte),
       await ParteMedicoPrinter.generarVistaPrevia(parte),
+      await ParteMedicoPrinter.generarTodos([parte]),
     ]) {
       expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+      final texto = _contenidoPdf(bytes);
+      expect(texto, isNot(contains('SIN LEGAJO')));
+      expect(texto, isNot(contains('TITULAR')));
+      expect(texto, isNot(contains('SUPLENTE')));
+    }
+  });
+
+  test('sin número imprime SUPLENTE solo para una suplencia real', () async {
+    final parte = ParteMedico.fromJson({
+      'id': 1,
+      'dni': 23456789,
+      'fecha': '2026-11-13',
+      'tipo': 'CONSULTORIO',
+      'empleado_apellido': 'Prueba',
+      'empleado_nombre': 'Dos',
+      'empleado_legajo': null,
+      'empleado_condicion': 'Suplente Ordinario - Cargo Vacante',
+    });
+    for (final bytes in [
+      await ParteMedicoPrinter.generar(parte),
+      await ParteMedicoPrinter.generarVistaPrevia(parte),
+      await ParteMedicoPrinter.generarTodos([parte]),
+    ]) {
+      expect(_contenidoPdf(bytes), contains('SUPLENTE'));
     }
   });
 

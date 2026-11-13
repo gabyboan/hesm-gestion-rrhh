@@ -220,7 +220,7 @@ class ParteMedicoPrinter {
                   width: 215,
                 ),
                 _text(
-                  parte.empleadoLegajo?.toString() ?? 'SUPLENTE',
+                  parte.legajoParaImprimir,
                   left: 115,
                   top: 150,
                   width: 75,

@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const requiredBackendSchema = 2;
+const requiredBackendSchema = 3;
 
 Future<void> requireCompatibleBackend(SupabaseClient client) async {
   try {
@@ -12,7 +12,8 @@ Future<void> requireCompatibleBackend(SupabaseClient client) async {
         result['schema'] >= requiredBackendSchema &&
         result['horas_gremiales'] == true &&
         result['horas_idempotencia'] == true &&
-        result['horas_periodos'] == true) {
+        result['horas_periodos'] == true &&
+        result['medicos_condicion'] == true) {
       return;
     }
   } on PostgrestException catch (error) {

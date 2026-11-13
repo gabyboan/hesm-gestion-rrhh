@@ -1,5 +1,21 @@
 # Registro de cambios
 
+## Corrección 1.0.8.9 · 13 de noviembre de 2026
+
+El parte médico da prioridad al número de legajo. Si falta, consulta la condición
+real: **Titular deja el casillero vacío** y una suplencia muestra **SUPLENTE**.
+Antes se imprimía SUPLENTE para toda persona sin número. La condición se consulta
+para la vista previa y se conserva al emitir; una modificación posterior de la
+ficha no cambia un parte ya registrado. Los anteriores sin esa copia dejan el
+casillero vacío en ausencia de número, sin reconstruir su condición histórica.
+
+Se verifica el texto del PDF individual, de la vista previa y de la impresión
+por lotes con datos ficticios.
+
+Instalador firmado publicado en el canal privado, con capacidades 3 aplicadas.
+Se comprobaron el paquete extraído y las firmas, tamaño y SHA-256 por la red.
+Véase [Condición y legajo](docs/CORRECCION_MEDICOS_1_0_8.md).
+
 ## Distribución 1.0.7.8 · 12 de noviembre de 2026
 
 Instalador firmado publicado en el canal privado del hospital. Incluye Ficha y

@@ -3,12 +3,14 @@ class MedicoPersona {
   final String apellido;
   final String nombre;
   final int? legajo;
+  final String? condicion;
 
   const MedicoPersona({
     required this.dni,
     required this.apellido,
     required this.nombre,
     required this.legajo,
+    this.condicion,
   });
 
   String get nombreCompleto => [apellido.trim(), nombre.trim()]
@@ -25,6 +27,7 @@ class MedicoPersona {
       apellido: (json['apellido'] ?? '').toString().trim(),
       nombre: (json['nombre'] ?? '').toString().trim(),
       legajo: json['legajo'] == null ? null : _asInt(json['legajo'], 'legajo'),
+      condicion: json['condicion']?.toString().trim(),
     );
   }
 

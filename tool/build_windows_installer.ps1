@@ -94,7 +94,7 @@ if ($LASTEXITCODE -ne 0) { throw 'La firma del instalador no es valida.' }
 $length = (Get-Item -LiteralPath $installer).Length
 $payloadPath = Join-Path $Destino 'release-payload.json'
 $utf8NoBom = New-Object Text.UTF8Encoding($false)
-$payload = [ordered]@{schema=1; required_schema=2; version=$fileVersion; file=[IO.Path]::GetFileName($installer); length=$length;
+$payload = [ordered]@{schema=1; required_schema=3; version=$fileVersion; file=[IO.Path]::GetFileName($installer); length=$length;
     sha256=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant(); signature=$signature} | ConvertTo-Json -Compress
 [IO.File]::WriteAllText($payloadPath, $payload, $utf8NoBom)
 try {

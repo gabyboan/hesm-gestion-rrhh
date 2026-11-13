@@ -27,6 +27,13 @@ y partes médicos desde Windows.
 | **Licencias** | Carga, modificación, anulación y exportación; catálogo operativo, cupos de Estudio y revisión separada de importaciones. |
 | **Ficha** | Datos del personal, historial integrado desde 2026, resumen anual y planilla PDF con continuaciones. |
 
+## Corrección de Médicos 1.0.8.9 · 13 de noviembre de 2026
+
+La impresión consulta la condición real cuando falta el número de legajo:
+Titular deja el casillero vacío y una suplencia muestra SUPLENTE. Requiere
+capacidades de base 3, ya aplicadas. El instalador firmado está publicado en el
+canal privado del hospital. Véase [Condición y legajo](docs/CORRECCION_MEDICOS_1_0_8.md).
+
 ## Actualización 1.0.7.8 publicada · 12 de noviembre de 2026
 
 El código `1.0.7+8` incorpora Horas Gremiales, guardado de horas con protección

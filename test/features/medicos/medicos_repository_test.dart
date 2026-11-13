@@ -16,6 +16,7 @@ void main() {
   Map<String, dynamic>? respuesta;
   List<Map<String, dynamic>>? filas;
   late List<Map<String, dynamic>> carreras;
+  late List<Map<String, dynamic>> condiciones;
   late List<String> rutas;
 
   setUp(() async {
@@ -24,6 +25,7 @@ void main() {
     respuesta = null;
     filas = null;
     carreras = [];
+    condiciones = [];
     rutas = [];
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((request) async {
@@ -39,6 +41,8 @@ void main() {
         }));
       } else if (request.uri.path.endsWith('/rpc_medicos_carreras')) {
         request.response.write(jsonEncode(carreras));
+      } else if (request.uri.path.endsWith('/rpc_medicos_condiciones')) {
+        request.response.write(jsonEncode(condiciones));
       } else if (filas != null) {
         request.response.write(jsonEncode(filas));
       } else if (respuesta != null) {
@@ -65,6 +69,23 @@ void main() {
   tearDown(() async {
     await client.dispose();
     await server.close(force: true);
+  });
+
+  test('consulta la condición real por DNI sin deducirla del legajo', () async {
+    filas = [
+      {'dni': 12345678, 'apellido': 'Prueba', 'nombre': 'Uno', 'legajo': null},
+      {'dni': 23456789, 'apellido': 'Prueba', 'nombre': 'Dos', 'legajo': null},
+    ];
+    condiciones = [
+      {'dni': 23456789, 'condicion': 'Suplente Ordinario - Cargo Vacante'},
+      {'dni': 12345678, 'condicion': 'Titular'},
+    ];
+    final personas = await repository.personas(buscar: 'Prueba');
+    expect(personas.map((p) => p.condicion),
+        ['Titular', 'Suplente Ordinario - Cargo Vacante']);
+    expect(solicitudes.last, {
+      'p_dnis': [12345678, 23456789]
+    });
   });
 
   test('guarda partes comunes con la firma anterior sin enviar meses nulos',

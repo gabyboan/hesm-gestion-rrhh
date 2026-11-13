@@ -42,6 +42,7 @@ class ParteMedico {
   final String empleadoApellido;
   final String empleadoNombre;
   final int? empleadoLegajo;
+  final String? empleadoCondicion;
   final String? familiarApellidoNombre;
   final int? familiarDni;
   final int? familiarEdad;
@@ -62,6 +63,7 @@ class ParteMedico {
     required this.empleadoApellido,
     required this.empleadoNombre,
     required this.empleadoLegajo,
+    this.empleadoCondicion,
     required this.familiarApellidoNombre,
     this.familiarDni,
     required this.familiarEdad,
@@ -80,6 +82,17 @@ class ParteMedico {
         empleadoNombre.trim()
       ].where((part) => part.isNotEmpty).join(', ');
 
+  // El número tiene prioridad. La ausencia no permite inferir una suplencia.
+  String get legajoParaImprimir {
+    if (empleadoLegajo != null) return empleadoLegajo.toString();
+    final condicion = empleadoCondicion?.trim().toUpperCase() ?? '';
+    if (condicion == 'TITULAR') return '';
+    if (condicion == 'SUPLENTE' || condicion.startsWith('SUPLENTE ')) {
+      return 'SUPLENTE';
+    }
+    return condicion;
+  }
+
   String get descripcionRegistro => [
         empleadoCompleto,
         if (tipo.requiereFamiliar &&
@@ -97,6 +110,7 @@ class ParteMedico {
         empleadoApellido: empleadoApellido,
         empleadoNombre: empleadoNombre,
         empleadoLegajo: empleadoLegajo,
+        empleadoCondicion: empleadoCondicion,
         familiarApellidoNombre: familiarApellidoNombre,
         familiarDni: familiarDni,
         familiarEdad: familiarEdad,
@@ -119,6 +133,7 @@ class ParteMedico {
         empleadoApellido: empleadoApellido,
         empleadoNombre: empleadoNombre,
         empleadoLegajo: empleadoLegajo,
+        empleadoCondicion: empleadoCondicion,
         familiarApellidoNombre: familiarApellidoNombre,
         familiarDni: familiarDni,
         familiarEdad: familiarEdad,
@@ -169,6 +184,7 @@ class ParteMedico {
       empleadoLegajo: json['empleado_legajo'] == null
           ? null
           : _asInt(json['empleado_legajo'], 'empleado_legajo'),
+      empleadoCondicion: _asNullableString(json['empleado_condicion']),
       familiarApellidoNombre: _asNullableString(
         json['familiar_apellido_nombre'],
       ),
