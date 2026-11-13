@@ -18,7 +18,21 @@ class MedicosRepository {
       'rpc_medicos_personas',
       params: {'p_buscar': buscar},
     );
-    return _asRows(res).map(MedicoPersona.fromJson).toList();
+    final rows = _asRows(res);
+    if (rows.isEmpty) return [];
+    final condiciones =
+        _asRows(await _sb.rpc('rpc_medicos_condiciones', params: {
+      'p_dnis': rows.map((p) => p['dni']).toSet().toList(),
+    }));
+    final porDni = {
+      for (final row in condiciones) row['dni'].toString(): row['condicion']
+    };
+    return rows
+        .map((row) => MedicoPersona.fromJson({
+              ...row,
+              'condicion': porDni[row['dni'].toString()],
+            }))
+        .toList();
   }
 
   Future<List<ParteMedico>> registros({String? buscar, DateTime? fecha}) async {

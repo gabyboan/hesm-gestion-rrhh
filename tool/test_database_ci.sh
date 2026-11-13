@@ -27,6 +27,7 @@ for migration in \
   sql publication_test "supabase/migrations/$migration" "$migration"
 done
 sql publication_test supabase/tests/partes_medicos_domicilio_emision.sql issued-address
+sql publication_test supabase/tests/partes_medicos_condicion.sql issued-condition
 sql publication_test supabase/tests/seguridad_rendimiento.sql security
 psql -X -A -t --dbname=publication_test --set=ON_ERROR_STOP=1 \
   --file=supabase/audits/seguridad_rendimiento.sql >build/sql-ci/audit.json

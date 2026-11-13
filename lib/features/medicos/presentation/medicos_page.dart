@@ -892,6 +892,7 @@ class _ParteMedicoDialogState extends ConsumerState<_ParteMedicoDialog> {
         empleadoApellido: widget.persona.apellido,
         empleadoNombre: widget.persona.nombre,
         empleadoLegajo: widget.persona.legajo,
+        empleadoCondicion: widget.persona.condicion,
         familiarApellidoNombre:
             _tipo.requiereFamiliar ? _familiar.text.trim() : null,
         familiarDni: _tipo.requiereFamiliar

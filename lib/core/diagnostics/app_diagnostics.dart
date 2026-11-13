@@ -23,7 +23,7 @@ class AppDiagnostics {
     final event = jsonEncode({
       'time': DateTime.now().toUtc().toIso8601String(),
       'version': const String.fromEnvironment('WINDOWS_APP_VERSION',
-          defaultValue: '1.0.7.8'),
+          defaultValue: '1.0.8.9'),
       'component': RegExp(r'^[a-z_]{1,40}$').hasMatch(component)
           ? component
           : 'application',

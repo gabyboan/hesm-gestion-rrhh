@@ -9,7 +9,8 @@ void main() {
       'solo permite operar con las capacidades requeridas y detecta migración ausente',
       () async {
     var missing = false;
-    var schema = 2;
+    var schema = 3;
+    var condicion = true;
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((request) async {
       await request.drain<void>();
@@ -23,7 +24,8 @@ void main() {
           'schema': schema,
           'horas_gremiales': true,
           'horas_idempotencia': true,
-          'horas_periodos': true
+          'horas_periodos': true,
+          'medicos_condicion': condicion,
         }));
       }
       await request.response.close();
@@ -36,7 +38,11 @@ void main() {
       await server.close(force: true);
     });
     await requireCompatibleBackend(client);
-    schema = 1;
+    condicion = false;
+    await expectLater(requireCompatibleBackend(client),
+        throwsA(isA<BackendUpdateRequired>()));
+    condicion = true;
+    schema = 2;
     await expectLater(requireCompatibleBackend(client),
         throwsA(isA<BackendUpdateRequired>()));
     missing = true;

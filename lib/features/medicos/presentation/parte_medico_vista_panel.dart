@@ -34,6 +34,7 @@ class ParteMedicoVistaPanel extends ConsumerWidget {
                 empleadoApellido: agente.apellido,
                 empleadoNombre: agente.nombre,
                 empleadoLegajo: agente.legajo,
+                empleadoCondicion: agente.condicion,
                 familiarApellidoNombre: null,
                 familiarEdad: null,
                 familiarParentesco: null,

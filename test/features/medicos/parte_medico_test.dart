@@ -3,6 +3,36 @@ import 'package:app_horas/features/medicos/domain/medico_domicilio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+      'imprime número o condición real; titular y desconocida quedan en blanco',
+      () {
+    for (final caso in [
+      (null, 'Titular', ''),
+      (null, ' titular ', ''),
+      (null, 'Suplente Ordinario - Cargo Vacante', 'SUPLENTE'),
+      (null, 'Suplente Extraordinario', 'SUPLENTE'),
+      (null, 'Residente', 'RESIDENTE'),
+      (null, null, ''),
+      (123, 'Titular', '123'),
+      (123, 'Suplente Ordinario', '123'),
+    ]) {
+      final parte = ParteMedico.fromJson({
+        'id': 10,
+        'dni': 12345678,
+        'fecha': '2026-11-13',
+        'tipo': 'CONSULTORIO',
+        'empleado_legajo': caso.$1,
+        'empleado_condicion': caso.$2,
+      });
+      expect(parte.legajoParaImprimir, caso.$3);
+      expect(
+          parte
+              .conDomicilio(null)
+              .conCarrera(nombre: null, esEnfermeria: false)
+              .legajoParaImprimir,
+          caso.$3);
+    }
+  });
   test('recupera la copia del domicilio y la conserva al completar la carrera',
       () {
     final parte = ParteMedico.fromJson({
