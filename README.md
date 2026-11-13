@@ -31,7 +31,8 @@ y partes médicos desde Windows.
 
 La impresión consulta la condición real cuando falta el número de legajo:
 Titular deja el casillero vacío y una suplencia muestra SUPLENTE. Requiere
-capacidades de base 3. Véase [Condición y legajo](docs/CORRECCION_MEDICOS_1_0_8.md).
+capacidades de base 3, ya aplicadas. El instalador firmado está publicado en el
+canal privado del hospital. Véase [Condición y legajo](docs/CORRECCION_MEDICOS_1_0_8.md).
 
 ## Actualización 1.0.7.8 publicada · 12 de noviembre de 2026
 

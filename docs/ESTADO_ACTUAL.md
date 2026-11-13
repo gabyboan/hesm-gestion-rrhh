@@ -1,5 +1,13 @@
 # Estado actual de HESM Gestión RRHH
 
+## Corrección del 13 de noviembre de 2026
+
+La versión vigente **1.0.8.9** está publicada y firmada en el canal privado.
+El parte médico consulta la condición real cuando falta legajo: Titular deja
+el casillero vacío y una suplencia muestra SUPLENTE. Conserva la condición al
+emitir, con capacidades 3 ya aplicadas y respaldo restaurado antes de migrar.
+Véase [Condición y legajo](CORRECCION_MEDICOS_1_0_8.md).
+
 ## Distribución del 12 de noviembre de 2026
 
 El código `1.0.7+8` agrega Horas Gremiales, guardado con reconocimiento de

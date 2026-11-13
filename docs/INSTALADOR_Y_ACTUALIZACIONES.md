@@ -1,6 +1,8 @@
 # Instalación y actualizaciones de Windows
 
-La versión vigente **1.0.7.8** incluye Ficha y Licencias, Horas Gremiales, caché
+La versión vigente **1.0.8.9** corrige condición y legajo en Médicos;
+véase [Condición y legajo](CORRECCION_MEDICOS_1_0_8.md). También incluye
+Ficha y Licencias, Horas Gremiales, caché
 por sesión y guardado protegido contra reenvíos. El instalador firmado ya está
 publicado en el canal privado del hospital. El detalle de verificación está en
 [Distribución 1.0.7.8](DISTRIBUCION_1_0_7.md). Las rutas y cuentas siguientes
@@ -31,10 +33,10 @@ Inno Setup 6.5 o posterior y una clave local de firma Ed25519.
 
 ```powershell
 powershell -NoProfile -File tool/build_windows_installer.ps1 `
-  -Version '1.0.7+8' `
+  -Version '1.0.8+9' `
   -Configuracion 'credenciales.env' `
   -SigningKey '.private/windows-updates.key' `
-  -Destino 'dist/Windows-LAN-1.0.7.8'
+  -Destino 'dist/Windows-LAN-1.0.8.9'
 ```
 
 El script valida la clave publishable/anon, compila en una carpeta temporal
@@ -53,12 +55,12 @@ código público.
 
 ```powershell
 powershell -NoProfile -File tool/publish_windows_update.ps1 `
-  -Paquete 'dist/Windows-LAN-1.0.7.8' `
+  -Paquete 'dist/Windows-LAN-1.0.8.9' `
   -CarpetaRed '\\PC-PUBLICADORA\HESM-Actualizaciones'
 ```
 
 El publicador verifica firma, hash y tamaño, conserva las versiones anteriores
-y copia el instalador a `versions/1.0.7.8/`. Solo después reemplaza `latest.json`
+y copia el instalador a `versions/1.0.8.9/`. Solo después reemplaza `latest.json`
 de forma atómica. Rechaza una versión igual o anterior a la publicada.
 
 El cliente verifica el manifiesto y el instalador antes de ejecutarlo, incluida

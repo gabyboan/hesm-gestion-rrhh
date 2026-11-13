@@ -12,6 +12,10 @@ casillero vacío en ausencia de número, sin reconstruir su condición históric
 Se verifica el texto del PDF individual, de la vista previa y de la impresión
 por lotes con datos ficticios.
 
+Instalador firmado publicado en el canal privado, con capacidades 3 aplicadas.
+Se comprobaron el paquete extraído y las firmas, tamaño y SHA-256 por la red.
+Véase [Condición y legajo](docs/CORRECCION_MEDICOS_1_0_8.md).
+
 ## Distribución 1.0.7.8 · 12 de noviembre de 2026
 
 Instalador firmado publicado en el canal privado del hospital. Incluye Ficha y
