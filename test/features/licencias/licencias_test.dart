@@ -112,7 +112,7 @@ void main() {
     expect(find.text('PRUEBA LICENCIAS'), findsOneWidget);
     expect(find.text('Cargar licencia'), findsNothing);
     expect(find.byTooltip('Modificar licencia'), findsNothing);
-    expect(find.byTooltip('Anular licencia'), findsNothing);
+    expect(find.byTooltip('Borrar licencia'), findsNothing);
     await tester.enterText(find.byType(TextField).first, '12.345.678 prueba');
     await tester.pump(const Duration(milliseconds: 350));
     expect(find.text('PRUEBA LICENCIAS'), findsOneWidget);
@@ -215,7 +215,7 @@ void main() {
     expect(find.text('43 · Imprevisto'), findsOneWidget);
     expect(find.text('Gestionar en Imprevistos'), findsOneWidget);
     expect(find.byTooltip('Modificar licencia'), findsNothing);
-    expect(find.byTooltip('Anular licencia'), findsNothing);
+    expect(find.byTooltip('Borrar licencia'), findsNothing);
     final tooltip = tester.widget<Tooltip>(find
         .ancestor(
             of: find.text('PRUEBA IMPREVISTO'), matching: find.byType(Tooltip))

@@ -223,6 +223,8 @@ commit;
     (Join-Path $repoPath 'supabase/tests/licencias_francos_cantidad_papel.sql'))) 'licencias-francos-cantidad-papel.log'
   Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
     (Join-Path $repoPath 'supabase/tests/licencias_documentacion_pendiente.sql'))) 'licencias-documentacion-pendiente.log'
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/ficha_insertar_filas.sql'))) 'ficha-insertar-filas.log'
   Invoke-CheckedNative (Join-Path $PostgresBin 'createdb.exe') @(
     '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres', 'horas_next_test'
   ) 'createdb-horas-next.log'

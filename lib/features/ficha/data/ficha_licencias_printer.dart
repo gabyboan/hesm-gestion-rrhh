@@ -76,6 +76,13 @@ class FichaLicenciasPrinter {
             !r.desde.isAfter(fin))
         .toList()
       ..sort((a, b) {
+        if (anio == null && a.desde.year != b.desde.year) {
+          return a.desde.year.compareTo(b.desde.year);
+        }
+        final periodo = anio ?? a.desde.year;
+        final orden = (a.ordenFichaPorAnio?[periodo] ?? 2147483647)
+            .compareTo(b.ordenFichaPorAnio?[periodo] ?? 2147483647);
+        if (orden != 0) return orden;
         final fecha = a.desde.compareTo(b.desde);
         return fecha == 0 ? a.id.compareTo(b.id) : fecha;
       });

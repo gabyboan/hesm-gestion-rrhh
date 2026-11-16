@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/date_fmt.dart';
 import '../../../core/utils/error_text.dart';
 import '../../../core/widgets/app_search_field.dart';
+import '../../licencias/application/licencias_providers.dart';
+import '../../licencias/domain/licencia.dart';
+import '../../licencias/presentation/licencia_acciones.dart';
 import '../application/ficha_providers.dart';
 import '../domain/ficha_persona.dart';
 import '../domain/ficha_resumen.dart';
@@ -21,6 +24,17 @@ class _FichaPageState extends ConsumerState<FichaPage> {
   FichaPersona? _persona;
   int _anio = DateTime.now().year;
   bool _incluirAnuladas = false;
+  bool _busy = false;
+
+  Future<void> _borrar(LicenciaRegistro registro) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await borrarLicencia(context, ref, registro);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +81,7 @@ class _FichaPageState extends ConsumerState<FichaPage> {
                         icon: const Icon(Icons.refresh),
                         onPressed: () {
                           ref.invalidate(puedeLeerFichaProvider);
+                          ref.invalidate(licenciasPermisosProvider);
                           ref.read(sessionDataCacheProvider)
                             ..invalidate('ficha')
                             ..invalidate('licencias');
@@ -162,6 +177,8 @@ class _FichaPageState extends ConsumerState<FichaPage> {
   }
 
   Widget _historial(FichaPersona persona) {
+    final puedeAdministrar =
+        ref.watch(licenciasPermisosProvider).valueOrNull?.administrar == true;
     final consulta = (dni: persona.dni, anio: _anio);
     return ref.watch(fichaLicenciasProvider(consulta)).when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -244,7 +261,7 @@ class _FichaPageState extends ConsumerState<FichaPage> {
                                       setState(() => _incluirAnuladas = value)),
                             ]),
                         const Text(
-                            'Las cargas y correcciones se realizan desde Licencias; los imprevistos, desde Imprevistos.'),
+                            'Los imprevistos se gestionan desde el m?dulo Imprevistos.'),
                         const SizedBox(height: 8),
                         if (rows.isEmpty)
                           const Padding(
@@ -287,7 +304,30 @@ class _FichaPageState extends ConsumerState<FichaPage> {
                                     child: SelectableText(
                                         r.observacion?.isNotEmpty == true
                                             ? r.observacion!
-                                            : 'Sin observaciones.'))
+                                            : 'Sin observaciones.')),
+                                if (puedeAdministrar &&
+                                    !r.anulado &&
+                                    !r.esImprevisto)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 12),
+                                    child: Wrap(spacing: 12, children: [
+                                      OutlinedButton.icon(
+                                        onPressed: _busy
+                                            ? null
+                                            : () => mostrarFormularioLicencia(
+                                                context, ref,
+                                                registro: r),
+                                        icon: const Icon(Icons.edit_outlined),
+                                        label: const Text('Modificar licencia'),
+                                      ),
+                                      OutlinedButton.icon(
+                                        onPressed:
+                                            _busy ? null : () => _borrar(r),
+                                        icon: const Icon(Icons.delete_outline),
+                                        label: const Text('Borrar licencia'),
+                                      ),
+                                    ]),
+                                  ),
                               ],
                             ));
                       }),

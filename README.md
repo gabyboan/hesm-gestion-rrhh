@@ -27,6 +27,13 @@ y partes médicos desde Windows.
 | **Licencias** | Carga, modificación, anulación y exportación; catálogo operativo, cupos de Estudio y revisión separada de importaciones. |
 | **Ficha** | Datos del personal, historial integrado desde 2026, resumen anual y planilla PDF con continuaciones. |
 
+## Licencias y planilla 1.0.9.10 · 16 de noviembre de 2026
+
+Permite modificar o borrar licencias desde Ficha, actualiza consultas y planillas
+al guardar y conserva las fechas de las fichas de papel. La impresión respeta el
+orden de las filas insertadas desde Legajo Digital. Incluye las correcciones de
+Médicos de 1.0.8.9. Véase [Licencias y planilla](docs/LICENCIAS_1_0_9.md).
+
 ## Corrección de Médicos 1.0.8.9 · 13 de noviembre de 2026
 
 La impresión consulta la condición real cuando falta el número de legajo:

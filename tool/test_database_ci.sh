@@ -121,7 +121,8 @@ for contract in \
   licencias_fichas_papel \
   licencias_duelo_parentescos \
   licencias_francos_cantidad_papel \
-  licencias_documentacion_pendiente; do
+  licencias_documentacion_pendiente \
+  ficha_insertar_filas; do
   sql licencias_test "supabase/tests/$contract.sql" "$contract"
 done
 

@@ -2,7 +2,10 @@
 
 ## Alcance aclarado por el usuario
 
-La carga y las correcciones se realizan en Licencias. Ficha consulta los datos
+La carga se realiza en Licencias. Las correcciones y el borrado también están
+disponibles en el historial de Ficha con permiso de administración de licencias.
+El borrado conserva el registro como anulado, sin sumarlo ni imprimirlo.
+Ficha consulta los datos
 existentes del empleado y las mismas licencias confirmadas, vinculadas a esa
 persona. No se duplica la carga ni se copian los registros entre módulos.
 

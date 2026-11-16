@@ -13,6 +13,13 @@ modificar y anular con autorización. Las anulaciones conservan el registro y su
 auditoría. Las cargas nuevas rechazan duplicados del mismo tipo y período y
 períodos que coincidan con inactividad de la persona.
 
+Los botones **Modificar licencia** y **Borrar licencia** están disponibles tanto
+en Licencias como en **Ficha → Datos e historial**, al desplegar una licencia,
+para quienes tienen permiso de administración. Borrar pide confirmación y usa
+la anulación existente. Las consultas, los totales y la planilla se actualizan al
+guardar. Al editar una ficha de papel se conserva el período calendario, aunque
+la cantidad anotada difiera de los días entre ambas fechas.
+
 Los 30 tipos originales del Excel se conservan para identificar el historial;
 sus identificadores internos no se confunden con los códigos. Los registros
 confirmados sin código deducible conservan el tipo original y una observación
