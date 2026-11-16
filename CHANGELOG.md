@@ -1,5 +1,18 @@
 # Registro de cambios
 
+## Licencias y planilla 1.0.9.10 · 16 de noviembre de 2026
+
+- Permite modificar y borrar licencias desde el historial de Ficha con los mismos
+  permisos y formulario de Licencias; el borrado mantiene el registro anulado.
+- Actualiza los listados, totales y PDF después de guardar o borrar.
+- Conserva el período calendario al editar cantidades provenientes de papel.
+- Respeta el orden de las filas insertadas arriba o abajo desde Legajo Digital,
+  tanto en la planilla anual como en la acumulada.
+- Agrega la migración de disposición de fichas y contratos de inserción atómica,
+  permisos y concurrencia, conservando los controles de sesión y MFA.
+
+Detalles de puesta en servicio: [Licencias y planilla](docs/LICENCIAS_1_0_9.md).
+
 ## Corrección 1.0.8.9 · 13 de noviembre de 2026
 
 El parte médico da prioridad al número de legajo. Si falta, consulta la condición

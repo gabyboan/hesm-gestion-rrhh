@@ -1,8 +1,15 @@
 # Estado actual de HESM Gestión RRHH
 
+## Actualización del 16 de noviembre de 2026
+
+La versión 1.0.9.10 agrega edición y borrado desde Ficha y respeta en sus PDF el
+orden de las filas insertadas desde la planilla de Legajo Digital. La migración
+se ensayó sobre el respaldo restaurado y ya está aplicada en la base compartida.
+Véase [Licencias y planilla](LICENCIAS_1_0_9.md).
+
 ## Corrección del 13 de noviembre de 2026
 
-La versión vigente **1.0.8.9** está publicada y firmada en el canal privado.
+La versión **1.0.8.9** se publicó firmada en el canal privado.
 El parte médico consulta la condición real cuando falta legajo: Titular deja
 el casillero vacío y una suplencia muestra SUPLENTE. Conserva la condición al
 emitir, con capacidades 3 ya aplicadas y respaldo restaurado antes de migrar.

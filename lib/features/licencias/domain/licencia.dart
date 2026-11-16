@@ -84,6 +84,7 @@ class LicenciaRegistro {
     this.origenDocumento,
     this.origenPagina,
     this.documentacionPendiente = false,
+    this.ordenFichaPorAnio,
   });
   final int id;
   final int dni;
@@ -111,6 +112,7 @@ class LicenciaRegistro {
   final String? origenDocumento;
   final int? origenPagina;
   final bool documentacionPendiente;
+  final Map<int, int>? ordenFichaPorAnio;
   String get estado => anulado
       ? 'Anulada'
       : documentacionPendiente
@@ -160,6 +162,8 @@ class LicenciaRegistro {
         origenDocumento: json['origen_documento'] as String?,
         origenPagina: (json['origen_pagina'] as num?)?.toInt(),
         documentacionPendiente: json['documentacion_pendiente'] == true,
+        ordenFichaPorAnio: (json['orden_ficha_por_anio'] as Map?)?.map((key, value) =>
+            MapEntry(int.parse(key.toString()), (value as num).toInt())),
         diasCalendario: (json['dias_calendario'] as num?)?.toInt(),
         diasPorAnio: (json['dias_por_anio'] as Map?)?.map((key, value) =>
             MapEntry(int.parse(key.toString()), (value as num).toInt())),

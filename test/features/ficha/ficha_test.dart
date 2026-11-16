@@ -3,6 +3,7 @@ import 'package:app_horas/features/ficha/domain/ficha_resumen.dart';
 import 'package:app_horas/features/ficha/domain/ficha_persona.dart';
 import 'package:app_horas/features/ficha/presentation/ficha_page.dart';
 import 'package:app_horas/features/licencias/domain/licencia.dart';
+import 'package:app_horas/features/licencias/application/licencias_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,7 +34,8 @@ LicenciaRegistro registro(
 }
 
 void main() {
-  test('dos francos en una fecha conservan cantidad y calendario separados', () {
+  test('dos francos en una fecha conservan cantidad y calendario separados',
+      () {
     final franco = LicenciaRegistro.fromJson({
       'id': 10,
       'dni': 12345678,
@@ -137,6 +139,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(ProviderScope(overrides: [
       puedeLeerFichaProvider.overrideWith((ref) async => leer),
+      licenciasPermisosProvider
+          .overrideWith((ref) async => const LicenciasPermisos(leer: true)),
       fichaPersonasProvider.overrideWith((ref, buscar) async => [
             FichaPersona(
                 dni: 12345678,
