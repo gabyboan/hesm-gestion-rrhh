@@ -67,6 +67,8 @@ try {
     (Join-Path $repoPath 'supabase/tests/partes_medicos_condicion.sql'))) 'condicion-emision.log'
   Invoke-CheckedNative $psql ($connectionArgs + @('-f',
     (Join-Path $repoPath 'supabase/tests/seguridad_rendimiento.sql'))) 'seguridad-rendimiento.log'
+  Invoke-CheckedNative $psql ($connectionArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/partes_medicos_superposiciones.sql'))) 'partes-medicos-superposiciones.log'
   Invoke-CheckedNative $psql ($connectionArgs + @('-A', '-t', '-f',
     (Join-Path $repoPath 'supabase/audits/seguridad_rendimiento.sql'))) 'auditoria.json'
   $audit = Get-Content -LiteralPath (Join-Path $runPath 'auditoria.json') -Raw | ConvertFrom-Json
@@ -225,6 +227,8 @@ commit;
     (Join-Path $repoPath 'supabase/tests/licencias_documentacion_pendiente.sql'))) 'licencias-documentacion-pendiente.log'
   Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
     (Join-Path $repoPath 'supabase/tests/ficha_insertar_filas.sql'))) 'ficha-insertar-filas.log'
+  Invoke-CheckedNative $psql ($licenciasArgs + @('-f',
+    (Join-Path $repoPath 'supabase/tests/licencias_anuales.sql'))) 'licencias-anuales.log'
   Invoke-CheckedNative (Join-Path $PostgresBin 'createdb.exe') @(
     '-h', '127.0.0.1', '-p', "$port", '-U', 'postgres', 'horas_next_test'
   ) 'createdb-horas-next.log'

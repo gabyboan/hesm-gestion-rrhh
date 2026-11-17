@@ -53,10 +53,15 @@ final licenciasTiposProvider =
 });
 
 typedef LicenciaEstudioCalculo = ({DateTime desde, int dias});
+typedef LicenciaHabilesCalculo = ({DateTime desde, int dias});
 final licenciasEstudioHastaProvider = FutureProvider.autoDispose
     .family<DateTime, LicenciaEstudioCalculo>((ref, calculo) => ref
         .watch(licenciasRepoProvider)
         .hastaEstudio(calculo.desde, calculo.dias));
+final licenciasAnualHastaProvider = FutureProvider.autoDispose
+    .family<DateTime, LicenciaHabilesCalculo>((ref, calculo) => ref
+        .watch(licenciasRepoProvider)
+        .hastaAnual(calculo.desde, calculo.dias));
 final licenciasPersonasProvider = FutureProvider.autoDispose
     .family<List<LicenciaPersona>, String>((ref, buscar) async {
   if (!(await ref.watch(licenciasPermisosProvider.future)).leer) return [];

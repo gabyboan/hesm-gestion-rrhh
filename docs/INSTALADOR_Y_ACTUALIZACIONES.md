@@ -1,5 +1,15 @@
 # Instalación y actualizaciones de Windows
 
+## Versión 1.0.11.12 · 17 de noviembre de 2026
+
+La nueva entrega `1.0.11+12` reúne anuales hábiles, bloqueo de partes médicos,
+mejoras de Horas y corrección del inicio. Mantiene la clave de firma y las
+capacidades de esquema 3 del canal existente. El recorrido de actualización
+está en [Reglas y actualización 1.0.11.12](REGLAS_1_0_11.md).
+
+La documentación de 1.0.7.8 que sigue conserva la referencia histórica y los
+comandos generales de compilación y publicación.
+
 La versión vigente **1.0.8.9** corrige condición y legajo en Médicos;
 véase [Condición y legajo](CORRECCION_MEDICOS_1_0_8.md). También incluye
 Ficha y Licencias, Horas Gremiales, caché

@@ -107,6 +107,28 @@ void main() {
     expect(resumirLicencias([estudio], 2027).single.dias, 3);
   });
 
+  for (final codigo in ['01', null]) {
+    test('Anual ($codigo) usa el reparto de hábiles del servidor en la ficha',
+        () {
+      final anual = LicenciaRegistro.fromJson({
+        'id': 1,
+        'dni': 12345678,
+        'apellido_nombre': 'PRUEBA',
+        'tipo_id': codigo == null ? 6 : 101,
+        'categoria_excel_id': 6,
+        'tipo': {'nombre': 'Lic. Anual', 'codigo': codigo},
+        'desde': '2026-12-30',
+        'hasta': '2027-01-06',
+        'dias': 5,
+        'dias_calendario': 8,
+        'dias_por_anio': {'2026': 2, '2027': 3},
+      });
+      expect(anual.unidadDias, 'días hábiles');
+      expect(resumirLicencias([anual], 2026).single.dias, 2);
+      expect(resumirLicencias([anual], 2027).single.dias, 3);
+    });
+  }
+
   late FichaPrintingFake printing;
   late PrintingPlatform original;
   setUp(() {

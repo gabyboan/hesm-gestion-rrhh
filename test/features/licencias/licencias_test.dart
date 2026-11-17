@@ -88,7 +88,14 @@ void main() {
       licenciasRegistrosProvider
           .overrideWith((ref) async => registros ?? [_registro]),
       licenciasTiposProvider.overrideWith((ref) async =>
-          tipos ?? [const LicenciaTipo(id: 6, nombre: 'Lic. Anual')]),
+          tipos ??
+          [
+            const LicenciaTipo(
+                id: 101,
+                nombre: 'Lic. Anual',
+                codigo: '01',
+                categoriaExcelId: 6)
+          ]),
       licenciasPendientesProvider.overrideWith((ref) async => []),
       licenciasImportadasResumenProvider.overrideWith((ref) async => []),
       licenciasPersonasProvider.overrideWith((ref, buscar) async =>
@@ -121,7 +128,8 @@ void main() {
     expect(find.text('No hay licencias para estos filtros.'), findsOneWidget);
   });
 
-  testWidgets('carga conserva el cálculo hasta e impide guardar doble',
+  testWidgets(
+      'Anual usa hábiles sin los topes de Estudio y guarda la fecha del servidor',
       (tester) async {
     final repo = _RecordingRepository();
     addTearDown(() {
@@ -135,17 +143,63 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byType(DropdownButtonFormField<int>).last);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Lic. Anual').last);
+    await tester.tap(find.text('01 · Lic. Anual').last);
     await tester.pumpAndSettle();
-    final dias = find.widgetWithText(TextFormField, 'Cantidad de días');
-    await tester.enterText(dias, '4');
+    final dias = find.widgetWithText(TextFormField, 'Días hábiles');
+    await tester.enterText(dias, '21');
     await tester.pumpAndSettle();
+    expect(find.text('Hasta: 10/11/2026'), findsOneWidget);
     await tester.tap(find.text('Guardar'));
     await tester.pumpAndSettle();
     expect(repo.calls, 1);
-    expect(diasLicencia(repo.desde!, repo.hasta!), 4);
+    expect(repo.solicitudAnual, 21);
+    expect(repo.hasta, DateTime(2026, 11, 10));
     expect(find.text('Licencia guardada'), findsOneWidget);
     await tester.pump(const Duration(seconds: 4));
+  });
+
+  testWidgets('Anual bloquea guardar cuando falla la consulta del calendario',
+      (tester) async {
+    final repo = _RecordingRepository()..errorAnual = true;
+    addTearDown(repo.sb.dispose);
+    await mount(tester, const LicenciasPermisos(leer: true, cargar: true),
+        repository: repo);
+    await tester.tap(find.text('Cargar licencia'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<int>).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('01 · Lic. Anual').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('No se pudo consultar el calendario'),
+        findsOneWidget);
+    expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Guardar'))
+            .onPressed,
+        isNull);
+    expect(repo.calls, 0);
+  });
+
+  test('Anual exporta hábiles y conserva por separado la duración calendario',
+      () {
+    final anual = LicenciaRegistro.fromJson({
+      'id': 9,
+      'dni': 12345678,
+      'apellido_nombre': 'PRUEBA',
+      'tipo_id': 101,
+      'categoria_excel_id': 6,
+      'tipo': {'nombre': 'Lic. Anual', 'codigo': '01'},
+      'desde': '2026-12-30',
+      'hasta': '2027-01-06',
+      'dias': 5,
+      'dias_calendario': 8,
+      'dias_por_anio': {'2026': 2, '2027': 3},
+    });
+    final cells = buildLicenciasExcel([anual])['Licencias'].rows[1];
+    expect(anual.unidadDias, 'días hábiles');
+    expect(cells[5]?.value.toString(), '5');
+    expect(cells[16]?.value.toString(), 'Hábiles');
+    expect(cells[17]?.value.toString(), '8');
   });
 
   testWidgets('filtro Familiar agrupa 10, 11 y el histórico pendiente',
@@ -293,6 +347,15 @@ class _RecordingRepository extends LicenciasRepository {
   DateTime? desde;
   DateTime? hasta;
   int? solicitudHabiles;
+  int? solicitudAnual;
+  bool errorAnual = false;
+  @override
+  Future<DateTime> hastaAnual(DateTime desde, int dias) async {
+    if (errorAnual) throw StateError('No se pudo consultar el calendario');
+    solicitudAnual = dias;
+    return DateTime(2026, 11, 10);
+  }
+
   @override
   Future<DateTime> hastaEstudio(DateTime desde, int dias) async {
     solicitudHabiles = dias;

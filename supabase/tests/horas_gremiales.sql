@@ -229,3 +229,5 @@ do $$ begin
 end; $$;
 rollback;
 select 'OK: Gremiales, carreras, cupos, reenvíos, períodos y permisos.' as resultado;
+
+\ir horas_particulares.sql

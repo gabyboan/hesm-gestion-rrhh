@@ -6,6 +6,7 @@ import '../../../../core/ui/app_snackbar.dart';
 import '../../../../core/utils/date_fmt.dart';
 import '../../../../core/utils/error_text.dart';
 import '../../application/horas_providers.dart';
+import '../../domain/cupo_particular.dart';
 import '../../domain/hora_registro.dart';
 import '../../domain/persona.dart';
 import 'widgets/ver_horas_widgets.dart';
@@ -100,49 +101,6 @@ class VerHorasPage extends ConsumerWidget {
 
       ref.read(selectedPersonaProvider.notifier).state = resolved;
     });
-  }
-
-  ({int aplicados, int excedidos, Map<int, int> excedidoPorId})
-      _calcParticularCupo(
-    List<HoraRegistro> rows, {
-    int limiteMin = VerHorasMath.limiteParticularMin,
-  }) {
-    final particulares = rows.where((r) => r.esParticular).toList()
-      ..sort((a, b) {
-        final fecha = a.fecha.compareTo(b.fecha);
-        if (fecha != 0) return fecha;
-
-        return a.id.compareTo(b.id);
-      });
-
-    var usado = 0;
-    var aplicados = 0;
-    var excedidos = 0;
-    final excedidoPorId = <int, int>{};
-
-    for (final registro in particulares) {
-      final duracion = registro.minutos ?? 0;
-      if (duracion <= 0) {
-        excedidoPorId[registro.id] = 0;
-        continue;
-      }
-
-      final restante = (limiteMin - usado) < 0 ? 0 : limiteMin - usado;
-      final aplicado = duracion <= restante ? duracion : restante;
-      final excedido = duracion - aplicado;
-
-      usado += aplicado;
-      aplicados += aplicado;
-      excedidos += excedido;
-
-      excedidoPorId[registro.id] = excedido;
-    }
-
-    return (
-      aplicados: aplicados,
-      excedidos: excedidos,
-      excedidoPorId: excedidoPorId,
-    );
   }
 
   Future<void> _pickPersonaModal(
@@ -284,10 +242,9 @@ class VerHorasPage extends ConsumerWidget {
     );
 
     final persona = ref.watch(selectedPersonaProvider);
-    final personasOficiales =
-        listadoOficiales.valueOrNull ?? const <Persona>[];
-    final esElegibleHorasOficiales = persona != null &&
-        personasOficiales.any((oficial) => oficial.key == persona.key);
+    final esElegibleHorasParticulares = persona != null &&
+        (listadoNormal.valueOrNull ?? const <Persona>[])
+            .any((item) => item.key == persona.key);
     final registrosAsync = ref.watch(registrosProvider);
     final borrarState = ref.watch(borrarHoraControllerProvider);
 
@@ -350,13 +307,13 @@ class VerHorasPage extends ConsumerWidget {
           Expanded(
             child: registrosAsync.when(
               data: (rows) {
-                final calcParticular = _calcParticularCupo(rows);
+                final calcParticular = CupoParticular.desdeRegistros(rows);
 
                 return Column(
                   children: [
                     ResumenHorasCard(
                       persona: persona,
-                      esElegibleHorasOficiales: esElegibleHorasOficiales,
+                      esElegibleHorasParticulares: esElegibleHorasParticulares,
                       rows: rows,
                       calcParticular: calcParticular,
                       hhmmFromMinutes: _hhmmFromMinutes,

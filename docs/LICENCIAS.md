@@ -1,5 +1,17 @@
 # Licencias
 
+## Anuales en días hábiles · 1.0.11.12
+
+Las cargas anuales (código 01 o categoría Anual del catálogo) solicitan días
+hábiles y calculan Hasta en el servidor con el calendario del sistema,
+excluyendo sábados, domingos y feriados. Los totales por año, la ficha y el
+Excel usan ese reparto. Una corrección sin cambio de fecha o cantidad
+conserva el período original; las fichas de papel mantienen su cantidad
+verificada. Anual no toma los cupos de Estudio.
+
+La migración `20261117000619_licencias_anuales_dias_habiles.sql` ya está
+aplicada. Véase [Reglas y actualización 1.0.11.12](REGLAS_1_0_11.md).
+
 Licencias se conecta con el módulo Ficha, donde se ve lo cargado para cada persona.
 La carga de licencias se realiza desde Licencias; los imprevistos se gestionan
 en Imprevistos y se consultan desde ambos módulos y desde Ficha. Se deben consultar y

@@ -23,6 +23,7 @@ import 'parte_medico_vista_panel.dart';
 import 'parte_medico_vista_ampliada.dart';
 import 'cola_impresion_dialog.dart';
 import 'control_parte_medico_dialog.dart';
+import 'aviso_conflictos_partes.dart';
 
 class MedicosPage extends ConsumerStatefulWidget {
   const MedicosPage({super.key});
@@ -61,14 +62,17 @@ class _MedicosPageState extends ConsumerState<MedicosPage>
       context: context,
       builder: (_) => _ParteMedicoDialog(persona: persona),
     );
-    if (resultado == null) return;
+    if (resultado == null || !context.mounted) return;
     final data = resultado.data;
     int? parteGuardadoId;
 
     try {
-      final id = await ref
-          .read(guardarParteMedicoControllerProvider.notifier)
-          .crear(data);
+      final id = await guardarParteSinConflictos<int>(
+          context: context,
+          guardar: () => ref
+              .read(guardarParteMedicoControllerProvider.notifier)
+              .crear(data));
+      if (id == null) return;
       parteGuardadoId = id;
       // Recuperar también el domicilio fijado al emitir desde el servidor.
       final documento = await ref.read(medicosRepoProvider).documento(id: id);

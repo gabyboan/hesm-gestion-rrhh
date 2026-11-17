@@ -78,6 +78,14 @@ class LicenciasRepository {
     return DateTime.parse(fecha as String);
   }
 
+  Future<DateTime> hastaAnual(DateTime desde, int dias) async {
+    final fecha = await sb.rpc('rpc_licencias_anual_hasta', params: {
+      'p_desde': _fecha(desde),
+      'p_dias': dias,
+    });
+    return DateTime.parse(fecha as String);
+  }
+
   Future<List<Map<String, dynamic>>> importadasResumen() async {
     final rows = await sb.rpc('rpc_licencias_importadas_resumen');
     return (rows as List).map((row) => Map<String, dynamic>.from(row)).toList();

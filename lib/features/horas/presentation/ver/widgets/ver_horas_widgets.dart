@@ -4,12 +4,9 @@ import 'package:intl/intl.dart';
 import '../../../../../core/utils/date_fmt.dart';
 import '../../../../../core/utils/search_query.dart';
 import '../../../../../core/widgets/app_search_field.dart';
+import '../../../domain/cupo_particular.dart';
 import '../../../domain/hora_registro.dart';
 import '../../../domain/persona.dart';
-
-class VerHorasMath {
-  static const int limiteParticularMin = 180;
-}
 
 class VerPeriodoHeader extends StatelessWidget {
   final DateTime periodo;
@@ -93,19 +90,15 @@ class PersonaSelectorField extends StatelessWidget {
 
 class ResumenHorasCard extends StatelessWidget {
   final Persona? persona;
-  final bool esElegibleHorasOficiales;
+  final bool esElegibleHorasParticulares;
   final List<HoraRegistro> rows;
-  final ({
-    int aplicados,
-    int excedidos,
-    Map<int, int> excedidoPorId
-  }) calcParticular;
+  final CupoParticular calcParticular;
   final String Function(int minutes) hhmmFromMinutes;
 
   const ResumenHorasCard({
     super.key,
     required this.persona,
-    required this.esElegibleHorasOficiales,
+    required this.esElegibleHorasParticulares,
     required this.rows,
     required this.calcParticular,
     required this.hhmmFromMinutes,
@@ -117,26 +110,17 @@ class ResumenHorasCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    if (esElegibleHorasOficiales) {
-      return _SummaryContainer(
-        children: [
-          Text(
-            _oficialLine,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: cs.primary,
-            ),
-          ),
-        ],
-      );
-    }
-
-    final aplicadosParticular = calcParticular.aplicados;
     final excedidosParticular = calcParticular.excedidos;
     final usoEnfermedad = rows.any((r) => r.esEnfermedad);
-
-    final restantes = VerHorasMath.limiteParticularMin - aplicadosParticular;
-    final disponibles = restantes < 0 ? 0 : restantes;
+    final mostrarCupo = esElegibleHorasParticulares ||
+        rows.any((r) => r.esParticular || r.esEnfermedad);
+    final disponibles = calcParticular.disponibles;
+    final oficiales = rows
+        .where((r) => r.esOficial)
+        .fold(0, (total, r) => total + (r.minutos ?? 0));
+    final gremiales = rows
+        .where((r) => r.esGremial)
+        .fold(0, (total, r) => total + (r.minutos ?? 0));
 
     late final Color colorParticular;
     late final String particularLine;
@@ -162,20 +146,28 @@ class ResumenHorasCard extends StatelessWidget {
     return _SummaryContainer(
       children: [
         Text(
-          particularLine,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: colorParticular,
-          ),
+          'Horas cargadas en el mes: Particulares ${hhmmFromMinutes(calcParticular.total)} h · Oficiales ${hhmmFromMinutes(oficiales)} h · Gremiales ${hhmmFromMinutes(gremiales)} h',
+          style:
+              theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
         ),
-        const SizedBox(height: 6),
-        Text(
-          enfermedadLine,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: colorEnfermedad,
+        if (mostrarCupo) ...[
+          const SizedBox(height: 10),
+          Text(
+            particularLine,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: colorParticular,
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            enfermedadLine,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: colorEnfermedad,
+            ),
+          ),
+        ],
         const SizedBox(height: 10),
         Text(
           _oficialLine,
@@ -192,11 +184,7 @@ class ResumenHorasCard extends StatelessWidget {
 class RegistrosList extends StatelessWidget {
   final List<HoraRegistro> rows;
   final bool borrarLoading;
-  final ({
-    int aplicados,
-    int excedidos,
-    Map<int, int> excedidoPorId
-  }) calcParticular;
+  final CupoParticular calcParticular;
   final String Function(HoraRegistro registro) duracionRegistro;
   final String Function(int minutes) hhmmFromMinutes;
   final ValueChanged<HoraRegistro> onDelete;

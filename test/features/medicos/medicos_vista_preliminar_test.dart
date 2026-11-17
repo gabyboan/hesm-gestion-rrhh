@@ -6,6 +6,7 @@ import 'package:app_horas/features/medicos/domain/medico_domicilio.dart';
 import 'package:app_horas/features/medicos/domain/medico_persona.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico.dart';
 import 'package:app_horas/features/medicos/domain/control_parte_medico.dart';
+import 'package:app_horas/features/medicos/domain/conflicto_parte_medico.dart';
 import 'package:app_horas/features/medicos/data/medicos_repository.dart';
 import 'package:app_horas/features/medicos/presentation/medicos_page.dart';
 import 'package:app_horas/features/medicos/presentation/parte_medico_vista_panel.dart';
@@ -23,8 +24,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _GuardarPrueba extends GuardarParteMedicoController {
   int siguienteId = 100;
+  int intentos = 0;
+  List<ConflictoParteMedico>? conflictos;
   @override
-  Future<int> crear(ParteMedicoFormData data) async => siguienteId++;
+  Future<int> crear(ParteMedicoFormData data) async {
+    intentos++;
+    if (conflictos != null) {
+      throw ConflictosPartesMedicos(conflictos!);
+    }
+    return siguienteId++;
+  }
 }
 
 class _RepositorioPrueba implements MedicosRepository {
@@ -131,6 +140,7 @@ void main() {
   Future<void> abrir(WidgetTester tester, List<ParteMedico> registros,
       {Size size = const Size(1440, 900),
       DateTime? hoy,
+      _GuardarPrueba? guardar,
       MedicoPersona agente = persona,
       void Function(int dni)? alConsultarDomicilio}) async {
     await tester.binding.setSurfaceSize(size);
@@ -154,7 +164,8 @@ void main() {
                   ]))
               .toList();
         }),
-        guardarParteMedicoControllerProvider.overrideWith(_GuardarPrueba.new),
+        guardarParteMedicoControllerProvider
+            .overrideWith(() => guardar ?? _GuardarPrueba()),
         medicosDomicilioProvider.overrideWith((ref, dni) async {
           alConsultarDomicilio?.call(dni);
           return const MedicoDomicilio(calle: 'Calle de prueba', numero: '123');
@@ -200,6 +211,48 @@ void main() {
         findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  for (final duplicado in [false, true]) {
+    testWidgets(
+        'emisión ${duplicado ? 'duplicada' : 'superpuesta'}: el aviso bloquea guardar e imprimir',
+        (tester) async {
+      final guardar = _GuardarPrueba()
+        ..conflictos = [
+          ConflictoParteMedico.fromJson({
+            'id': 42,
+            'tipo': 'CONSULTORIO',
+            'fecha_desde': '2026-11-11',
+            'fecha_hasta': '2026-11-16',
+            'version': 1,
+            'duplicado': duplicado,
+          })
+        ];
+      await abrir(tester, [], guardar: guardar, hoy: DateTime(2026, 11, 16));
+      await tester.tap(find.byTooltip('Emitir parte'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cargar para imprimir después'));
+      await tester.pumpAndSettle();
+      expect(
+          find.text(duplicado
+              ? 'Parte médico duplicado'
+              : 'Partes médicos superpuestos'),
+          findsOneWidget);
+      expect(find.text('Del 11/11/2026 al 16/11/2026'), findsOneWidget);
+      expect(guardar.siguienteId, 100);
+      expect(printing.impresiones, 0);
+      expect(find.text('Continuar y guardar'), findsNothing);
+      await tester.tap(find.text('Entendido'));
+      await tester.pumpAndSettle();
+      expect(guardar.siguienteId, 100);
+      expect(guardar.intentos, 1);
+      final container =
+          ProviderScope.containerOf(tester.element(find.byType(MedicosPage)));
+      expect(container.read(colaImpresionProvider), isEmpty);
+      expect(printing.impresiones, 0);
+      await tester.pump(const Duration(seconds: 4));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets(
       'conserva registrar e imprimir y guarda la cancelación en la bandeja',

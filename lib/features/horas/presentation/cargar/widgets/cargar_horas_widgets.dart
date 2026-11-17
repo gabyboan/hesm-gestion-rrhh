@@ -3,9 +3,74 @@ import 'package:flutter/material.dart';
 import '../../../../../core/utils/date_fmt.dart';
 import '../../../../../core/utils/search_query.dart';
 import '../../../../../core/widgets/app_search_field.dart';
+import '../../../domain/cupo_particular.dart';
 import '../../../domain/persona.dart';
 import '../../../domain/tipo_hora.dart';
 import 'pick_duracion_30.dart';
+
+class CargarCupoParticularBox extends StatelessWidget {
+  final DateTime periodo;
+  final CupoParticular cupo;
+  final int? minutosSeleccionados;
+
+  const CargarCupoParticularBox({
+    super.key,
+    required this.periodo,
+    required this.cupo,
+    required this.minutosSeleccionados,
+  });
+
+  String _duracion(int minutos) =>
+      '${minutos ~/ 60}:${(minutos % 60).toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final excedido = cupo.excedidoConCarga(minutosSeleccionados ?? 0);
+    final cs = Theme.of(context).colorScheme;
+    final color = excedido > 0 ? cs.error : cs.primary;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: excedido > 0 ? cs.errorContainer : cs.surfaceContainerHighest,
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(excedido > 0 ? Icons.warning_amber_rounded : Icons.schedule,
+              color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Horas particulares · ${DateFmt.mesNombre(periodo)} ${periodo.year}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                    'Cargadas: ${_duracion(cupo.total)} h · Cupo mensual: 3:00 h'),
+                if (minutosSeleccionados != null)
+                  Text(
+                      'Total con esta carga: ${_duracion(cupo.total + minutosSeleccionados!)} h'),
+                if (excedido > 0) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Límite mensual excedido en ${_duracion(excedido)} h. Podés guardar y seguir cargando; se contabiliza toda la duración.',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ] else
+                  Text('Disponibles: ${_duracion(cupo.disponibles)} h'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class CargarPersonaSelectorField extends StatelessWidget {
   final Persona persona;

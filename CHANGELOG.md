@@ -1,5 +1,16 @@
 # Registro de cambios
 
+## Reglas de negocio 1.0.11.12 · 17 de noviembre de 2026
+
+Anuales en días hábiles según el calendario de feriados; duplicados y
+superposiciones médicas bloqueados sin opción de continuar. Incluye los
+avisos y totales de Horas particulares preparados en 1.0.10.11 y la corrección
+del inicio de sesión. Conserva la condición real de los partes médicos y las
+mejoras de Ficha de las versiones anteriores.
+
+El código es `1.0.11+12`; el instalador firmado se distribuye por el canal
+privado del hospital. Véase [Reglas y actualización 1.0.11.12](docs/REGLAS_1_0_11.md).
+
 ## Licencias y planilla 1.0.9.10 · 16 de noviembre de 2026
 
 - Permite modificar y borrar licencias desde el historial de Ficha con los mismos

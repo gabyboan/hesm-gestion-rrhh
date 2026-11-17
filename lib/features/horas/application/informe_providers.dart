@@ -14,8 +14,7 @@ import 'horas_providers.dart';
 ///   dni|carreraId
 ///
 /// Reglas principales:
-/// - PARTICULAR: suma minutos aplicados. Si no hay aplicados pero sí excedidos,
-///   usa minutos excedidos.
+/// - PARTICULAR: suma la duración completa, incluidos los minutos excedidos.
 /// - ENFERMEDAD: solo marca el día. No suma minutos.
 /// - OFICIAL: suma minutos reales, porque `minutosAplicados` puede venir en 0.
 /// - Otros tipos de registros se ignoran.
@@ -150,13 +149,9 @@ List<InformeRow> _buildInforme({
     }
 
     // PARTICULAR:
-    // Prioriza minutos aplicados. Si aplicados es 0 pero hubo excedente,
-    // se muestran los minutos excedidos.
+    // Conserva toda la duración cargada, incluso cuando cruza el cupo mensual.
     if (r.esParticular) {
-      final aplicados = r.minutosAplicados;
-      final excedidos = r.minutosExcedidos;
-      final minutos =
-          aplicados > 0 ? aplicados : (excedidos > 0 ? excedidos : 0);
+      final minutos = r.minutos ?? (r.minutosAplicados + r.minutosExcedidos);
 
       if (minutos > 0) {
         addMin(part, key, d, minutos);

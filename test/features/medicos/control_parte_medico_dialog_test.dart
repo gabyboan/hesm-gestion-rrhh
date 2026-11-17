@@ -1,6 +1,7 @@
 import 'package:app_horas/features/medicos/application/medicos_providers.dart';
 import 'package:app_horas/features/medicos/data/medicos_repository.dart';
 import 'package:app_horas/features/medicos/domain/control_parte_medico.dart';
+import 'package:app_horas/features/medicos/domain/conflicto_parte_medico.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico_qr.dart';
 import 'package:app_horas/features/medicos/presentation/control_parte_medico_dialog.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ class _Repositorio extends Fake implements MedicosRepository {
   int? diasGuardados;
   int? versionEsperada;
   bool rechazar = false;
+  List<ConflictoParteMedico>? conflictos;
 
   @override
   Future<DocumentoParteMedico> documento({int? id, String? codigo}) async {
@@ -45,6 +47,9 @@ class _Repositorio extends Fake implements MedicosRepository {
     String? motivoRectificacion,
   }) async {
     guardados++;
+    if (conflictos != null) {
+      throw ConflictosPartesMedicos(conflictos!);
+    }
     if (rechazar) {
       throw StateError('El control cambio. Volve a consultar el parte.');
     }
@@ -136,6 +141,49 @@ void main() {
     expect(find.byType(CheckboxListTile), findsNothing);
     expect(repo.guardados, 0);
   });
+
+  for (final duplicado in [false, true]) {
+    testWidgets(
+        'devolución ${duplicado ? 'duplicada' : 'superpuesta'}: cierra el aviso sin guardar ni repetir la escritura',
+        (tester) async {
+      final repo = _Repositorio()
+        ..conflictos = [
+          ConflictoParteMedico.fromJson({
+            'id': 99,
+            'tipo': 'CONSULTORIO',
+            'fecha_desde': '2026-10-23',
+            'fecha_hasta': '2026-10-25',
+            'version': 1,
+            'duplicado': duplicado,
+          })
+        ];
+      await abrir(tester, repo, id: 42);
+      await completar(tester);
+      await tester.tap(find.text('Registrar devolución'));
+      // La devolución mantiene el indicador de carga detrás del aviso modal.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(
+          find.text(duplicado
+              ? 'Parte médico duplicado'
+              : 'Partes médicos superpuestos'),
+          findsOneWidget);
+      expect(repo.controles, isEmpty);
+      expect(find.text('Continuar y guardar'), findsNothing);
+      await tester.tap(find.text('Entendido'));
+      await tester.pumpAndSettle();
+      expect(repo.controles, isEmpty);
+      expect(repo.guardados, 1);
+      expect(find.text('Registrar devolución'), findsOneWidget);
+      expect(
+          tester
+              .widget<TextField>(campo('Días corridos aprobados'))
+              .controller!
+              .text,
+          '3');
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('valida días y fechas y no reintenta una escritura rechazada',
       (tester) async {

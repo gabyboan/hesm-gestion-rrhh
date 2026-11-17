@@ -4,7 +4,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/ui/app_snackbar.dart';
+import '../../../../core/utils/date_fmt.dart';
 import '../../application/horas_providers.dart';
+import '../../domain/cupo_particular.dart';
 import '../../domain/persona.dart';
 import '../../domain/tipo_hora.dart';
 import 'widgets/cargar_horas_widgets.dart';
@@ -251,6 +253,24 @@ class CargarHorasPage extends ConsumerWidget {
                   ref.read(minutosProvider.notifier).state = value;
                 },
               ),
+            const SizedBox(height: 16),
+          ],
+          if (tipo.esParticular && persona != null) ...[
+            ref.watch(registrosCargaProvider).when(
+                  data: (rows) => CargarCupoParticularBox(
+                    periodo: DateFmt.monthStart(fecha),
+                    cupo: CupoParticular.desdeRegistros(rows),
+                    minutosSeleccionados: minutos,
+                  ),
+                  loading: () => const CargarInfoBox(
+                    text: 'Consultando horas particulares del mes…',
+                  ),
+                  error: (_, __) => const CargarInfoBox(
+                    text:
+                        'No se pudo consultar el total mensual. Podés guardar la carga y revisar las horas en Ver.',
+                    error: true,
+                  ),
+                ),
             const SizedBox(height: 16),
           ],
           SizedBox(
