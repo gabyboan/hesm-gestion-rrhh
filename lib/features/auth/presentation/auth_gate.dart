@@ -66,18 +66,20 @@ class _LoggedOutGateState extends ConsumerState<_LoggedOutGate> {
   void initState() {
     super.initState();
     ref.read(sessionTimeoutProvider).stop();
-    ref.invalidate(cargarHoraControllerProvider);
-    ref.invalidate(selectedPersonaProvider);
-    ref.invalidate(horasRepoProvider);
-    ref.invalidate(fichaRepoProvider);
-    ref.invalidate(licenciasRepoProvider);
-    ref.invalidate(francosRepoProvider);
-    ref.invalidate(selectedFrancoPersonaProvider);
-    ref.invalidate(imprevistosRepoProvider);
-    ref.invalidate(selectedImprevistoPersonaProvider);
-    ref.invalidate(medicosRepoProvider);
-    ref.invalidate(selectedMedicoPersonaProvider);
-    ref.invalidate(suplenciasRepoProvider);
+    // initState cannot subscribe to inherited widgets through ref.invalidate.
+    final container = ProviderScope.containerOf(context, listen: false);
+    container.invalidate(cargarHoraControllerProvider);
+    container.invalidate(selectedPersonaProvider);
+    container.invalidate(horasRepoProvider);
+    container.invalidate(fichaRepoProvider);
+    container.invalidate(licenciasRepoProvider);
+    container.invalidate(francosRepoProvider);
+    container.invalidate(selectedFrancoPersonaProvider);
+    container.invalidate(imprevistosRepoProvider);
+    container.invalidate(selectedImprevistoPersonaProvider);
+    container.invalidate(medicosRepoProvider);
+    container.invalidate(selectedMedicoPersonaProvider);
+    container.invalidate(suplenciasRepoProvider);
   }
 
   @override
@@ -104,8 +106,9 @@ class _LoggedInGateState extends ConsumerState<_LoggedInGate> {
   @override
   void initState() {
     super.initState();
-    ref.invalidate(userPreferencesProvider);
-    ref.invalidate(currentUserProfileProvider);
+    final container = ProviderScope.containerOf(context, listen: false);
+    container.invalidate(userPreferencesProvider);
+    container.invalidate(currentUserProfileProvider);
     _startTimeoutFuture = _startAuthenticatedSession();
   }
 

@@ -51,4 +51,29 @@ void main() {
     expect(rows.map((row) => row.persona.dni), [conUso.dni]);
     expect(rows.single.particularesPorDia[DateTime(2026, 10, 5)], 60);
   });
+
+  test('informe y exportación conservan la duración que cruza el cupo',
+      () async {
+    final container = ProviderContainer(overrides: [
+      registrosPeriodoProvider.overrideWith((ref) async => [
+            registroParticular.copyWith(
+              minutos: 120,
+              minutosAplicados: 60,
+              minutosExcedidos: 60,
+              excedido: true,
+            ),
+          ]),
+      listadoProvider.overrideWith((ref) async => [conUso]),
+      listadoOficialesProvider.overrideWith((ref) async => [conUso]),
+    ]);
+    addTearDown(container.dispose);
+    container.read(informeFiltrosProvider.notifier).state = {
+      InformeFiltro.particulares,
+      InformeFiltro.excedidos,
+    };
+    final rows = await container.read(informeRowsProvider.future);
+    final export = await container.read(informeRowsExportProvider.future);
+    expect(rows.single.particularesPorDia[DateTime(2026, 10, 5)], 120);
+    expect(export.single.particularesPorDia[DateTime(2026, 10, 5)], 120);
+  });
 }

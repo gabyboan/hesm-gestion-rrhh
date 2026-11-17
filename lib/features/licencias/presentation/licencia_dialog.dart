@@ -20,9 +20,11 @@ class LicenciaDialogState extends ConsumerState<LicenciaDialog> {
   late int? _tipoId = widget.registro?.tipoId;
   late DateTime _desde =
       widget.registro?.desde ?? DateUtils.dateOnly(DateTime.now());
-  late final _dias = TextEditingController(
-      text:
-          '${widget.registro?.esEstudio == true ? widget.registro!.dias : widget.registro?.diasCalendario ?? widget.registro?.dias ?? 1}');
+  late final _dias = TextEditingController(text: '$_diasIniciales');
+  int get _diasIniciales =>
+      widget.registro?.esEstudio == true || widget.registro?.esAnual == true
+          ? widget.registro!.dias
+          : widget.registro?.diasCalendario ?? widget.registro?.dias ?? 1;
   late final _observacion =
       TextEditingController(text: widget.registro?.observacion ?? '');
   late final _dniFamiliar = TextEditingController(
@@ -42,6 +44,22 @@ class LicenciaDialogState extends ConsumerState<LicenciaDialog> {
           ?.any((t) => t.id == _tipoId && t.codigo == '29') ??
       (widget.registro?.esEstudio == true &&
           widget.registro?.tipoId == _tipoId);
+
+  bool get _esAnual =>
+      (ref
+              .read(licenciasTiposProvider)
+              .valueOrNull
+              ?.any((t) => t.id == _tipoId && t.esAnual) ??
+          false) ||
+      (widget.registro?.esAnual == true && widget.registro?.tipoId == _tipoId);
+
+  // Editar una observación no debe recalcular el período de una ficha existente.
+  bool get _conservaPeriodoAnual =>
+      _esAnual &&
+      widget.registro != null &&
+      _tipoId == widget.registro!.tipoId &&
+      DateUtils.isSameDay(_desde, widget.registro!.desde) &&
+      int.tryParse(_dias.text) == _diasIniciales;
 
   @override
   void dispose() {
@@ -75,10 +93,17 @@ class LicenciaDialogState extends ConsumerState<LicenciaDialog> {
     });
     try {
       final dias = int.parse(_dias.text);
-      final hasta = _esEstudio
-          ? await ref.read(
-              licenciasEstudioHastaProvider((desde: _desde, dias: dias)).future)
-          : hastaLicencia(_desde, dias);
+      final hasta = _conservaPeriodoAnual
+          ? widget.registro!.hasta
+          : _esAnual
+              ? await ref.read(
+                  licenciasAnualHastaProvider((desde: _desde, dias: dias))
+                      .future)
+              : _esEstudio
+                  ? await ref.read(
+                      licenciasEstudioHastaProvider((desde: _desde, dias: dias))
+                          .future)
+                  : hastaLicencia(_desde, dias);
       await ref.read(licenciasRepoProvider).guardar(
           id: widget.registro?.id,
           dni: _persona!.dni,
@@ -105,9 +130,19 @@ class LicenciaDialogState extends ConsumerState<LicenciaDialog> {
     final tipos = ref.watch(licenciasTiposProvider);
     final count = int.tryParse(_dias.text) ?? 0;
     final esEstudio = _esEstudio;
-    final hastaEstudio = esEstudio && count >= 1 && count <= 5
-        ? ref.watch(licenciasEstudioHastaProvider((desde: _desde, dias: count)))
-        : null;
+    final esAnual = _esAnual;
+    final usaHabiles = esEstudio || esAnual;
+    final AsyncValue<DateTime>? hastaHabiles;
+    if (_conservaPeriodoAnual) {
+      hastaHabiles = AsyncData(widget.registro!.hasta);
+    } else if (usaHabiles && count >= 1 && count <= (esEstudio ? 5 : 36500)) {
+      final calculo = (desde: _desde, dias: count);
+      hastaHabiles = ref.watch(esAnual
+          ? licenciasAnualHastaProvider(calculo)
+          : licenciasEstudioHastaProvider(calculo));
+    } else {
+      hastaHabiles = null;
+    }
     return PopScope(
         canPop: !_saving,
         child: AlertDialog(
@@ -247,7 +282,9 @@ class LicenciaDialogState extends ConsumerState<LicenciaDialog> {
                                   decoration: InputDecoration(
                                       labelText: esEstudio
                                           ? 'Días hábiles (máx. 5)'
-                                          : 'Cantidad de días',
+                                          : esAnual
+                                              ? 'Días hábiles'
+                                              : 'Cantidad de días',
                                       border: const OutlineInputBorder()),
                                   onChanged: (_) => setState(() {}),
                                   validator: (value) {
@@ -258,8 +295,8 @@ class LicenciaDialogState extends ConsumerState<LicenciaDialog> {
                                         : null;
                                   },
                                 )),
-                            if (esEstudio)
-                              hastaEstudio?.when(
+                            if (usaHabiles)
+                              hastaHabiles?.when(
                                     data: (fecha) => Text(
                                         'Hasta: ${DateFmt.ddmmyyyy(fecha)}'),
                                     loading: () =>
@@ -275,7 +312,13 @@ class LicenciaDialogState extends ConsumerState<LicenciaDialog> {
                       const SizedBox(height: 8),
                       Text(esEstudio
                           ? 'Estudio: 20 días hábiles por persona y año, hasta 5 por solicitud. Se excluyen sábados, domingos y los feriados del calendario del sistema.'
-                          : 'La cantidad incluye los días desde y hasta, como en el Excel.'),
+                          : esAnual
+                              ? 'Anual: se cuentan días hábiles, excluyendo sábados, domingos y los feriados del calendario del sistema.'
+                              : 'La cantidad incluye los días desde y hasta, como en el Excel.'),
+                      if (_conservaPeriodoAnual &&
+                          widget.registro?.cantidadDiasFicha != null)
+                        const Text(
+                            'Se conservan la cantidad verificada de la ficha de papel y su período original. Si cambiás la fecha o los días, se recalcula con el calendario.'),
                       const SizedBox(height: 16),
                       Wrap(spacing: 16, runSpacing: 12, children: [
                         SizedBox(
@@ -333,7 +376,7 @@ class LicenciaDialogState extends ConsumerState<LicenciaDialog> {
                 child: const Text('Cancelar')),
             FilledButton(
                 onPressed: _saving ||
-                        (esEstudio && hastaEstudio?.hasValue != true) ||
+                        (usaHabiles && hastaHabiles?.hasValue != true) ||
                         !tipos.hasValue ||
                         (tipos.valueOrNull?.isEmpty ?? true)
                     ? null

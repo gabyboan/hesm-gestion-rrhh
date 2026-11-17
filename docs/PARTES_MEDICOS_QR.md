@@ -1,5 +1,18 @@
 # Partes médicos: QR y control de devolución
 
+## Duplicados y superposiciones · 1.0.11.12
+
+No se permite emitir ni devolver un parte que duplique o se superponga con
+otro vigente de la misma persona. Los extremos del período están incluidos.
+Se usa el control más reciente, se excluyen los partes anulados y al corregir
+un control se excluye su propio parte. El aviso muestra los registros en
+conflicto y solo ofrece **Entendido**; cerrar el aviso no guarda ni imprime.
+La comprobación también se aplica en la base y protege las cargas simultáneas.
+
+La migración `20261117001707_partes_medicos_advertir_superposiciones.sql`, a
+pesar de su nombre histórico, implementa un bloqueo obligatorio y ya está
+aplicada. Véase [Reglas y actualización 1.0.11.12](REGLAS_1_0_11.md).
+
 Migración aplicada el 23/10/2026 en el proyecto de destino, después de
 acortar el código manual a ocho números.
 La app móvil todavía no está implementada. El escritorio con QR se incorporó

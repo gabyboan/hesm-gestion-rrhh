@@ -1,5 +1,12 @@
 # Ficha y Licencias
 
+## Anuales · 1.0.11.12
+
+La ficha suma los días hábiles anuales calculados con los feriados del sistema,
+incluso cuando el período cruza de año. Las cantidades verificadas de fichas
+de papel y sus fechas originales se conservan al corregir otros campos.
+Véase [Reglas y actualización 1.0.11.12](REGLAS_1_0_11.md).
+
 ## Alcance aclarado por el usuario
 
 La carga se realiza en Licencias. Las correcciones y el borrado también están

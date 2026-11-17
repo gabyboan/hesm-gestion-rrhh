@@ -29,6 +29,7 @@ done
 sql publication_test supabase/tests/partes_medicos_domicilio_emision.sql issued-address
 sql publication_test supabase/tests/partes_medicos_condicion.sql issued-condition
 sql publication_test supabase/tests/seguridad_rendimiento.sql security
+sql publication_test supabase/tests/partes_medicos_superposiciones.sql medical-overlaps
 psql -X -A -t --dbname=publication_test --set=ON_ERROR_STOP=1 \
   --file=supabase/audits/seguridad_rendimiento.sql >build/sql-ci/audit.json
 python3 - <<'PY'
@@ -122,7 +123,8 @@ for contract in \
   licencias_duelo_parentescos \
   licencias_francos_cantidad_papel \
   licencias_documentacion_pendiente \
-  ficha_insertar_filas; do
+  ficha_insertar_filas \
+  licencias_anuales; do
   sql licencias_test "supabase/tests/$contract.sql" "$contract"
 done
 

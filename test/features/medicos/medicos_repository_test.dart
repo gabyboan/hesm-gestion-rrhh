@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:app_horas/features/medicos/data/medicos_repository.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico.dart';
+import 'package:app_horas/features/medicos/domain/conflicto_parte_medico.dart';
 import 'package:app_horas/features/medicos/domain/parte_medico_qr.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,6 +14,7 @@ void main() {
   late MedicosRepository repository;
   late List<Map<String, dynamic>> solicitudes;
   String? error;
+  String? details;
   Map<String, dynamic>? respuesta;
   List<Map<String, dynamic>>? filas;
   late List<Map<String, dynamic>> carreras;
@@ -22,6 +24,7 @@ void main() {
   setUp(() async {
     solicitudes = [];
     error = null;
+    details = null;
     respuesta = null;
     filas = null;
     carreras = [];
@@ -38,6 +41,7 @@ void main() {
         request.response.write(jsonEncode({
           'code': error,
           'message': 'Sin permiso para emitir partes medicos.',
+          if (details != null) 'details': details,
         }));
       } else if (request.uri.path.endsWith('/rpc_medicos_carreras')) {
         request.response.write(jsonEncode(carreras));
@@ -274,5 +278,58 @@ void main() {
     expect(control.version, 2);
     expect(control.usuarioRegistro, 'usuario-servidor');
     expect(control.fechaHasta, DateTime(2026, 10, 25));
+  });
+
+  test('un conflicto de emisión llega al formulario sin reintentar el guardado',
+      () async {
+    error = 'PMP01';
+    details = jsonEncode([
+      {
+        'id': 42,
+        'tipo': 'CONSULTORIO',
+        'fecha_desde': '2026-11-11',
+        'fecha_hasta': '2026-11-16',
+        'version': 1,
+        'duplicado': false,
+      }
+    ]);
+    await expectLater(
+        repository.crear(
+            dni: 12345678, tipo: TipoParteMedico.consultorio, esArt: false),
+        throwsA(isA<ConflictosPartesMedicos>().having(
+            (e) => e.conflictos.single.hasta,
+            'último día inclusive',
+            DateTime(2026, 11, 16))));
+    expect(solicitudes, hasLength(1));
+    expect(solicitudes.single.containsKey('p_conflictos_confirmados'), isFalse);
+  });
+
+  test('un conflicto de devolución conserva los datos del aviso y no reintenta',
+      () async {
+    final datos = {
+      'id': 42,
+      'tipo': 'CONSULTORIO',
+      'fecha_desde': '2026-11-11',
+      'fecha_hasta': '2026-11-16',
+      'version': 2,
+      'duplicado': true,
+      'es_art': false,
+      'familiar': null,
+    };
+    error = 'PMP01';
+    details = jsonEncode([datos]);
+    await expectLater(
+        repository.guardarControl(
+            qr: ParteMedicoQr.parse('00000422'),
+            fechaDesde: DateTime(2026, 11, 11),
+            diasAprobados: 6,
+            medicoNombre: 'Médico ficticio',
+            medicoMatricula: 'MAT-1',
+            versionEsperada: 0),
+        throwsA(isA<ConflictosPartesMedicos>()
+            .having((e) => e.conflictos.single.duplicado, 'duplicado', isTrue)
+            .having((e) => e.conflictos.single.version, 'versión', 2)));
+    expect(solicitudes, hasLength(1));
+    expect(solicitudes.single.containsKey('p_conflictos_confirmados'), isFalse);
   });
 }

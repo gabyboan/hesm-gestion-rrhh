@@ -6,6 +6,7 @@ import '../domain/medico_familiar.dart';
 import '../domain/parte_medico.dart';
 import '../domain/parte_medico_qr.dart';
 import '../domain/control_parte_medico.dart';
+import '../domain/conflicto_parte_medico.dart';
 import '../../../core/utils/date_fmt.dart';
 
 class MedicosRepository {
@@ -93,7 +94,7 @@ class MedicosRepository {
     required bool esArt,
     String? aclaracionFechaTurno,
   }) async {
-    final res = await _sb.rpc(
+    final res = await _rpcConConflictos(
       'rpc_medicos_crear',
       params: {
         'p_dni': dni,
@@ -139,7 +140,7 @@ class MedicosRepository {
     required int versionEsperada,
     String? motivoRectificacion,
   }) async {
-    final res = await _sb.rpc('rpc_medicos_control_guardar', params: {
+    final res = await _rpcConConflictos('rpc_medicos_control_guardar', params: {
       'p_codigo': qr.codigo,
       'p_fecha_desde': DateFmt.yyyymmdd(fechaDesde),
       'p_dias_aprobados': diasAprobados,
@@ -149,6 +150,18 @@ class MedicosRepository {
       'p_motivo_rectificacion': motivoRectificacion?.trim(),
     });
     return ControlParteMedico.fromJson(Map<String, dynamic>.from(res as Map));
+  }
+
+  Future<dynamic> _rpcConConflictos(String nombre,
+      {required Map<String, dynamic> params}) async {
+    try {
+      return await _sb.rpc(nombre, params: params);
+    } on PostgrestException catch (error) {
+      if (error.code == 'PMP01' && error.details is String) {
+        throw ConflictosPartesMedicos.fromDetails(error.details as String);
+      }
+      rethrow;
+    }
   }
 
   List<Map<String, dynamic>> _asRows(dynamic res) {

@@ -53,7 +53,7 @@ Excel buildLicenciasExcel(List<LicenciaRegistro> rows) {
       row.dniFamiliar == null ? null : IntCellValue(row.dniFamiliar!),
       row.numeroOrden == null ? null : IntCellValue(row.numeroOrden!),
       TextCellValue(row.cantidadFicha ?? ''),
-      TextCellValue(row.esEstudio
+      TextCellValue(row.usaDiasHabiles
           ? 'Hábiles'
           : row.cantidadDiasFicha != null
               ? 'Según ficha'

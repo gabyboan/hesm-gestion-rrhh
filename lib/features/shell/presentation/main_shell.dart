@@ -99,6 +99,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       ref.invalidate(listadoProvider);
       ref.invalidate(listadoOficialesProvider);
       ref.invalidate(registrosProvider);
+      ref.invalidate(registrosCargaProvider);
       ref.invalidate(registrosPeriodoProvider);
       ref.invalidate(periodosConRegistrosProvider);
     }

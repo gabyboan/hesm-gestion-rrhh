@@ -122,6 +122,19 @@ final registrosProvider = FutureProvider<List<HoraRegistro>>((ref) async {
       );
 });
 
+/// Usa el mes de la fecha de carga, independiente del mes consultado en Ver.
+final registrosCargaProvider = FutureProvider<List<HoraRegistro>>((ref) async {
+  final persona = ref.watch(selectedPersonaProvider);
+  final periodo = ref.watch(fechaProvider.select(DateFmt.monthStart));
+  if (persona == null) return [];
+
+  return ref.watch(horasRepoProvider).registrosMes(
+        dni: persona.dni,
+        carreraId: persona.carreraId,
+        periodo: periodo,
+      );
+});
+
 /// Registros del período seleccionado para todas las personas.
 final registrosPeriodoProvider =
     FutureProvider<List<HoraRegistro>>((ref) async {
@@ -238,6 +251,7 @@ void _invalidateListados(Ref ref) {
 
 void _invalidateRegistros(Ref ref) {
   ref.invalidate(registrosProvider);
+  ref.invalidate(registrosCargaProvider);
   ref.invalidate(registrosPeriodoProvider);
   ref.invalidate(periodosConRegistrosProvider);
 }
@@ -316,6 +330,7 @@ class CargarHoraController extends AsyncNotifier<void> {
 
       if (generation != _generation) return;
       ref.read(minutosProvider.notifier).state = null;
+      ref.read(periodoProvider.notifier).state = DateFmt.monthStart(fecha);
 
       _invalidateListados(ref);
       _invalidateRegistros(ref);

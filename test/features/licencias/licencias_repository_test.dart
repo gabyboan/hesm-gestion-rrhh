@@ -48,32 +48,40 @@ void main() {
     }
   });
 
-  test('Estudio calcula hasta con el calendario del servidor', () async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    Map<String, dynamic>? datos;
-    Uri? uri;
-    server.listen((request) async {
-      uri = request.uri;
-      datos = jsonDecode(await utf8.decoder.bind(request).join())
-          as Map<String, dynamic>;
-      request.response.headers.contentType = ContentType.json;
-      request.response.write(jsonEncode('2026-01-08'));
-      await request.response.close();
+  for (final anual in [false, true]) {
+    test(
+        '${anual ? 'Anual' : 'Estudio'} calcula hasta con el calendario del servidor',
+        () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      Map<String, dynamic>? datos;
+      Uri? uri;
+      server.listen((request) async {
+        uri = request.uri;
+        datos = jsonDecode(await utf8.decoder.bind(request).join())
+            as Map<String, dynamic>;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode('2026-01-08'));
+        await request.response.close();
+      });
+      final client = SupabaseClient(
+          'http://127.0.0.1:${server.port}', 'test-key',
+          authOptions: const AuthClientOptions(autoRefreshToken: false));
+      try {
+        final repo = LicenciasRepository(client);
+        expect(
+            await (anual
+                ? repo.hastaAnual(DateTime(2026, 1, 1), 5)
+                : repo.hastaEstudio(DateTime(2026, 1, 1), 5)),
+            DateTime(2026, 1, 8));
+        expect(uri?.path,
+            '/rest/v1/rpc/rpc_licencias_${anual ? 'anual' : 'estudio'}_hasta');
+        expect(datos, {'p_desde': '2026-01-01', 'p_dias': 5});
+      } finally {
+        await client.dispose();
+        await server.close(force: true);
+      }
     });
-    final client = SupabaseClient('http://127.0.0.1:${server.port}', 'test-key',
-        authOptions: const AuthClientOptions(autoRefreshToken: false));
-    try {
-      expect(
-          await LicenciasRepository(client)
-              .hastaEstudio(DateTime(2026, 1, 1), 5),
-          DateTime(2026, 1, 8));
-      expect(uri?.path, '/rest/v1/rpc/rpc_licencias_estudio_hasta');
-      expect(datos, {'p_desde': '2026-01-01', 'p_dias': 5});
-    } finally {
-      await client.dispose();
-      await server.close(force: true);
-    }
-  });
+  }
 
   test(
       'Ficha consulta el historial integrado por persona, con paginación completa',

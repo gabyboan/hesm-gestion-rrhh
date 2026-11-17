@@ -25,17 +25,13 @@ void main() {
   });
   tearDown(() => PrintingPlatform.instance = original);
 
-  Future<void> mount(
-    WidgetTester tester,
-    bool ficha, {
-    bool admin = true,
-  }) async {
+  Future<void> mount(WidgetTester tester, bool ficha,
+      {bool admin = true}) async {
     tester.view.physicalSize = const Size(1600, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(
-      ProviderScope(
+    await tester.pumpWidget(ProviderScope(
         overrides: [
           sessionDataCacheProvider.overrideWith((ref) {
             final cache = SessionDataCache();
@@ -44,37 +40,25 @@ void main() {
           }),
           licenciasRepoProvider.overrideWithValue(repo),
           licenciasPermisosProvider.overrideWith(
-            (ref) async => LicenciasPermisos(leer: true, administrar: admin),
-          ),
+              (ref) async => LicenciasPermisos(leer: true, administrar: admin)),
           licenciasAnioProvider.overrideWith((ref) => DateTime.now().year),
           licenciasRegistrosProvider.overrideWith((ref) async => repo.rows),
-          licenciasTiposProvider.overrideWith(
-            (ref) async => [
-              const LicenciaTipo(id: 101, nombre: 'Lic. Anual', codigo: '01'),
-            ],
-          ),
+          licenciasTiposProvider.overrideWith((ref) async => [
+                const LicenciaTipo(id: 101, nombre: 'Lic. Anual', codigo: '01')
+              ]),
           licenciasPendientesProvider.overrideWith((ref) async => []),
           licenciasImportadasResumenProvider.overrideWith((ref) async => []),
           puedeLeerFichaProvider.overrideWith((ref) async => true),
-          fichaPersonasProvider.overrideWith(
-            (ref, q) async => [
-              const FichaPersona(dni: 12345678, nombre: 'AGENTE DEMO'),
-            ],
-          ),
-          fichaLicenciasProvider.overrideWith(
-            (ref, consulta) async => repo.rows,
-          ),
-          fichaLicenciasAcumuladasProvider.overrideWith(
-            (ref, dni) async => repo.rows,
-          ),
+          fichaPersonasProvider.overrideWith((ref, q) async =>
+              [const FichaPersona(dni: 12345678, nombre: 'AGENTE DEMO')]),
+          fichaLicenciasProvider
+              .overrideWith((ref, consulta) async => repo.rows),
+          fichaLicenciasAcumuladasProvider
+              .overrideWith((ref, dni) async => repo.rows),
         ],
         child: MaterialApp(
-          home: Scaffold(
-            body: ficha ? const FichaPage() : const LicenciasPage(),
-          ),
-        ),
-      ),
-    );
+            home: Scaffold(
+                body: ficha ? const FichaPage() : const LicenciasPage()))));
     await tester.pumpAndSettle();
     if (ficha) {
       await tester.tap(find.text('AGENTE DEMO'));
@@ -94,62 +78,56 @@ void main() {
 
   for (final ficha in [false, true]) {
     final modulo = ficha ? 'Ficha' : 'Licencias';
-    testWidgets('$modulo: lectura no habilita edición ni borrado', (
-      tester,
-    ) async {
+    testWidgets('$modulo: lectura no habilita edición ni borrado',
+        (tester) async {
       await mount(tester, ficha, admin: false);
       expect(edit(ficha), findsNothing);
       expect(borrar(ficha), findsNothing);
     });
 
     testWidgets(
-      '$modulo: editar conserva el período original de una ficha de papel',
-      (tester) async {
-        await mount(tester, ficha);
-        await tester.tap(edit(ficha));
-        await tester.pumpAndSettle();
-        final dias = find.widgetWithText(TextFormField, 'Cantidad de días');
-        expect(tester.widget<TextFormField>(dias).controller!.text, '19');
-        await tester.tap(find.text('Guardar'));
-        await tester.pumpAndSettle();
-        expect(repo.guardadoId, 11);
-        expect(repo.hasta, DateTime(DateTime.now().year, 1, 19));
-        expect(find.text('Licencia modificada'), findsOneWidget);
-        await tester.pump(const Duration(seconds: 4));
-      },
-    );
+        '$modulo: editar conserva el período original de una ficha de papel',
+        (tester) async {
+      await mount(tester, ficha);
+      await tester.tap(edit(ficha));
+      await tester.pumpAndSettle();
+      final dias = find.widgetWithText(TextFormField, 'Días hábiles');
+      expect(tester.widget<TextFormField>(dias).controller!.text, '15');
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+      expect(repo.guardadoId, 11);
+      expect(repo.hasta, DateTime(DateTime.now().year, 1, 19));
+      expect(find.text('Licencia modificada'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 4));
+    });
 
     testWidgets(
-      '$modulo: cancelar no borra y confirmar actualiza historial y totales',
-      (tester) async {
-        await mount(tester, ficha);
-        await tester.tap(borrar(ficha));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Cancelar'));
-        await tester.pumpAndSettle();
-        expect(repo.borrados, isEmpty);
-        await tester.tap(borrar(ficha));
-        await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(FilledButton, 'Borrar'));
-        await tester.pumpAndSettle();
-        expect(repo.borrados, [11]);
-        expect(find.text('Licencia borrada'), findsOneWidget);
-        if (ficha) {
-          expect(find.text('0 días en ${DateTime.now().year}'), findsOneWidget);
-          expect(find.text('0 licencias registradas'), findsOneWidget);
-        } else {
-          expect(
-            find.text('No hay licencias para estos filtros.'),
-            findsOneWidget,
-          );
-        }
-        await tester.pump(const Duration(seconds: 4));
-      },
-    );
+        '$modulo: cancelar no borra y confirmar actualiza historial y totales',
+        (tester) async {
+      await mount(tester, ficha);
+      await tester.tap(borrar(ficha));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(repo.borrados, isEmpty);
+      await tester.tap(borrar(ficha));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Borrar'));
+      await tester.pumpAndSettle();
+      expect(repo.borrados, [11]);
+      expect(find.text('Licencia borrada'), findsOneWidget);
+      if (ficha) {
+        expect(find.text('0 días en ${DateTime.now().year}'), findsOneWidget);
+        expect(find.text('0 licencias registradas'), findsOneWidget);
+      } else {
+        expect(
+            find.text('No hay licencias para estos filtros.'), findsOneWidget);
+      }
+      await tester.pump(const Duration(seconds: 4));
+    });
 
-    testWidgets('$modulo: un borrado rechazado conserva el registro', (
-      tester,
-    ) async {
+    testWidgets('$modulo: un borrado rechazado conserva el registro',
+        (tester) async {
       repo.rechazar = true;
       await mount(tester, ficha);
       await tester.tap(borrar(ficha));
@@ -157,10 +135,8 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Borrar'));
       await tester.pumpAndSettle();
       expect(repo.borrados, isEmpty);
-      expect(
-        find.textContaining('La licencia ya no está disponible.'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('La licencia ya no está disponible.'),
+          findsOneWidget);
       expect(borrar(ficha), findsOneWidget);
       await tester.pump(const Duration(seconds: 4));
     });
@@ -189,21 +165,20 @@ class _Repository extends LicenciasRepository {
             diasCalendario: 19,
             cantidadDiasFicha: 15,
             cantidadFicha: '15/25',
-          ),
+          )
         ];
 
   @override
-  Future<void> guardar({
-    int? id,
-    required int dni,
-    required int tipoId,
-    required DateTime desde,
-    required DateTime hasta,
-    String? observacion,
-    int? dniFamiliar,
-    int? numeroOrden,
-    String? cantidadFicha,
-  }) async {
+  Future<void> guardar(
+      {int? id,
+      required int dni,
+      required int tipoId,
+      required DateTime desde,
+      required DateTime hasta,
+      String? observacion,
+      int? dniFamiliar,
+      int? numeroOrden,
+      String? cantidadFicha}) async {
     guardadoId = id;
     this.hasta = hasta;
   }

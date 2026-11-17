@@ -13,6 +13,7 @@ class LicenciaTipo {
   final int? categoriaExcelId;
   final String? descripcion;
   String get etiqueta => codigo == null ? nombre : '$codigo · $nombre';
+  bool get esAnual => codigo == '01' || categoriaExcelId == 6;
 
   factory LicenciaTipo.fromJson(Map<String, dynamic> json) => LicenciaTipo(
         id: (json['id'] as num).toInt(),
@@ -127,7 +128,10 @@ class LicenciaRegistro {
   final int? diasCalendario;
   final Map<int, int>? diasPorAnio;
   bool get esEstudio => codigo == '29';
-  String get unidadDias => esEstudio
+  bool get esAnual => codigo == '01' || categoriaExcelId == 6;
+  bool get usaDiasHabiles =>
+      esEstudio || (esAnual && cantidadDiasFicha == null);
+  String get unidadDias => usaDiasHabiles
       ? 'días hábiles'
       : cantidadDiasFicha != null
           ? 'días según ficha'
@@ -162,8 +166,9 @@ class LicenciaRegistro {
         origenDocumento: json['origen_documento'] as String?,
         origenPagina: (json['origen_pagina'] as num?)?.toInt(),
         documentacionPendiente: json['documentacion_pendiente'] == true,
-        ordenFichaPorAnio: (json['orden_ficha_por_anio'] as Map?)?.map((key, value) =>
-            MapEntry(int.parse(key.toString()), (value as num).toInt())),
+        ordenFichaPorAnio: (json['orden_ficha_por_anio'] as Map?)?.map(
+            (key, value) =>
+                MapEntry(int.parse(key.toString()), (value as num).toInt())),
         diasCalendario: (json['dias_calendario'] as num?)?.toInt(),
         diasPorAnio: (json['dias_por_anio'] as Map?)?.map((key, value) =>
             MapEntry(int.parse(key.toString()), (value as num).toInt())),

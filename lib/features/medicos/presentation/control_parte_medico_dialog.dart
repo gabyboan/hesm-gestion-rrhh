@@ -6,6 +6,7 @@ import '../../../core/utils/date_fmt.dart';
 import '../../../core/utils/error_text.dart';
 import '../application/medicos_providers.dart';
 import '../domain/control_parte_medico.dart';
+import 'aviso_conflictos_partes.dart';
 
 class ControlParteMedicoDialog extends ConsumerStatefulWidget {
   const ControlParteMedicoDialog({super.key, this.parteId});
@@ -102,16 +103,20 @@ class _ControlParteMedicoDialogState
       _mensaje = null;
     });
     try {
-      await ref.read(medicosRepoProvider).guardarControl(
-            qr: documento.parte.qr!,
-            fechaDesde:
-                DateFormat('dd/MM/yyyy').parseStrict(_fecha.text.trim()),
-            diasAprobados: int.parse(_dias.text.trim()),
-            medicoNombre: _medico.text,
-            medicoMatricula: _matricula.text,
-            versionEsperada: documento.ultimoControl?.version ?? 0,
-            motivoRectificacion: _rectificando ? _motivo.text : null,
-          );
+      final control = await guardarParteSinConflictos<ControlParteMedico>(
+        context: context,
+        guardar: () => ref.read(medicosRepoProvider).guardarControl(
+              qr: documento.parte.qr!,
+              fechaDesde:
+                  DateFormat('dd/MM/yyyy').parseStrict(_fecha.text.trim()),
+              diasAprobados: int.parse(_dias.text.trim()),
+              medicoNombre: _medico.text,
+              medicoMatricula: _matricula.text,
+              versionEsperada: documento.ultimoControl?.version ?? 0,
+              motivoRectificacion: _rectificando ? _motivo.text : null,
+            ),
+      );
+      if (control == null) return;
       if (!mounted) return;
       // Tras una respuesta exitosa bloqueamos otro guardado, incluso si falla
       // la consulta de actualización. Un error de red nunca repite la escritura.
